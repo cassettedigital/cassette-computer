@@ -1,0 +1,34 @@
+# Cassette Player — Docker Compose dev overrides
+# GPL v3 fork of Navidrome — https://github.com/navidrome/navidrome
+#
+# Usage (always combined with the base file):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   (or just: pnpm dev — the dev.sh script handles this)
+#
+# These overrides are for local development only.
+# They enable faster feedback loops: verbose logging, frequent scans,
+# and a shorter session timeout so we can test login flows.
+
+services:
+  navidrome:
+    environment:
+      # Verbose logging so we can see what Navidrome is doing
+      ND_LOGLEVEL: debug
+
+      # Scan every 5 minutes instead of 1 hour — useful when adding test files
+      ND_SCANNER_SCHEDULE: 5m
+
+      # Shorter session so we can test auth flows without waiting
+      ND_SESSIONTIMEOUT: 1h
+
+      # Enable dev-only features
+      ND_DEVACTIVITYPANEL: "true"
+
+    # In dev, don't restart automatically so we notice crashes
+    restart: "no"
+
+  sidecar:
+    environment:
+      # The web dev server (:3100, :3000) calls the hub straight from the browser.
+      # The hub allows no other origin unless it is named here (BUG-858).
+      SIDECAR_CORS_ORIGINS: "http://localhost:3100,http://localhost:3000"

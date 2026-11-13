@@ -1,0 +1,74 @@
+[
+  {
+    "name": "arabic harakat (Mn outside block)",
+    "artist": "Arabic",
+    "title": "مُحَمَّد",
+    "duration_seconds": 100,
+    "artist_codepoints": "Arabic",
+    "title_codepoints": "U+0645U+064FU+062DU+064EU+0645U+064EU+0651U+062F",
+    "ts_result": "03a7fb30dcad37c46b519c32828bb128",
+    "go_result": "7e829bc5abe0e5a6ca30ee3e414d9079",
+    "swift_result": "7e829bc5abe0e5a6ca30ee3e414d9079",
+    "note": "NO agreed expected_local_id — founder's call"
+  },
+  {
+    "name": "hebrew niqqud (Mn outside block)",
+    "artist": "Hebrew",
+    "title": "שָׁלוֹם",
+    "duration_seconds": 100,
+    "artist_codepoints": "Hebrew",
+    "title_codepoints": "U+05E9U+05B8U+05C1U+05DCU+05D5U+05B9U+05DD",
+    "ts_result": "69393f9008815721e92a865fefe6f58a",
+    "go_result": "3e015c47c2956e5dd92ad92b08c115c7",
+    "swift_result": "3e015c47c2956e5dd92ad92b08c115c7",
+    "note": "NO agreed expected_local_id — founder's call"
+  },
+  {
+    "name": "devanagari combining marks (Mn)",
+    "artist": "Hindi",
+    "title": "नमस्ते",
+    "duration_seconds": 100,
+    "artist_codepoints": "Hindi",
+    "title_codepoints": "U+0928U+092EU+0938U+094DU+0924U+0947",
+    "ts_result": "8145ec78158627418085605017a64bd8",
+    "go_result": "f8692abead32dbc85f55d7246e03cfec",
+    "swift_result": "f8692abead32dbc85f55d7246e03cfec",
+    "note": "NO agreed expected_local_id — founder's call"
+  },
+  {
+    "name": "latin + combining beyond block (Mn)",
+    "artist": "X",
+    "title": "a᷀b",
+    "duration_seconds": 100,
+    "artist_codepoints": "X",
+    "title_codepoints": "aU+1DC0b",
+    "ts_result": "7636c8e2932537bfa579472580094de0",
+    "go_result": "f59acb19997d8887e04f0d891b295344",
+    "swift_result": "f59acb19997d8887e04f0d891b295344",
+    "note": "NO agreed expected_local_id — founder's call"
+  },
+  {
+    "name": "NEL separator U+0085",
+    "artist": "BonIver",
+    "title": "Day One",
+    "duration_seconds": 184,
+    "artist_codepoints": "BonU+0085Iver",
+    "title_codepoints": "DayU+0020One",
+    "ts_result": "ec57e12d76a57bacd5b211ca99493e57",
+    "go_result": "f9fb3ba93022d599de45fc3016168ee1",
+    "swift_result": "f9fb3ba93022d599de45fc3016168ee1",
+    "note": "NO agreed expected_local_id — founder's call"
+  },
+  {
+    "name": "ZWNBSP/BOM U+FEFF",
+    "artist": "Bon Iver",
+    "title": "Day﻿One",
+    "duration_seconds": 184,
+    "artist_codepoints": "BonU+0020Iver",
+    "title_codepoints": "DayU+FEFFOne",
+    "ts_result": "f9fb3ba93022d599de45fc3016168ee1",
+    "go_result": "516797ed0542295f7a1123373ba53e66",
+    "swift_result": "516797ed0542295f7a1123373ba53e66",
+    "note": "NO agreed expected_local_id — founder's call"
+  }
+]

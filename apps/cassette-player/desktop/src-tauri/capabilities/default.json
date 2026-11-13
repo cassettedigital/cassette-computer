@@ -1,0 +1,26 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Main window, shipped app. The UI is served from a local Node server (loopback), not the tauri:// asset protocol, so the webview is a 'remote' origin and needs IPC explicitly allowlisted via `remote.urls` below, or JS->Rust commands (pairing, sign out, updates, and dragging the window by the page's drag regions: the title bar is an overlay, see apps/cassette/src/lib/desktop-shell.ts) are denied. Scoped to the shipped app's bundled server :41730 ONLY; Cassette Dev.app adds the dev server in dev.json. The public site is never granted IPC (the webview never loads it; pairing opens it in the system browser instead). No command hands the page the device token (BUG-784): the shell reads it itself. dialog:allow-message is the Mac's own alert for every yes/no and notice (apps/cassette/src/lib/ask.ts, BUG-602): the plugin's window.confirm swap calls a command the plugin no longer has, so pages never use it. allow-add-music moves or copies the music a person drops on the window or picks into the hub's music folder (add_music.rs), and dialog:allow-open is that picker (File > Add to Library…).",
+  "windows": [
+    "main"
+  ],
+  "remote": {
+    "urls": [
+      "http://localhost:41730/*"
+    ]
+  },
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
+    "opener:default",
+    "dialog:allow-message",
+    "allow-clear-device-token",
+    "allow-begin-pairing",
+    "allow-check-for-update",
+    "allow-install-update",
+    "allow-add-music",
+    "dialog:allow-open"
+  ]
+}

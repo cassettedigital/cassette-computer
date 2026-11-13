@@ -1,0 +1,158 @@
+.triggerReset {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+}
+.triggerReset[data-focus-visible] {
+  outline: 2px solid var(--cs-focus-ring, var(--cs-orange));
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+/* The drawn covers and the presets together run taller than a screen, and the modal
+   itself doesn't scroll. The padding keeps a tile's hover lift and focus ring inside. */
+.scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-5);
+  max-height: min(62vh, 640px);
+  overflow-y: auto;
+  padding: 4px;
+  margin: -4px;
+}
+
+.sectionLabel {
+  margin: 0 0 var(--cs-space-2);
+  font-family: var(--cs-font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--cs-space-3);
+}
+
+.tile {
+  aspect-ratio: 1;
+  border-radius: var(--cs-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--cs-border-subtle);
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  transition: transform var(--cs-hover-dur) ease, box-shadow var(--cs-hover-dur) ease;
+}
+.tile:hover,
+.tile:focus-visible {
+  transform: scale(1.04);
+  box-shadow: var(--cs-shadow-sm);
+  outline: none;
+}
+.tileImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.uploadTile {
+  aspect-ratio: 1;
+  border-radius: var(--cs-radius-md);
+  border: 1px dashed var(--cs-border-subtle);
+  background: var(--cs-bg2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--cs-ink3);
+  font-family: var(--cs-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: var(--cs-space-2);
+}
+.uploadTile:hover,
+.uploadTile:focus-visible {
+  color: var(--cs-ink);
+  border-color: var(--cs-ink3);
+  outline: none;
+}
+
+.previewWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cs-space-4);
+  padding: var(--cs-space-3) 0;
+}
+
+/* 160px with rounded corners: the playlist detail page header's cover
+   (PlaylistEditor .coverThumb), so what's confirmed here is what actually
+   renders. */
+.preview {
+  width: 160px;
+  height: 160px;
+  border-radius: var(--cs-radius-md);
+  overflow: hidden;
+  box-shadow: 0 0 0 2px var(--cs-border-subtle), var(--cs-shadow-sm);
+  background: var(--cs-vinyl);
+}
+.previewImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.actions {
+  display: flex;
+  gap: var(--cs-space-3);
+}
+
+.cancel,
+.confirm {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-meta);
+  padding: var(--cs-space-2) var(--cs-space-4);
+  border-radius: var(--cs-flair-radius);
+  cursor: pointer;
+}
+.cancel {
+  background: var(--cs-bg2);
+  border: 1px solid var(--cs-border-subtle);
+  color: var(--cs-ink3);
+}
+.cancel:hover { color: var(--cs-ink); }
+.confirm {
+  background: var(--cs-orange);
+  border: 1px solid var(--cs-orange);
+  color: var(--cs-on-accent, #1c1913);
+}
+
+.error {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-red, #f87171);
+  margin: 0;
+}
+.status {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  margin: 0;
+}

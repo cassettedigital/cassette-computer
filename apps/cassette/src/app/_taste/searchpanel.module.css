@@ -1,0 +1,314 @@
+/*
+ * The search's matches (SearchPanel.tsx): a panel under the masthead's pill (not inside it, since a
+ * searching pill clips what it holds), on the page's own paper, light or dark as the device is. The menus'
+ * surface, lifted; on dark paper the pill's own near-black, so the field and its matches read as one
+ * piece. The sure result leads on a wash of its own, larger; then the groups in the label type, the rows
+ * as the kit's artist and song rows are (a face, a name, one line of facts), the lit row lifted in the
+ * paper's own ink as the menus' hovered row is (never the record's colour, which on a page with none
+ * fell back to a muddy brass). Its corners are the pill's (the area corner, as round as the 50px pill), and what sits
+ * inside them is rounded to nest in them. No row lines. "Search everything" holds the foot while the rest scrolls. On a phone, a
+ * sheet to the bottom of the screen.
+ */
+.panel {
+  /* the lit row: a lift in the paper's own ink, as the menus' hovered row */
+  --lit: var(--track);
+  /* the sure result and the lit row nest in the panel's corner, inside its 8px */
+  --r-in: calc(var(--r-area) - 8px);
+
+  position: fixed;
+  z-index: 70;
+  top: calc(72px + var(--top-dock-h, 0px)); /* the pill's 14px from the top, its 50px, and 8px of air */
+  left: calc(50% - var(--rail-w, 0px) / 2);
+  width: min(720px, calc(100vw - 24px - var(--rail-w, 0px)));
+  max-height: calc(100vh - 96px - var(--top-dock-h, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding: 8px 0 76px; /* a row the arrows reach never hides under the held foot */
+  padding: 8px;
+  border-radius: var(--r-area);
+  background: light-dark(var(--raised), var(--bg));
+  color: var(--ink-e);
+  box-shadow:
+    0 0 0 1px var(--track),
+    0 24px 60px light-dark(rgba(52, 34, 16, 0.22), rgba(0, 0, 0, 0.55));
+  transform: translateX(-50%);
+  animation: arrive 0.24s var(--ease);
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+/* still searching: a quiet line runs along the top, only once a search takes longer than a blink */
+.panel[data-loading]::before {
+  content: "";
+  display: block;
+  height: 2px;
+  margin: -8px -8px 6px;
+  background: linear-gradient(90deg, transparent, var(--ink-3), transparent) -60% 0 / 40% 100% no-repeat;
+  animation: seek 1.1s var(--fade) 0.35s infinite both;
+}
+@keyframes seek {
+  from {
+    background-position: -60% 0;
+  }
+  to {
+    background-position: 160% 0;
+  }
+}
+
+.list,
+.group {
+  display: grid;
+  gap: 2px;
+}
+.top + .group,
+.hint + .group,
+.group + .group {
+  margin-top: 10px;
+}
+.head {
+  margin: 0;
+  padding: 8px 10px 4px;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ── the sure result: its face large, what it is over its name, its preview at the end ── */
+.top {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 12px;
+  border-radius: var(--r-in);
+  background: var(--wash);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.top[data-lit] {
+  background: var(--lit);
+}
+.top .face {
+  width: 72px;
+  height: 72px;
+}
+.top .text {
+  gap: 9px;
+}
+.kicker {
+  overflow: hidden;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-3);
+}
+.topName {
+  overflow: hidden;
+  padding-top: 2px;
+  font: 800 30px/0.92 var(--f-display);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── a row: a face, a name and its facts, and a song's length and preview key at the end ── */
+.row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 10px;
+  border-radius: var(--r-in);
+  cursor: pointer;
+}
+.row[data-lit] {
+  background: var(--lit);
+}
+.face {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--r-cover);
+  background: var(--sleeve);
+}
+.face[data-round] {
+  border-radius: 50%;
+}
+.face img {
+  object-fit: cover;
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.name,
+.meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.name {
+  font: 400 18px/1.2 var(--f-serif);
+}
+.name[data-kind="artist"] {
+  font: 700 19px/1.05 var(--f-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.meta {
+  font: var(--t-meta);
+  line-height: 1.2;
+  letter-spacing: var(--t-meta-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.time {
+  min-width: 34px;
+  font: var(--t-meta);
+  line-height: 1;
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ink-3);
+}
+/* the round preview key */
+.key {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.key:hover {
+  background: var(--wash);
+  color: var(--ink-e);
+}
+.row[data-lit] .key:hover {
+  background: var(--track);
+}
+
+.hint {
+  margin: 0;
+  padding: 6px 10px;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ── "Search everything": always last, held at the foot while the rest scrolls, the keys beside it ── */
+.all {
+  position: sticky;
+  bottom: 0;
+  margin-top: 8px;
+  --behind: light-dark(var(--raised), var(--bg)); /* the panel's own surface */
+  background: var(--behind);
+  box-shadow: 0 0 0 8px var(--behind); /* covers the panel's own edge, so nothing shows round it */
+}
+.all[data-lit] {
+  background: linear-gradient(var(--lit), var(--lit)), var(--behind);
+}
+.allKey {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--wash);
+  color: var(--ink-2);
+}
+.keys {
+  display: none;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+.keys kbd {
+  margin-left: 10px;
+  font: inherit;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+.keys kbd:first-child {
+  margin-left: 0;
+}
+@media (hover: hover) and (pointer: fine) and (min-width: 761px) {
+  .keys {
+    display: inline;
+  }
+}
+
+/* ── a phone: a sheet from under the pill to the bottom of the screen, as a phone's own search is ── */
+@media (max-width: 640px) {
+  .panel {
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    max-height: none;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--r-area) var(--r-area) 0 0;
+    transform: none;
+  }
+  .top {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    gap: 14px;
+    padding: 10px;
+  }
+  .top .face {
+    width: 56px;
+    height: 56px;
+  }
+  .topName {
+    font-size: 24px;
+  }
+  /* the preview key goes round, its glyph alone */
+  .top .topPlay {
+    width: var(--control-h);
+    padding: 0;
+  }
+  .top .topPlay > span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .panel[data-loading]::before {
+    animation: none;
+  }
+  .panel[data-loading]::before {
+    background: none;
+  }
+}
+
+/* inside the iPhone app (lib/app-surface.ts) the app's own screen is the frame, with its own search */
+:global(html[data-surface="app"]) .panel {
+  display: none;
+}

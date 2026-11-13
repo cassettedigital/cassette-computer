@@ -1,0 +1,83 @@
+/* The note to the founder (ReportProblem.tsx), on the player kit's Dialog. Opened from anywhere by the
+   `cassette:report-problem` event: the account window's Invite friends, the help dock. A screenshot is OPTIONAL
+   and picked by the person (no auto-capture). A note always sends (it ignores the diagnostics opt-out). */
+
+/* the kit's tokens reach the dialog without the wrapper taking a box of its own */
+.tokens {
+  display: contents;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+.label {
+  font: var(--pk-t-section-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pk-text-tertiary);
+}
+/* the kit's field, several lines tall: its raised fill and hairline, its corner a card's rather than a pill's */
+.area {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 112px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--pk-r-control);
+  background: var(--pk-surface-raised);
+  box-shadow: inset 0 0 0 1px var(--pk-hairline);
+  color: var(--pk-text-primary);
+  font: var(--pk-t-body);
+  line-height: 1.45;
+  resize: vertical;
+}
+.area::placeholder {
+  color: var(--pk-text-tertiary);
+}
+.area:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--pk-text-primary);
+}
+
+.shotRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+.thumb {
+  flex: none;
+  width: 72px;
+  height: 46px;
+  object-fit: cover;
+  border-radius: var(--pk-r-control);
+  box-shadow: 0 0 0 1px var(--pk-hairline);
+}
+.shotName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--pk-t-metadata);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-secondary);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.sent {
+  margin: 0;
+  font: var(--pk-t-body);
+  color: var(--pk-text-primary);
+}

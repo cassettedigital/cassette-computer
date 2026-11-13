@@ -1,0 +1,10 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="#23201a"/>
+  <g fill="#e87830" fill-opacity="0.8">
+    <circle cx="30" cy="30" r="6"/><circle cx="90" cy="30" r="6"/><circle cx="150" cy="30" r="6"/><circle cx="210" cy="30" r="6"/><circle cx="270" cy="30" r="6"/>
+    <circle cx="30" cy="90" r="6"/><circle cx="90" cy="90" r="6"/><circle cx="150" cy="90" r="6"/><circle cx="210" cy="90" r="6"/><circle cx="270" cy="90" r="6"/>
+    <circle cx="30" cy="150" r="6"/><circle cx="90" cy="150" r="6"/><circle cx="150" cy="150" r="6"/><circle cx="210" cy="150" r="6"/><circle cx="270" cy="150" r="6"/>
+    <circle cx="30" cy="210" r="6"/><circle cx="90" cy="210" r="6"/><circle cx="150" cy="210" r="6"/><circle cx="210" cy="210" r="6"/><circle cx="270" cy="210" r="6"/>
+    <circle cx="30" cy="270" r="6"/><circle cx="90" cy="270" r="6"/><circle cx="150" cy="270" r="6"/><circle cx="210" cy="270" r="6"/><circle cx="270" cy="270" r="6"/>
+  </g>
+</svg>

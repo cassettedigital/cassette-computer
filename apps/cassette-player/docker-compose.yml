@@ -1,0 +1,120 @@
+# Cassette Player — Docker Compose (local dev)
+# GPL v3 fork of Navidrome — https://github.com/navidrome/navidrome
+#
+# Usage:
+#   docker compose build   (first time or after theme/source changes)
+#   docker compose up -d
+#   docker compose logs -f navidrome
+#   docker compose down
+#
+# First run: open http://localhost:4533 and create an admin account.
+#
+# IMPORTANT: This builds from our fork's source (./navidrome/), not from
+# the official deluan/navidrome:latest image. The Cassette theme is baked
+# in at build time via ui/src/themes/CassetteTheme.js.
+#
+# The previous approach (mounting cassette-theme.css into the running
+# container) does NOT work — Navidrome embeds the UI into the Go binary
+# at compile time; file mounts cannot inject CSS at runtime.
+
+services:
+  navidrome:
+    build:
+      context: ./navidrome
+      dockerfile: Dockerfile
+    image: cassette-player:local
+    container_name: cassette-player
+    restart: unless-stopped
+    ports:
+      - "4533:4533"
+    environment:
+      # Core config — override in .env.local or docker-compose.dev.yml
+      ND_MUSICFOLDER: /music
+      ND_DATAFOLDER: /data
+      ND_SCANNER_SCHEDULE: 1h
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+      ND_PORT: 4533
+
+      # Use the Cassette theme by default (must match themeName in CassetteTheme.js)
+      ND_DEFAULTTHEME: "Cassette"
+
+      # Welcome message shown on the login screen
+      ND_UIWELCOMEMESSAGE: "Welcome to Cassette Player"
+
+      # Never reach out to outside services (same switches the sidecar forces,
+      # sidecar/supervisor.go withoutExternalServices): no metadata agents, no
+      # ListenBrainz, no usage report, no downloaded login background.
+      ND_ENABLEEXTERNALSERVICES: "false"
+      ND_ENABLEINSIGHTSCOLLECTOR: "false"
+      ND_AGENTS: ""
+
+    volumes:
+      # Music library — add your FLAC/MP3 files here
+      - ./music:/music:ro
+
+      # Navidrome database, cache, and transcoding temp files
+      - ./data:/data
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4533/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── Cassette Player Sidecar ────────────────────────────────────────────────
+  # Handles the one-time Cassette account pairing and periodic heartbeat.
+  # On first run it opens a browser window for sign-in; after pairing it
+  # runs silently in the background.
+  #
+  # To disable: comment out this service. Navidrome keeps working without it;
+  # you just need to enter server URL and Subsonic credentials manually in
+  # the iOS app.
+  sidecar:
+    build:
+      context: ./sidecar
+      dockerfile: Dockerfile
+    image: cassette-player-sidecar:local
+    container_name: cassette-player-sidecar
+    restart: unless-stopped
+    depends_on:
+      navidrome:
+        condition: service_healthy
+    environment:
+      # Cassette web URL — change to point at your own Cassette instance
+      CASSETTE_API_BASE: "https://cassette.digital"
+      # Navidrome must be accessible from inside the Docker network
+      NAVIDROME_BASE_URL: "http://navidrome:4533"
+      # Navidrome admin credentials — must match the account created at first login
+      # Set in a .env file; never commit the real values
+      NAVIDROME_ADMIN_USER: "${NAVIDROME_ADMIN_USER:-admin}"
+      NAVIDROME_ADMIN_PW: "${NAVIDROME_ADMIN_PW:-}"
+      # Mac's mDNS hostname (e.g. my-mac.local) — set by dev.sh before compose starts
+      HOST_HOSTNAME: "${HOST_HOSTNAME:-}"
+      # Same data volume as Navidrome — state persisted to /data/sidecar.json
+      SIDECAR_DATA_DIR: "/data"
+      # Music directory — must match Navidrome's ND_MUSICFOLDER. Mounted RW
+      # below because the Layer 1 MBID resolver writes musicbrainz_trackid
+      # back into FLAC/MP3 files. Navidrome's mount stays read-only.
+      SIDECAR_MUSIC_DIR: "/music"
+      # Port for the first-run wizard browser UI (local-only)
+      SIDECAR_PORT: "5173"
+      # Bind the wildcard INSIDE the container so the compose port mapping below can
+      # reach it. The sidecar binary now defaults to 127.0.0.1 (fail closed — its
+      # endpoints have no inbound auth); Docker needs the wildcard because the
+      # mapping connects from the bridge network, and host exposure stays loopback
+      # via the "127.0.0.1:5173:5173" mapping.
+      SIDECAR_BIND_ADDR: "0.0.0.0"
+    volumes:
+      # Shared with Navidrome — sidecar stores pairing state alongside Navidrome DB
+      - ./data:/data
+      # Writable music mount: the sidecar embeds MusicBrainz Recording IDs
+      # into tag metadata so identity follows the user across devices.
+      # Navidrome's mount of the same directory remains :ro — it does not
+      # modify files; only the sidecar does.
+      - ./music:/music
+    ports:
+      # Wizard UI + OAuth callback — accessible on the host at http://localhost:5173
+      # The browser's Cassette sign-in redirects back to this port.
+      - "127.0.0.1:5173:5173"

@@ -1,0 +1,13 @@
+.dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cs-ink3);
+  animation: cs-loadPulse 1s ease-in-out infinite;
+}

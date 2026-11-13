@@ -1,0 +1,315 @@
+/*
+ * The taste set's foundations: the faces, the curves, the type roles, the ring, the two stocks and the
+ * page frame, shared by the homepage and the new artist and album pages (step 2 of the consolidation:
+ * one recipe each, the calls in the founder-approved list).
+ *
+ * F1 one orange: the site kit's skinned accent, var(--cs-orange), text on it var(--cs-on-accent). It
+ * follows the account skin everywhere, the homepage included. On the product pages it means live state
+ * only (something playing). A record's own colour arrives as --accent-c, and its text-safe version (lifted
+ * to 4.5:1 on the paper) as --accent-ink.
+ *
+ * F2 ink: four steps per stock (ink-e, ink-2 .74, ink-3 .56 the lowest step for text, .62 on the light
+ * stock so it still reads 4.5:1 there, ink-4 .38 for tracks and rules, never text), plus a wash for hover
+ * fills and a track for unfilled lines. Two stocks: the dark one (.root on the product pages, .dark on a
+ * dark section of the homepage) and the light one (.light, the homepage's card stock). Every PageFrame
+ * page follows the reader's device between them (.follows). Parts read only these tokens, so they
+ * draw right on either.
+ *
+ * The stocks, the faces, the three corners and the type roles are not written here: they come from the
+ * one token source, packages/cassette-kit/tokens.json (`taste`), whose generator writes them as
+ * @discovery/cassette-kit/taste.module.css; each class below composes its part of it. Change a value
+ * there and run the kit's `generate`, never here.
+ *
+ * The site kit's role tokens (--cs-*) are re-pointed onto the dark paper inside .root, so the kit's own
+ * atoms (InfoTip) draw in these inks with no local patch. globals.css is not touched. A whole page still
+ * drawn in the site kit takes the full set of them from the page frame (PageFrame `oldKit`).
+ *
+ * Never give .root container, contain, transform, filter, perspective or will-change: any of those makes
+ * it the containing block for position: fixed and the dock would scroll away. The size container is
+ * <main> (.body).
+ */
+
+/* ── the generated roles each stock takes: .root is the dark product paper with everything shared ── */
+.base {
+  composes: base from "@discovery/cassette-kit/taste.module.css";
+}
+.dark {
+  composes: dark from "@discovery/cassette-kit/taste.module.css";
+}
+.light {
+  composes: light from "@discovery/cassette-kit/taste.module.css";
+}
+
+/* ── what every taste page shares, whatever its stock: curves, grains, the orange, the frame, the focus
+      ring and the cover's one shadow, beside the generated faces (the app's own, from the root layout's
+      next/font; DM Mono only at 400 and 500), corners and type roles. The artist and album pages take
+      them through .root; the homepage through .base. ── */
+.root,
+.base {
+  /* curves: a touch (something answering) is quick, then a long settle; a fade eases in and out evenly.
+     The homepage's How it works draws its loop in JS with the touch and a move, cubic-bezier(1, 0, 0, 1),
+     all of its speed in the middle (Intake.tsx) */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --touch: cubic-bezier(0.1, 0.4, 0, 1);
+  --fade: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* each stock's grain: light specks for the dark press paper, dark specks for the light card stock */
+  --grain-press: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.94 0 0 0 0 0.86 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.09 0 0 0 0 0.07 0 0 0 0 0.05 0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* F1: the one orange is the kit's, var(--cs-orange), written as itself everywhere (no local name) */
+  --pill: rgba(21, 17, 14, 0.92); /* the masthead pill */
+
+  /* the frame: one wrap on every page, 1200 at most, 20px gutters on a phone and 32 from a 760 container */
+  --gutter: 20px;
+  --wrap-max: 1200px;
+
+  /* F4 the type roles (generated). A role is its font (the shorthand) and its tracking; caps where it
+     says so. display: Barlow Condensed 800 caps, the homepage's section statements (the hero's name or
+     title is the same face fitted to its column, set by its page); head / head-small: the product pages'
+     section heads, scaled to the page's size container; body and caption: Newsreader; label: DM Mono
+     caps, the small names of things; button: the label on a button, the player kit's own pill letters
+     (Barlow Condensed 700); link: an arrow link's typewriter caps; meta: years, lengths and counts,
+     tabular. Nothing is ever set under 11px (the generator refuses it).
+     F6 corners (generated; the founder, 2026-10-29: round everywhere): --r-pill for anything you press,
+     anything you type into and every tag (a circle when it holds only an icon); --r-area for a box that
+     holds a paragraph; --r-small for rows, strips, code and other small boxes; --r-card for cards, menus
+     and tiles; --r-cover for covers. A control is --control-h tall, its outline --control-line at
+     --control-line-alpha of the ink. */
+
+  /* F7 the cover's one shadow and one hover lift */
+  --cover-shadow: 0 22px 44px -20px rgba(0, 0, 0, 0.72);
+  --cover-lift: -3px;
+
+  /* P1 the one focus ring (--ring, a box-shadow; --ring-line, the same as an outline where a part's
+     box-shadow is taken by a cover's shadow) is each stock's own, generated: a gap of the paper, then the
+     ink, so it reads on the dark paper and the light alike (BUG-630) */
+}
+
+/* ── F2 the dark stock (generated): --bg the press paper, --own Cassette's flat stock, --ink-e and its
+      steps (--ink-3 the lowest for text, --ink-4 tracks, rules and outlines, never text), --wash for
+      hover and pressed fills, --track the unfilled part of a line (never a divider), --raised a menu, a
+      tip, anything lifted off the paper, --sleeve the box a record with no cover sits in, --fill-hover a
+      filled button pointed at. Here only the stock as a background. ── */
+.root,
+.dark {
+  --ink: var(--ink-e); /* ink on the paper, the same name the light stock gives it (BUG-633) */
+  --surface: var(--bg) var(--grain-press);
+}
+
+/* ── F2 the light stock (generated): the homepage's warm card stock, its ink in the same four steps,
+      and the homepage's own names for its paper, card and ink ── */
+.light {
+  --paper: var(--bg);
+  --card: var(--raised);
+  --ink: var(--ink-e); /* ink on the paper */
+  --surface: var(--bg) var(--grain);
+}
+
+/* ── the stock that follows the reader (generated): the light card stock, or the dark paper when their
+      device is set to dark, and .autoBand the other one for a band. A page can hold either with
+      data-paper="light" or "dark", and so can <html> (the reader's choice in Appearance). Each side takes its own grain; for a colour that has to change with the
+      stock (a label's accent), a part writes light-dark(on light, on dark), which reads the side it is on. ── */
+.auto {
+  composes: auto from "@discovery/cassette-kit/taste.module.css";
+  --paper: var(--bg);
+  --card: var(--raised);
+  --ink: var(--ink-e);
+  --surface: var(--bg) var(--grain);
+}
+.autoBand {
+  composes: autoBand from "@discovery/cassette-kit/taste.module.css";
+  --ink: var(--ink-e); /* a band is the other stock, so its ink is too (BUG-633) */
+  --surface: var(--bg) var(--grain-press);
+}
+@media (prefers-color-scheme: dark) {
+  :where(:root:not([data-paper="light"])) .auto:not([data-paper="light"]) {
+    --surface: var(--bg) var(--grain-press);
+  }
+  :where(:root:not([data-paper="light"])) .auto:not([data-paper="light"]) .autoBand {
+    --surface: var(--bg) var(--grain);
+  }
+}
+.auto[data-paper="dark"],
+:root[data-paper="dark"] .auto:not([data-paper="light"]) {
+  --surface: var(--bg) var(--grain-press);
+}
+.auto[data-paper="dark"] .autoBand,
+:root[data-paper="dark"] .auto:not([data-paper="light"]) .autoBand {
+  --surface: var(--bg) var(--grain);
+}
+
+.root {
+  composes: base dark from "@discovery/cassette-kit/taste.module.css";
+  --paper: #f3eadb; /* the pill's text */
+
+  /* colour */
+  --brass: #c9a25a; /* the paper's own light; a record with no colour */
+  --accent-c: var(--brass); /* a page sets the record's colour (and its --accent-ink) on its own wrapper */
+
+  /* the frame (the gutter and the wrap's width are the set's, above) */
+  --stick: 16px; /* top offset for anything sticky */
+  --rail-w: 0px; /* the player's panel down the right, while it is open (.root[data-rail]) */
+  --top-dock-h: 0px; /* the player pinned along the top, written by the player from its measured height */
+  --mast-room: 78px; /* the fixed masthead's room at the top, so it never covers the opener at rest */
+  /* the one gap between sections on both pages: tight enough that a small screen still moves */
+  --sec: clamp(40px, 5.5cqi, 80px);
+
+  /* the site kit's roles on this paper (InfoTip) */
+  --cs-ink: var(--ink-e);
+  --cs-ink2: var(--ink-e);
+  --cs-ink3: var(--ink-3);
+  --cs-bg3: var(--raised);
+  --cs-border: var(--ink-4);
+  --cs-border-subtle: var(--ink-4);
+
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  padding-bottom: 0;
+  background-color: var(--bg);
+  background-image: var(--grain-paper, var(--grain-press));
+  color: var(--ink-e);
+  font-family: var(--f-mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── the product paper that follows the reader (every PageFrame page, and the desk): the light card
+      stock, or the dark paper when their device is set to dark. The page can hold one paper with
+      data-paper (a review link, ?paper=dark),
+      and <html> can hold either: the reader's choice in Appearance (lib/appearance.ts), or dark in the
+      iPhone app's web view (lib/app-surface.ts) while the app is dark-only. The page's hold wins. The pill keeps its cream (--paper, above). The paper's own light, the brass, is too pale
+      to read on cream, so a record with no colour takes a deep brass there; a record's own colour comes
+      in both versions from colour.ts (accentVars). ── */
+.follows {
+  composes: auto from "@discovery/cassette-kit/taste.module.css";
+  --grain-paper: var(--grain);
+  --surface: var(--bg) var(--grain);
+  --accent-c: light-dark(#7f5f26, var(--brass));
+  --cover-shadow: 0 22px 44px -20px light-dark(rgba(52, 34, 16, 0.5), rgba(0, 0, 0, 0.72));
+}
+@media (prefers-color-scheme: dark) {
+  :where(:root:not([data-paper="light"])) .follows:not([data-paper="light"]) {
+    --grain-paper: var(--grain-press);
+    --surface: var(--bg) var(--grain-press);
+  }
+}
+.follows[data-paper="dark"],
+:root[data-paper="dark"] .follows:not([data-paper="light"]) {
+  --grain-paper: var(--grain-press);
+  --surface: var(--bg) var(--grain-press);
+}
+/* The player (PlayerDock.tsx). On a wide window it is a panel down the right and the page steps aside
+   for it, so the page re-lays itself at the narrower width (pages query the `taste` container, which
+   narrows with it); the step is the one movement, the founder's "everything reacts". At least 400 wide,
+   so the panel's 16:9 video is never under 200 tall. On a narrower window it is pinned along the top and
+   the page starts below it. */
+.root {
+  transition: padding-right 0.45s var(--ease);
+}
+.root[data-rail] {
+  --rail-w: clamp(400px, 34vw, 480px);
+  padding-right: var(--rail-w);
+}
+.root[data-topdock] .body {
+  padding-top: calc(var(--mast-room) + var(--top-dock-h));
+}
+/* In the account window's side panel (lib/app-surface PANEL_FRAME, account/discover RecordFrame) the page is
+   drawn with a strip on its left the window keeps out of sight. While a preview plays the window uncovers the
+   strip over the shelves beside the panel and the player is drawn in it (dock.module.css), so the page itself
+   never moves (the founder, 2026-11-08). On a phone the panel is a sheet and the player keeps to its top. */
+@media (min-width: 780px) {
+  :global(html[data-frame="panel"]) .root,
+  :global(html[data-frame="panel"]) .root[data-rail] {
+    --rail-w: 400px;
+    padding-left: var(--rail-w);
+    padding-right: 0;
+    transition: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition: none;
+  }
+}
+/* a link takes its part's ink. Not inside a page still drawn in the old kit (PageFrame `oldKit`), whose own
+   one-class link colours this would outweigh; the :where keeps the rule's weight what it always was. */
+.root a:not(:where([data-old-kit] a)) {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── the size container and widths: pages query `taste` at 760 and 1100, never the viewport. The page
+      starts below the fixed masthead's room. ── */
+.body {
+  display: block;
+  container: taste / inline-size;
+  padding-top: var(--mast-room);
+}
+/* inside the iPhone app there is no masthead to leave room for (lib/app-surface.ts). The room itself is
+   nothing there, so a preview pinned along the top doesn't push the page 78px further down than the player
+   (`.root[data-topdock] .body` adds the room to the player's height; BUG-639). */
+:global(html[data-surface="app"]) .root,
+:global(html[data-surface="app"]) .body {
+  --mast-room: 0px;
+}
+.wrap {
+  width: calc(100% - 2 * var(--gutter));
+  max-width: var(--wrap-max);
+  margin-inline: auto;
+}
+/* from 760 the gutters are 32px, or --wrap-gutter where a page needs more room at its edges (the guide
+   rail asks for it while it shows: guiderail.module.css) */
+@container taste (width >= 760px) {
+  .wrap {
+    width: calc(100% - 2 * var(--wrap-gutter, 32px));
+  }
+}
+
+/* ── section stocks: other people's words on the grained paper, our arithmetic on the flat stock.
+      No rule, shadow or line where they meet; the change of stock is the only marker. ── */
+.ed {
+  position: relative;
+  background: transparent;
+  color: var(--ink-e);
+}
+.own {
+  position: relative;
+  background: var(--own);
+  color: var(--ink-e);
+}
+
+/* ── the type roles as classes, for markup that takes a role whole ── */
+.display {
+  font: var(--t-display);
+  letter-spacing: var(--t-display-track);
+  text-transform: uppercase;
+}
+.label {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+}
+.meta {
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+}
+.text {
+  font: var(--t-body);
+}
+.caption {
+  font: var(--t-caption);
+}
+
+/* ── motion: none by default. The founder (2026-10-21): "reserve animation for focal points". The
+      reveal observer (reveal.ts) still marks [data-reveal] elements [data-shown] when they scroll in,
+      but only a focal part animates on it (the measured bar, Measure). ── */
+
+/* the one ring, light enough in weight that any part can carry its own over it */
+.root :where(:focus-visible) {
+  outline: none;
+  box-shadow: var(--ring);
+}
+

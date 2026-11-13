@@ -1,0 +1,78 @@
+/*
+ * Listeners (Listeners.tsx): people's own words about the record, after the press, in the reading face a size
+ * under the press cards, each with its stars and the person's name. Held apart by space, never by a line; the
+ * stars in the paper's ink; the record's colour only where a link answers the pointer.
+ */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: clamp(28px, 3.4cqi, 44px) clamp(28px, 4cqi, 56px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.review {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  margin: 0;
+}
+.words {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  font: 400 clamp(18px, 1.7cqi, 21px) / 1.36 var(--f-serif);
+  letter-spacing: -0.005em;
+  color: var(--ink-e);
+  text-wrap: pretty;
+}
+.words p {
+  margin: 0;
+  white-space: pre-line;
+}
+.by {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.name {
+  border-radius: var(--r-small);
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-e);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.name:hover,
+.rest:hover {
+  color: var(--accent-ink, var(--accent-c));
+}
+.name:focus-visible,
+.rest:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.date {
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.rest {
+  border-radius: var(--r-small);
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+.moreRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}

@@ -1,0 +1,66 @@
+/*
+ * A cover's own light (P8): the phone app's recipe, the cover blurred and oversized behind its parent,
+ * reaching up and out but barely down.
+ *
+ * Quiet (the founder, 2026-10-21: "the harsh gradient, we should bring these down quite a bit on both"):
+ * half the light it had or less, and no shape to it. The mask is full only behind the cover, then falls
+ * away on a long, eased curve (many stops, so no ring shows where a straight ramp would start or end)
+ * and is gone a little inside the box, so the light reads as a wash of the cover's colour rather than a
+ * lit ellipse.
+ *
+ * It must fade to nothing before any edge that could cut it (the founder, 2026-10-21: "the lines are a
+ * little harsh"). Nothing clips it on purpose; the edges it meets are the window's: the side of the
+ * window, past the page's margin, and the top of the page; and below, the next section's stock. So its
+ * reach is capped: sideways by the page's side margin (--room, the space between the wrap and the
+ * window, a little inside it; a page whose light sits further in says so with --glow-room), upward by
+ * 96px, which every page leaves above its opener (a page that leaves more says so with --glow-up-room),
+ * and downward to a sliver under its parent, well inside the opener's own bottom padding. The mask is
+ * applied after the blur, so nothing of the blur escapes the box.
+ */
+.glow {
+  --room: calc((100cqi - min(100cqi - 64px, var(--wrap-max))) / 2 - 8px);
+  --side: min(30%, var(--glow-room, var(--room)));
+  --up: min(var(--glow-up, 26%), var(--glow-up-room, 96px));
+  position: absolute;
+  top: calc(-1 * var(--up));
+  right: calc(-1 * var(--side));
+  bottom: -4%;
+  left: calc(-1 * var(--side));
+  z-index: 0;
+  opacity: 0.22;
+  filter: blur(96px) saturate(1.15);
+  /* full behind the cover itself, then an eased fall (roughly cos^2) over the rest of the reach: no ramp
+     ends to show as a ring, and nothing left past 97% */
+  mask-image: radial-gradient(
+    closest-side,
+    #000 46%,
+    rgba(0, 0, 0, 0.96) 52%,
+    rgba(0, 0, 0, 0.87) 58%,
+    rgba(0, 0, 0, 0.74) 64%,
+    rgba(0, 0, 0, 0.58) 70%,
+    rgba(0, 0, 0, 0.41) 76%,
+    rgba(0, 0, 0, 0.25) 82%,
+    rgba(0, 0, 0, 0.12) 88%,
+    rgba(0, 0, 0, 0.04) 93%,
+    transparent 97%
+  );
+  pointer-events: none;
+}
+/* soft: the artist header's, under a stack of covers (lower, wider, and slower to fall off) */
+.glow[data-soft] {
+  opacity: 0.17;
+  filter: blur(120px) saturate(1.1);
+}
+.glow img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@container taste (width < 760px) {
+  .glow {
+    --room: calc(var(--gutter) - 4px);
+    --side: min(8%, var(--glow-room, var(--room)));
+    --up: min(10%, 40px);
+    bottom: -6%;
+  }
+}

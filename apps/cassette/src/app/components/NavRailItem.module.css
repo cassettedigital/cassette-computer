@@ -1,0 +1,140 @@
+/* NavRailItem — one geometry for every rail row. Index grammar only: three
+   type treatments (meta / destination / entry), accent bar, no filled wash.
+   The legacy LED mode was retired with the rail redesign. */
+
+.cell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-2) var(--cs-space-5) var(--cs-space-2) var(--cs-space-4);
+  border-radius: 3px;
+  cursor: pointer;
+  text-decoration: none;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.cell:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: 2px;
+}
+
+/* ── Index grammar ─────────────────────────────────────── */
+.index {
+  border-radius: 0;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-2) var(--cs-space-5) var(--cs-space-2) var(--cs-space-4);
+}
+
+/* Leading slot — one geometry for icon, LED, or empty. */
+.lead {
+  width: var(--cs-space-4);
+  height: var(--cs-space-4);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cs-ink2);
+}
+.lead :global(svg) {
+  width: 14px;
+  height: 14px;
+}
+
+.index .label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cs-ink2);
+  transition: color 0.15s ease;
+  line-height: 1.15;
+}
+
+/* Job 1 — exactly three treatments. Meta + entry share 11px; case/tracking distinguish. */
+.meta .label {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.destination .label {
+  font-family: var(--cs-font-display);
+  font-size: var(--cs-text-body);
+  /* 600, matching the iOS rowTitle weight — 500 read thin/stringy in caps */
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.entry .label {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+/* Ink: resting ink2 → hover ink → selected accent. No ink3, no ink4-as-text. */
+.index:hover .label,
+.index:focus-visible .label {
+  color: var(--cs-ink);
+}
+.index.selected .label,
+.index[data-selected="true"] .label {
+  color: var(--cs-orange);
+}
+
+/* Selected marker — 2px accent bar, flush left, vertically centered. No fill. */
+.index.selected::before,
+.index[data-selected="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 14px;
+  background: var(--cs-orange);
+  border-radius: 0 1px 1px 0;
+}
+
+/* Inline affix — a tiny tag riding right after the label text (the hub mark).
+   Geometry only; the caller dresses it. */
+.affix {
+  display: inline;
+  margin-left: var(--cs-space-2);
+}
+
+/* Trailing annotation — placement marks "not a target"; ink stays put. */
+.trailing {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cs-ink2);
+  cursor: default;
+  pointer-events: none;
+}
+.index:hover .trailing,
+.index.selected .trailing,
+.index[data-selected="true"] .trailing,
+.index:focus-visible .trailing {
+  color: var(--cs-ink2);
+}
+
+/* unavailable kept for API compat — ink ruling: do not dim names */
+.unavailable .label {
+  color: var(--cs-ink2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow { transition: none; }
+  .index .label { transition: none; }
+}

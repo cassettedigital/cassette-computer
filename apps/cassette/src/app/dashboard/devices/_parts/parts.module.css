@@ -1,0 +1,91 @@
+/*
+ * Device pages — shared atoms (coverage meter · sync button). The status lamp
+ * is the kit StatusDot (one lamp everywhere — rail, shelf, teaser, detail);
+ * the tone mapping lives in lib/device-status.ts `toneForLight`.
+ */
+
+/* ── Coverage meter ───────────────────────────────────── */
+.coverage {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-4);
+}
+/* Segmented LED meter (LedMeter) — discrete, all-or-nothing cells. The LIT cells
+   are the drawn rectangles (amber, brighter center + bloom); the gaps between are
+   the panel's own bg, so no dark dividing lines. Shared by coverage + the rip bar. */
+.ledMeter {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  height: 11px;
+}
+.ledCell {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 1.5px;
+  /* A faint white sheen laid on top even when unlit — the same soft top gradient
+     the lit cell carries, dimmed right down — so each cell reads as a glossy lamp
+     before it lights (founder, 2026-08-20). .ledLit overrides both to light up. */
+  background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, white 9%, transparent),
+      transparent 55%
+    ),
+    var(--cs-bg);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
+}
+.ledLit {
+  /* The lit cells, pulled toward the brand orange (was straight amber) — still a
+     warm LED with a brighter center + bloom, just more on-brand. */
+  --led: color-mix(in srgb, var(--cs-led-amber), var(--cs-orange) 60%);
+  background: radial-gradient(
+    circle at 50% 38%,
+    color-mix(in srgb, var(--led), white 28%),
+    var(--led) 72%
+  );
+  box-shadow:
+    0 0 var(--cs-led-amber-bloom) color-mix(in srgb, var(--cs-orange) 55%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 30%, transparent);
+}
+.covNum {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-label);
+  color: var(--cs-ink2);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.covNum .q {
+  color: var(--cs-ink3);
+}
+/* Empty target — the emptiest card is the most actionable. */
+.covEmpty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-body);
+  letter-spacing: 0.01em;
+  color: var(--cs-orange);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--cs-orange) 0%, transparent);
+  transition: text-shadow 0.16s ease;
+}
+.covEmpty:hover {
+  text-shadow: 0 0 12px color-mix(in srgb, var(--cs-orange) 40%, transparent);
+}
+.covEmpty:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .covEmpty {
+    transition: none;
+  }
+}

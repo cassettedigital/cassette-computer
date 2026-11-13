@@ -1,0 +1,31 @@
+/*
+ * DashboardNavOverlay — the instant, client-rendered dashboard skeleton shown the
+ * moment a user clicks a link into /dashboard from elsewhere in the app.
+ *
+ * Why an overlay at all: /dashboard reads auth (cookies), so its layout is
+ * dynamic and sits above the route's loading.tsx boundary — which means Next
+ * can't paint the route skeleton until the server responds, leaving the user on
+ * the previous page with only the link's pending state. This overlay bridges that
+ * gap with zero round-trips: it appears on click and is removed the instant the
+ * real dashboard commits (pathname change).
+ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--cs-z-modal);
+  background: var(--cs-bg);
+  /* Gentle fade-in so it doesn't feel like a hard cut from the marketing page. */
+  animation: cs-navOverlayIn 120ms ease-out both;
+}
+
+@keyframes cs-navOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}

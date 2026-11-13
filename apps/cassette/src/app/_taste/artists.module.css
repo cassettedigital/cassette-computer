@@ -1,0 +1,119 @@
+/*
+ * Artists as rows (ArtistRows.tsx), moved here from the artist page's "Artists like them" unchanged: a
+ * face, a name in the display face, one line in the label type. Whole rows only at each column count.
+ */
+.rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: clamp(24px, 3.5cqi, 56px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.link {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+.face {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  background: var(--sleeve);
+  transition: translate 0.35s var(--spring);
+}
+.face[data-kind="photo"] {
+  border-radius: 50%;
+}
+.face[data-kind="cover"] {
+  border-radius: var(--r-cover);
+}
+.face img {
+  object-fit: cover;
+}
+.link:hover .face,
+.link:focus-visible .face {
+  translate: 0 var(--cover-lift);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.name {
+  overflow: hidden;
+  font: 700 21px/1 var(--f-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.link:hover .name {
+  color: var(--ink-2);
+}
+.line {
+  overflow: hidden;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+.line[data-two] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+@container taste (width >= 760px) {
+  .rows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rows > li[data-past2] {
+    display: none;
+  }
+}
+@container taste (width >= 1100px) {
+  .rows {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .rows > li[data-past2] {
+    display: list-item;
+  }
+  .rows > li[data-past3] {
+    display: none;
+  }
+}
+
+/* one column at every width (two classes, so it outweighs the counts above) */
+.rows.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* the focal size (big): bigger faces and names, with more air between rows and no rules (the kit has no row
+   lines). The face and name grow with the page's width */
+.rows.big .link {
+  grid-template-columns: clamp(64px, 6cqi, 84px) minmax(0, 1fr);
+  gap: clamp(14px, 1.6cqi, 20px);
+  padding: clamp(10px, 1.2cqi, 14px) 0;
+}
+.rows.big .face {
+  width: clamp(64px, 6cqi, 84px);
+  height: clamp(64px, 6cqi, 84px);
+}
+.rows.big .name {
+  font-size: clamp(24px, 2.2cqi, 30px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .face {
+    transition: none;
+  }
+}

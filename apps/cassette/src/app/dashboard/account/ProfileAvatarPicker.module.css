@@ -1,0 +1,114 @@
+/* Sticker avatar picker: a featured row + an "expand" key that reveals the whole set, on the player kit's
+   paper. Each sticker renders through AvatarDisc, so a chip looks exactly like the avatar it will become.
+   Selection reads as a ring in the kit's one primary fill; hover as a faint ring; no rules anywhere. */
+
+.picker {
+  display: grid;
+  gap: 20px;
+}
+/* the avatar keeps its own size at the head of the column */
+.picker > :first-child {
+  justify-self: start;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  /* flex:none so a crowded row WRAPS instead of shrinking a disc into an
+     oblong: the action discs were flex children that squished horizontally. */
+  flex: none;
+  display: inline-flex;
+  border: none;
+  background: none;
+  padding: 0;
+  border-radius: 50%;
+  line-height: 0;
+  cursor: pointer;
+  box-shadow: 0 0 0 4px transparent;
+  transition: box-shadow 0.15s ease;
+}
+.chip:disabled {
+  cursor: wait;
+}
+.chip:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--pk-surface-base),
+    0 0 0 4px var(--pk-text-primary);
+}
+.chip:hover {
+  box-shadow:
+    0 0 0 2px var(--pk-surface-base),
+    0 0 0 4px color-mix(in srgb, var(--pk-text-primary) 22%, transparent);
+}
+/* Selected wins over hover (declared last, same-specificity tiebreak). */
+.chipSelected,
+.chipSelected:hover {
+  box-shadow:
+    0 0 0 2px var(--pk-surface-base),
+    0 0 0 4px var(--pk-fill-selected);
+}
+
+/* Action discs (upload / expand): soft filled circles at the avatar's footprint, so they read as "do
+   something" and keep the row's rhythm. */
+.actionDisc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+  color: var(--pk-text-secondary);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+.chip:hover .actionDisc {
+  color: var(--pk-text-primary);
+  background: color-mix(in srgb, var(--pk-text-primary) 13%, transparent);
+}
+.chipSelected .actionDisc {
+  color: var(--pk-text-on-fill);
+  background: var(--pk-fill-selected);
+}
+
+/* The expand chevron flips when the library is open. */
+.moreChev {
+  transition: transform 0.18s ease;
+}
+.moreChevOpen {
+  transform: rotate(180deg);
+}
+
+/* ── The full library, revealed on expand: on the raised paper, no outline ── */
+.panel {
+  margin-top: 14px;
+  border-radius: var(--pk-r-panel);
+  background: var(--pk-surface-raised);
+  padding: 14px;
+}
+.libgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 52px);
+  gap: 14px;
+  max-height: 320px;
+  overflow-y: auto;
+  justify-content: space-between;
+  /* Center each chip in its cell: grid items default to stretch, which pulled
+     the discs (and their selection ring) into ovals. */
+  justify-items: center;
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .actionDisc,
+  .moreChev {
+    transition: none;
+  }
+}

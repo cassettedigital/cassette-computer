@@ -1,0 +1,90 @@
+/*
+ * Cover glass: a record's own light inside a card, under a pane of the card's paper. The iPhone's Now
+ * Playing recipe (AmbientCoverBackdrop): a small copy of the cover blurred wide, then the screen's own
+ * paper laid over it, thin by the picture so the record's colour shows and thick toward the far end
+ * where the words need the paper's contrast. Light paper on a light screen, dark on a dark one.
+ * Component: CoverGlass.tsx (how to use it is there).
+ *
+ * Settings a host can give, each with a default:
+ *   --glass-paper   the pane's colour (the card's own background)
+ *   --glass-radius  the host's corner radius (WebKit lets a blurred layer spill past rounded corners
+ *                   however the host clips, so the layer clips itself to this)
+ *   --glass-tint    the record's own accent: when set, the light takes that one hue and keeps the cover's
+ *                   light and shade, so the card glows in the colour the record wears elsewhere and the
+ *                   cover's other colours don't compete with it (founder, 2026-11-12)
+ */
+
+.host {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+/* everything the host holds sits on the glass */
+.host > :not(.layer) {
+  position: relative;
+  z-index: 1;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  clip-path: inset(0 round var(--glass-radius, 16px));
+  pointer-events: none;
+}
+
+/* The blurred copy overhangs the host on every side by more than the blur reaches. Inside the host a
+   blur that ran out at the copy's own edge drew a hard line where it stopped (founder, 2026-11-02): the
+   Mac's web view cuts a blur off at the box it belongs to instead of fading it. */
+.light {
+  position: absolute;
+  inset: -60% -20%;
+  opacity: 0.6;
+  filter: blur(48px) saturate(1.1);
+  transition: opacity 0.9s ease;
+}
+.layer[data-playing] .light {
+  opacity: 0.72;
+}
+.light img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* the record's accent laid over its light in the colour blend: the accent's hue and strength, the
+   cover's light and shade (nothing, when the host gives no --glass-tint) */
+.tint {
+  position: absolute;
+  inset: 0;
+  background: var(--glass-tint, transparent);
+  mix-blend-mode: color;
+}
+
+.pane {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    var(--glass-angle, 90deg),
+    color-mix(in srgb, var(--glass-paper, var(--pk-surface-raised)) 38%, transparent) 0%,
+    color-mix(in srgb, var(--glass-paper, var(--pk-surface-raised)) 56%, transparent) 40%,
+    color-mix(in srgb, var(--glass-paper, var(--pk-surface-raised)) 86%, transparent) 100%
+  );
+}
+/* the picture at the top and the words below it: the pane thickens downward */
+.layer[data-ramp="down"] {
+  --glass-angle: 180deg;
+}
+
+/* The rim: the faint lit edge a pane of glass has, brightest along its top. Its own class so it can go
+   on any surface, lit or not (founder, 2026-11-02: "really nice touch"). */
+.pane,
+.rim {
+  box-shadow:
+    inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.07)),
+    inset 0 0 0 1px light-dark(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
+}

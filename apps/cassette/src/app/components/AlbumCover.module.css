@@ -1,0 +1,49 @@
+.wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg3);
+  flex-shrink: 0;
+}
+
+.img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Self-contained box for fill-mode covers (bare / decorative). A `fill` <Image>
+   is position:absolute, so it only stays inside its frame if a positioned
+   ancestor boxes it. Those frames used to live in the CALLER's CSS — often the
+   unscoped global .cs-art-hover .glow / .cover or EntityHero .artInner — so a
+   stray edit to that shared CSS could let the cover break out of its box and
+   paint full-viewport (the low-res source upscaled). This owns the containing
+   block LOCALLY instead: the fill image can never exceed this element, and this
+   element is normal-flow (never position:absolute), so its worst case is
+   collapse-to-zero — never a viewport-covering blowout. */
+.fillBox {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Ghost initials fallback */
+.ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cs-bg3);
+}
+
+.initials {
+  font-family: var(--cs-font-display);
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--cs-ink3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  z-index: 1;
+}

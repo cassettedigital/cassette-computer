@@ -1,0 +1,281 @@
+/*
+ * The one dropdown menu (P4): one panel on the stock's raised surface, 5px corners, one ring; group heads
+ * in the label type at ink-3; items in the display face, mixed case, as the Mac app's lists; the current choice a lit row in a wash of the
+ * record's colour. The trigger is the arrow link's label (View) or the outlined Button (Buy: the word
+ * and the chevron, the same height as the play button beside it, on a phone too), each with the one
+ * chevron; or the small text after a head (the records' sort); or the masthead's round account key.
+ *
+ * Selectors on items carry two classes, so they outweigh the paper's own `a` and focus rules whichever
+ * stylesheet loads first.
+ */
+
+.wrap {
+  position: relative;
+  flex: none;
+}
+
+/* ── the triggers ── */
+/* the label: the arrow link's look; its chevron turns rather than sliding away */
+.label.label:hover {
+  gap: 8px;
+}
+/* the text: a small line of text in the label type after a section head's text, on the head's baseline,
+   with the chevron: the way a head's own choice is said ("Newest first"), nothing drawn around it. It
+   brightens when pointed at, open or focused, and its chevron turns */
+.text {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.text .chev {
+  margin-inline-start: 6px;
+  vertical-align: middle;
+}
+.text:hover,
+.text[data-open] {
+  color: var(--ink-e);
+}
+.text:focus-visible {
+  outline: var(--ring-line);
+  outline-offset: 4px;
+}
+/* the button: the word and the chevron, as small as the word allows, at every width (two classes, so
+   it outweighs the Button's own padding whichever sheet loads first) */
+.wrap .button {
+  gap: 10px;
+  padding: 0 16px 0 20px;
+}
+/* the avatar: the masthead's round account key, the person's face in it, lit when pointed at or open */
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-e);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.avatar:hover,
+.avatar[data-open] {
+  background: var(--track);
+}
+.avatar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+/* the word: the last word of a section head's sentence (the head's row sets `inline`, so it sits a word space
+   after the text and takes the head's size). It is the player kit's answer face, italic 500 (the "you haven't
+   played in a while" of the Mac app's shelves), sized up so it holds its own next to the caps, in the record's
+   colour, with the chevron after it. A long word wraps inside the button rather than push the row wide */
+.word {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  font: italic 500 1.22em / 1.02 var(--f-serif);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  text-align: start;
+  white-space: normal;
+  text-wrap: balance;
+  color: var(--accent-ink, var(--accent-c));
+  cursor: pointer;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.word:hover,
+.word[data-open] {
+  color: var(--ink-e);
+}
+.word:focus-visible {
+  outline: var(--ring-line);
+  outline-offset: 4px;
+}
+/* the chevron flows in the text, right after the last word, however many lines the word takes */
+.word .chev {
+  margin-inline-start: 0.2em;
+  vertical-align: middle;
+}
+.word .chev > svg {
+  width: 0.46em;
+  height: 0.46em;
+  min-width: 12px;
+  min-height: 12px;
+}
+.chev {
+  display: inline-flex;
+  flex: none;
+  transition: rotate 0.2s var(--ease);
+}
+.wrap[data-open] .chev {
+  rotate: 180deg;
+}
+
+/* ── the panel ── */
+.panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  display: grid;
+  gap: 2px;
+  width: max-content;
+  min-width: max(100%, 220px);
+  max-width: calc(100cqi - 2 * var(--gutter, 20px));
+  padding: 6px;
+  border-radius: var(--r-card);
+  background: var(--raised);
+  box-shadow:
+    0 0 0 1px var(--track),
+    0 24px 60px rgba(0, 0, 0, 0.55);
+}
+.panel[hidden] {
+  display: none;
+}
+.wrap[data-align="start"] .panel {
+  left: 0;
+}
+/* row: the panel hangs from the start of the row the page puts the menu in, at every width */
+.wrap[data-align="row"] {
+  position: static;
+}
+.wrap[data-align="row"] .panel {
+  left: 0;
+  min-width: 280px; /* its own width, not the row's */
+}
+.wrap[data-align="end"] .panel {
+  right: 0;
+}
+.group {
+  display: grid;
+  gap: 2px;
+}
+.group + .group {
+  padding-top: 4px;
+}
+.head {
+  padding: 10px 12px 6px;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ── the items ── */
+.panel .item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-small);
+  background: none;
+  color: var(--ink-e);
+  font: 700 20px/1.15 var(--f-display);
+  letter-spacing: 0.005em;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.panel .item:hover,
+.panel .item:focus-visible {
+  background: var(--wash);
+}
+.panel .item:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+/* the current choice: a lit row */
+.panel .item[aria-checked="true"],
+.panel .item[data-lit] {
+  background: color-mix(in srgb, var(--accent-c) 16%, transparent);
+}
+
+/* a store: its name and tag, what you get under it, the price and the way out at the far end */
+.panel .store {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 14px;
+  grid-template-areas:
+    "name price out"
+    "what price out";
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 4px;
+  min-width: 320px;
+}
+.name {
+  grid-area: name;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.tag {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--accent-ink, var(--accent-c));
+}
+.what {
+  grid-area: what;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.price {
+  grid-area: price;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-e);
+}
+.store:not([data-priced]) .price {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.out {
+  grid-area: out;
+  display: inline-flex;
+  color: var(--ink-3);
+}
+
+@container taste (width < 760px) {
+  /* a start-aligned menu hangs from the whole row its page puts it in, not from the trigger */
+  .wrap[data-align="start"] {
+    position: static;
+  }
+  .wrap[data-align="start"] .panel,
+  .wrap[data-align="row"] .panel {
+    right: 0;
+    width: auto;
+    max-width: none;
+  }
+  .panel .store {
+    min-width: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chev {
+    transition: none;
+  }
+}

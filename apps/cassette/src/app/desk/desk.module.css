@@ -1,0 +1,3601 @@
+/*
+ * The desktop app's window. The window itself (library | page | side view, the player along the foot)
+ * is the desk's; every part inside the library pages, the side view and the bar is the player kit's
+ * (packages/cassette-kit, the iPhone app's components), drawn from its tokens (--pk-*, in scope on .app).
+ * The album and artist pages keep the taste set's paper. No rule, border or shadow where the columns
+ * meet: the change of surface is the marker. No row lines.
+ */
+
+/* ── the window: library | page | side view over the player bar, which runs the window's width (the old
+      desktop app's split). The library and the side view size with the window (a 13-inch laptop gets
+      the narrow end, a big display the wide one) so the page keeps the room the album and artist pages
+      need. Narrower still, they give way (DeskShell): under 1180 the library folds to its icons (opened,
+      it floats over the page), under 980 the side view steps aside (shown, it floats over the page). ── */
+.app.app {
+  --side: clamp(204px, 17vw, 248px);
+  --aside: clamp(300px, 26vw, 380px);
+  --bar: 76px;
+  position: relative;
+  height: 100vh;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--side) minmax(0, 1fr) var(--aside);
+  grid-template-rows: minmax(0, 1fr) var(--bar);
+  overflow: hidden;
+}
+/* the full window: no side view and no bar (the room is the player) */
+.app.app[data-room] {
+  grid-template-rows: minmax(0, 1fr);
+}
+/* the side view away, or floated over the page: the page keeps the width */
+.app.app[data-room],
+.app.app[data-aside="away"],
+.app.app[data-aside="over"] {
+  grid-template-columns: var(--side) minmax(0, 1fr);
+}
+.app.app[data-aside="over"] .aside {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: var(--bar);
+  z-index: 30;
+  width: var(--aside);
+  /* thrown to one side only: the spread pulls it in as far as it blurs out, so none of it falls on the
+     player bar below (it sits higher than the bar, and a plain shadow darkened the bar's end) */
+  box-shadow: -40px 0 32px -32px rgb(0 0 0 / 0.55);
+}
+/* the library opened over a narrow window: it floats over the page, the page keeps its place */
+.app.app[data-rail-over] .side {
+  position: absolute;
+  top: 0;
+  bottom: var(--bar);
+  left: 0;
+  z-index: 30;
+  width: 248px;
+  box-shadow: 40px 0 32px -32px rgb(0 0 0 / 0.55); /* one side only, as the side view's */
+}
+.app.app .side {
+  grid-row: 1;
+}
+
+.pane {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* the toolbar's room: the page starts under it and scrolls beneath it */
+  --mast-room: 68px;
+  /* where a sticky part rests: just under the toolbar (52 tall). A sticky offset counts from the pane's
+     padded edge, and the pane is padded by the toolbar's room, so the offset is the toolbar's height
+     less that room (measured: a plain 52px rested 120px down, songs showing above the table's head) */
+  --toolbar-h: 52px;
+  --sticky-top: calc(var(--toolbar-h) - var(--mast-room));
+  --pk-table-top: var(--sticky-top);
+  --pk-table-head-bg: var(--surface);
+  /* a desktop tile's disc: bigger than the phone's 34pt (about a quarter of a tile, as Spotify's) */
+  --disc: 44px;
+  /* shelves grow with the window: the phone's 150 at the least */
+  --pk-tile-width: clamp(150px, 17cqi, 204px);
+  padding-bottom: 48px;
+  /* a website page borrowed into the window (an album or artist you don't own) fills its buttons with the
+     kit's own fill, so its Preview is the same object as the side view's Stop, skin and all */
+  --fill: var(--pk-fill-selected);
+  --fill-hover: var(--pk-fill-hover);
+  --on-fill: var(--pk-text-on-fill);
+}
+.pane,
+.asideBody,
+.side {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pk-hairline) transparent;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── the rail ── */
+.app.app[data-slim] {
+  --side: 72px;
+}
+.side {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 10px 12px;
+  overflow: hidden;
+  background: var(--pk-surface-base);
+  color: var(--pk-text-primary);
+}
+/* the Mac app's window runs to its top edge (lib/desktop-shell): the library's top keeps a band for
+   the window's buttons (tauri.conf.json trafficLightPosition puts them in the toolbar's line, 26 down),
+   and the toolbar and the side view's head rise into the same line. Elsewhere the band isn't there */
+.sideBand {
+  display: none;
+}
+:global(html[data-shell="mac"]) .sideBand {
+  display: block;
+  flex: none;
+  height: 36px;
+  margin-bottom: -14px; /* the column's gap: the library's top row starts 52 down, the toolbar's height */
+}
+.sideTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+}
+.side .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: var(--pk-r-control);
+  font: 800 17px/1 var(--pk-f-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pk-text-primary);
+}
+.brandMark {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin: -5px 0;
+  color: var(--pk-accent-text);
+}
+.foldKey,
+.findKey {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pk-r-pill); /* round everywhere (the founder, 2026-10-29): a key is a circle */
+  background: transparent;
+  color: var(--pk-text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.foldKey:hover,
+.findKey:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 7%, transparent);
+  color: var(--pk-text-primary);
+}
+.foldKey:focus-visible,
+.findKey:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.findKey {
+  width: 52px;
+  height: 34px;
+  margin: 0 auto;
+  border-radius: var(--pk-r-pill);
+  background: color-mix(in srgb, var(--pk-text-primary) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+  color: var(--pk-text-secondary);
+}
+/* the search key and the account, one row; folded, the key alone where it was */
+.sideFind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+.accountKey {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+.avatarKey {
+  display: grid;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 0.15s;
+}
+.avatarKey:hover {
+  box-shadow: 0 0 0 2px var(--pk-hairline);
+}
+.avatarKey:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.side[data-slim] .sideFind {
+  justify-content: center;
+}
+/* search is a key, not a field: a soft pill with the glass and the word, lit under the pointer */
+.find {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--pk-r-pill);
+  background: color-mix(in srgb, var(--pk-text-primary) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+  color: var(--pk-text-secondary);
+  font: 700 13px/1 var(--pk-f-display);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.find:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 12%, transparent);
+  color: var(--pk-text-primary);
+}
+.find:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.find svg {
+  flex: none;
+}
+
+/* a newer Mac app: beside the window's own buttons (tauri.conf.json trafficLightPosition, x 20), in
+   their line, lit in the accent, the same place with the rail open or folded (the founder, 2026-10-27;
+   BUG-584). Folded, the rail is narrower than the buttons and this, so the toolbar's back and forward
+   step right for it */
+.winUpdate {
+  position: fixed;
+  top: 13px;
+  left: 90px; /* the gap the window's own buttons keep between each other (11px from the zoom button) */
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 11px 0 10px;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: color-mix(in srgb, var(--pk-accent-progress) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pk-accent-progress) 45%, transparent);
+  color: var(--pk-accent-text);
+  font: 700 11px/1 var(--pk-f-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.winUpdate:hover {
+  background: color-mix(in srgb, var(--pk-accent-progress) 26%, transparent);
+}
+.winUpdate:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.winUpdate:disabled {
+  cursor: default;
+}
+.app[data-slim][data-update] .toolbar {
+  padding-left: 120px;
+}
+.updateDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: updatePulse 2s ease-in-out infinite;
+}
+/* installing: the dot turns into a spinner in the same place */
+[data-installing] > .updateDot {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  background: none;
+  animation: updateSpin 0.7s linear infinite;
+}
+@keyframes updatePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+@keyframes updateSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .updateDot {
+    animation: none;
+  }
+  [data-installing] > .updateDot {
+    animation-duration: 1.4s;
+  }
+}
+
+/* the places are the kit's (Places, Place in packages/cassette-kit/src/Pages.tsx), folded with the rail */
+.dot {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pk-text-tertiary);
+}
+.dot[data-light="live"] {
+  background: var(--pk-success);
+}
+.dot[data-light="idle"] {
+  background: var(--pk-warning);
+}
+.devLabel {
+  margin: 0;
+  font: var(--pk-t-section-label);
+  letter-spacing: var(--pk-k-section-label);
+  text-transform: uppercase;
+  color: var(--pk-text-tertiary);
+}
+
+/* your library: art rows, scrolling on their own */
+.library {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  margin-top: 14px;
+}
+.libHead {
+  display: grid;
+  gap: 8px;
+  padding: 0 8px;
+}
+.libList {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -4px;
+  padding: 0 4px 8px;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pk-hairline) transparent;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+}
+.libItem {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px;
+  border-radius: var(--pk-r-control);
+  transition: background-color 0.15s;
+}
+.libItem:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 5%, transparent);
+}
+/* the one the side view is looking into */
+.libItem[data-look] {
+  background: color-mix(in srgb, var(--pk-text-primary) 10%, transparent);
+}
+/* a playlist with songs held over it */
+.libItem[data-drop] {
+  background: color-mix(in srgb, var(--pk-text-primary) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--pk-text-primary);
+}
+.libArt {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--pk-r-small);
+  background: var(--pk-surface-elevated);
+  cursor: pointer;
+}
+/* a station's mark, rounded like the app icon it is */
+.libArt[data-kind="station"] {
+  border-radius: var(--pk-shape-station);
+}
+.libArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.libArt > span:first-child {
+  font-size: 9px; /* floor: art, the lettering on a 34px library tile's own art */
+}
+.libArtKey {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--pk-surface-sunken) 60%, transparent);
+  color: var(--pk-text-primary);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.libItem:hover .libArtKey,
+.libArt:focus-visible .libArtKey,
+.libItem[data-on] .libArtKey {
+  opacity: 1;
+}
+.libItem[data-on] .libArtKey {
+  --pk-waveform-max: 16px;
+}
+.libArt:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.libText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.libTitle {
+  overflow: hidden;
+  font: var(--pk-t-mini-title);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-secondary);
+  transition: color 0.15s;
+}
+.libItem:hover .libTitle {
+  color: var(--pk-text-primary);
+}
+/* the name is a word: it opens its page (2026-11-06), and underlines under the pointer to say so */
+button.libTitle {
+  justify-self: start;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+button.libTitle:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+/* the row's play symbol, at its end: there under the pointer, and while its music is on */
+.libPlay {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pk-text-primary);
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    background-color 0.15s;
+}
+.libItem:hover .libPlay,
+.libItem[data-on] .libPlay,
+.libPlay:focus-visible {
+  opacity: 1;
+}
+.libPlay:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 10%, transparent);
+}
+.libPlay:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.libItem[data-on] .libTitle {
+  color: var(--pk-accent-text);
+}
+.libLine {
+  overflow: hidden;
+  font: var(--pk-t-caption);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-tertiary);
+}
+
+/* the foot: your account, then the Mac */
+/* folded: icons and art, centred */
+.side[data-slim] {
+  align-items: center;
+  padding-inline: 8px;
+}
+/* folded: the fold key alone, in the top row's height, so everything under it stays put */
+.side[data-slim] .sideTop {
+  justify-content: center;
+}
+.side[data-slim] .library {
+  width: 100%;
+}
+.side[data-slim] .libItem {
+  grid-template-columns: 34px;
+  justify-content: center;
+}
+
+/* ── the side view: a record, looked into (or what's up next). The same warm base as the library
+      column, so the page sits between two matching rails ── */
+.aside {
+  grid-column: 3;
+  grid-row: 1;
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--pk-surface-base);
+  color: var(--pk-text-primary);
+}
+.asideHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 6px clamp(16px, 1.8vw, 24px);
+}
+.asideKeys {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+/* "Delete this playlist?", under the head, before anything goes */
+.lookConfirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px clamp(16px, 1.8vw, 24px) 6px;
+  padding: 8px 10px 8px 14px;
+  border-radius: var(--pk-r-control);
+  background: var(--pk-surface-raised);
+  font: var(--pk-t-mini-title);
+}
+.lookConfirm > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* one column the side view's own width: a long title ellipses or wraps instead of widening it */
+.asideBody {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 16px;
+  padding: 10px clamp(16px, 1.8vw, 24px) 28px;
+}
+.look {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.lookArt {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--pk-r-player-artwork);
+  background: var(--pk-surface-elevated);
+  /* the page cover's shadow (kit .heroArt): big and gentle, a touch of the record's colour in it */
+  box-shadow:
+    0 34px 64px -20px color-mix(in srgb, var(--pk-tint-glow, var(--pk-tint-neutral-glow)) 18%, rgb(0 0 0 / 0.5)),
+    0 8px 18px -8px rgb(0 0 0 / 0.32);
+}
+.lookArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lookArt:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 3px;
+}
+.lookText {
+  display: grid;
+  gap: 4px;
+}
+.lookTitle {
+  margin: 0;
+  font: var(--pk-t-card-title);
+  font-size: 24px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.lookBy {
+  margin: 0;
+  font: var(--pk-t-answer-compact);
+  font-size: 18px;
+  color: var(--pk-tint-text, var(--pk-text-secondary));
+}
+/* a playlist wears its colour on its name; its line is only its note (founder, 2026-11-12) */
+.lookTitle[data-tinted] {
+  color: var(--pk-tint-text, var(--pk-text-primary));
+}
+.lookBy[data-plain] {
+  color: var(--pk-text-secondary);
+}
+.lookTitle a:hover,
+.lookBy a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.lookFacts {
+  margin: 2px 0 0;
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-secondary);
+}
+.lookSongs {
+  margin-inline: -10px;
+}
+
+/* a station looked into (StationLook): its chips, what's on the air as a log down a thread, the stations
+   like it; its website and where to support it are in its menu (station-menu.ts) */
+.stChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.stChips li {
+  padding: 4px 10px;
+  border-radius: var(--pk-r-pill);
+  box-shadow: inset 0 0 0 1px var(--pk-hairline);
+  font: var(--pk-t-caption);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pk-text-secondary);
+}
+.stChips li:first-child {
+  background: var(--pk-surface-raised);
+  box-shadow: none;
+  color: var(--pk-text-primary);
+}
+.stSection {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+.stHead {
+  margin: 0;
+  font: var(--pk-t-caption);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pk-text-tertiary);
+}
+/* the show on now: its own picture, its name, who's hosting and until when */
+.stShow {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--pk-r-card);
+  background: var(--pk-surface-raised);
+}
+.stShowArt {
+  display: block;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--pk-surface-elevated);
+}
+.stShowArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.stShowText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.stShowName {
+  overflow: hidden;
+  font: var(--pk-t-row-title);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-primary);
+}
+.stShowLine {
+  font: var(--pk-t-caption);
+  font-size: 12px;
+  color: var(--pk-text-tertiary);
+}
+/* the log: each song at its time, its cover a bead on one thread running down the column; a song
+   with no cover is a small dot on the thread; the song on now leads, lit */
+.stLog,
+.stLater {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stLog::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: calc(52px + 10px + 19.5px);
+  width: 1px;
+  background: var(--pk-hairline);
+}
+.stLog li,
+.stLater li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.stLater li {
+  grid-template-columns: 52px minmax(0, 1fr);
+}
+/* a song in the log is a way onto Cassette: the whole row is its key (a click to its record, a right
+   click for the rest), lit softly under the pointer */
+.stHit {
+  position: absolute;
+  inset: -4px -8px;
+  z-index: 2;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.stLog li:has(.stHit:hover) .stSongTitle,
+.stLog li:has(.stHit:focus-visible) .stSongTitle {
+  color: var(--pk-text-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.stHit:hover,
+.stHit:focus-visible {
+  background: color-mix(in srgb, var(--pk-text-primary) 6%, transparent);
+}
+.stHit:focus-visible {
+  outline: 2px solid var(--pk-accent-progress);
+  outline-offset: 0;
+}
+.stWhen {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font: 500 11px/1 var(--pk-f-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--pk-text-tertiary);
+}
+.stLog li[data-now] .stWhen {
+  color: var(--pk-accent-text);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.stBead {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+.stBead:has(img) {
+  background: var(--pk-surface-elevated);
+  box-shadow: 0 6px 14px -8px rgb(0 0 0 / 0.7);
+}
+.stBead img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.stBead > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pk-text-tertiary);
+  box-shadow: 0 0 0 4px var(--pk-surface-base);
+}
+.stLog li[data-now] .stBead {
+  width: 44px;
+  height: 44px;
+  margin: -2px;
+  box-shadow: 0 0 0 1.5px var(--pk-accent-progress);
+}
+.stLog li[data-now] .stBead > i {
+  background: var(--pk-accent-progress);
+}
+.stSong {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+/* a song set as every other song row is (the kit's TrackRow: the row title over the metadata line) */
+.stSongTitle {
+  overflow: hidden;
+  font: var(--pk-t-row-title);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-primary);
+}
+.stLog li:not([data-now]) .stSongTitle {
+  font-weight: 500;
+  color: var(--pk-text-secondary);
+}
+.stSongArtist {
+  overflow: hidden;
+  font: var(--pk-t-metadata);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-tertiary);
+}
+/* the shows coming up: quieter still, under the log, under their own word */
+.stHeadLater {
+  padding-top: 12px;
+  border-top: 1px solid var(--pk-hairline);
+}
+.stLater {
+  gap: 6px;
+  margin-top: -4px;
+}
+.stLaterName {
+  overflow: hidden;
+  font: var(--pk-t-metadata);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-secondary);
+}
+.stLike {
+  display: grid;
+  gap: 2px;
+  margin: 0 -8px;
+  padding: 0;
+  list-style: none;
+}
+.stLike button {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: var(--pk-r-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.stLike button:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 5%, transparent);
+}
+.stLike button:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: -2px;
+}
+.stLikeArt {
+  display: block;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: var(--pk-shape-station);
+  background: var(--pk-surface-elevated);
+}
+.stLikeArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.stLikeText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.stLikeName {
+  overflow: hidden;
+  font: var(--pk-t-metadata);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-primary);
+}
+.stLikeLine {
+  overflow: hidden;
+  font: var(--pk-t-caption);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-tertiary);
+}
+
+/* ── the player: one bar along the window's foot ── */
+.bar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  position: relative;
+  z-index: 25;
+  display: grid;
+  /* the middle in the true centre, the two sides sharing what's left alike. The middle narrows with
+     the window down to the width of its keys (and never past 560); the keys at the end never give
+     way (if they need more than their half, what's on gives it) */
+  container: bar / inline-size;
+  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 0 14px 0 12px;
+  background: var(--pk-surface-sunken);
+  color: var(--pk-text-primary);
+}
+.barNow {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.barArt {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  border-radius: var(--pk-r-artwork-row);
+  background: var(--pk-surface-elevated);
+  cursor: pointer;
+}
+.barArt > * {
+  width: 100%;
+  height: 100%;
+}
+.barArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.barArt:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.barText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.barStation,
+.barTitle,
+.barBy {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.barStation {
+  font: var(--pk-t-caption);
+  font-size: 11px;
+  color: var(--pk-text-tertiary);
+}
+.barTitle {
+  font: var(--pk-t-row-title);
+}
+.barBy {
+  font: var(--pk-t-answer-compact);
+  font-size: 15px;
+  color: var(--pk-tint-text, var(--pk-text-secondary));
+}
+.barBy a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.barIdle {
+  grid-column: 1 / -1;
+  padding-left: 4px;
+  font: var(--pk-t-caption);
+  color: var(--pk-text-tertiary);
+}
+/* the middle takes what the two sides don't need (about 300 each), between its keys' width and 560:
+   so in a narrowing window it's the line that gives way first */
+.barMiddle {
+  /* never narrower than its keys: four 32 slots (one empty, shuffle, repeat, keep playing), two 34
+     transport keys, the 40 play key and six 8 gaps = 284 */
+  width: clamp(284px, calc(100cqw - 640px), 560px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.barKeys {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.barMode {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pk-text-tertiary);
+}
+button.barMode {
+  cursor: pointer;
+}
+button.barMode:hover {
+  color: var(--pk-text-primary);
+}
+button.barMode[aria-pressed="true"] {
+  color: var(--pk-tint-text, var(--pk-text-primary));
+}
+/* keep playing while repeat is on: switched on, but waiting (a press turns repeat off), as the kit's
+   QueueModes draws it in Up Next */
+button.barMode[data-waiting] {
+  opacity: 0.45;
+}
+button.barMode:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.barScrub {
+  width: 100%;
+}
+/* a narrow bar: the line is as wide as the keys over it and has no room for its times (the kit's
+   Scrubber drops them under 300 wide), so they sit beside the song, between it and the keys */
+.barTime {
+  display: none;
+  justify-items: end;
+  gap: 2px;
+  font: var(--pk-t-metadata);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--pk-text-secondary);
+}
+.barTime > :last-child {
+  color: var(--pk-text-tertiary);
+}
+@container bar (width < 940px) {
+  .barTime {
+    display: grid;
+  }
+}
+
+/* the end: the loudness to the left of its keys when there's room; in a tight window it stacks as
+   the middle does, its keys over the loudness, so the slider takes no width of its own */
+.barEnd {
+  display: flex;
+  flex-direction: row-reverse; /* the keys come first in the markup and sit on the right */
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.barEndKeys {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.barVolume {
+  display: flex;
+  width: clamp(84px, 8vw, 120px);
+}
+/* stacked, the keys and the loudness share one width, so their edges line up: the keys spread to
+   it, the slider fills it, and it grows with the room up to a limit */
+@container bar (width < 1100px) {
+  .barEnd {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-self: end;
+    align-content: center;
+    gap: 2px;
+    width: clamp(148px, 20cqw, 210px);
+  }
+  .barEndKeys {
+    justify-content: space-between;
+  }
+  .barVolume {
+    width: 100%;
+    padding: 0 9px;
+  }
+  .barVolume > * {
+    max-width: none;
+  }
+}
+/* the side view in its column: the end is the side view's width, under it and inset as it is, the keys
+   at its right and the loudness taking the rest (the founder, 2026-10-22: the controls under the side
+   view size by it). These win over the stacked rules above, which are for a window without it */
+.app.app:not([data-aside]):not([data-room]) .bar {
+  grid-template-columns: minmax(0, 1fr) auto minmax(var(--aside), 1fr);
+  padding-right: 0;
+}
+.app.app:not([data-aside]):not([data-room]) .barEnd {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-self: end;
+  gap: 14px;
+  box-sizing: border-box;
+  width: var(--aside);
+  padding-inline: clamp(16px, 1.8vw, 24px);
+}
+.app.app:not([data-aside]):not([data-room]) .barEndKeys {
+  justify-content: flex-end;
+}
+.app.app:not([data-aside]):not([data-room]) .barVolume {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  padding: 0;
+}
+/* a range input's own width (about 130) would otherwise hold the slider wider than its share */
+.app.app:not([data-aside]):not([data-room]) .barVolume > * {
+  min-width: 0;
+  max-width: none;
+}
+.barWarn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  color: var(--cs-orange);
+}
+/* a narrow window: the line has given what it can; then the gaps close */
+@media (max-width: 899.98px) {
+  .bar {
+    gap: 14px;
+  }
+}
+
+.deckTop {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: -12px;
+}
+.topKey {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pk-text-secondary);
+  cursor: pointer;
+}
+.topKey:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+  color: var(--pk-text-primary);
+}
+.topKey:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.deckText {
+  display: grid;
+  margin-top: 4px;
+}
+.deckTransport {
+  margin: -4px 0 2px;
+}
+.sleeve {
+  position: relative;
+}
+.sleeveLink {
+  display: block;
+  border-radius: var(--pk-r-player-artwork);
+}
+.sleeveLink:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 3px;
+}
+.pip {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+  width: 42%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--pk-r-control);
+  pointer-events: none; /* the host above it takes the clicks */
+}
+/* the one preview, laid over whichever slot is on screen (DeskShell) */
+.previewHost {
+  position: fixed;
+  z-index: 41; /* over the floating booth, which it plays in (BUG-613), and under a menu or the toast */
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  border-radius: var(--pk-r-control);
+  background: #000 center / cover no-repeat;
+  box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.8);
+  visibility: hidden;
+}
+.previewHost[hidden] {
+  display: none;
+}
+.upnext {
+  margin-inline: -10px;
+}
+.upnext > h2 {
+  margin-top: 4px;
+  padding-inline: 10px;
+}
+.quiet {
+  margin: 14px 10px 0;
+  font: var(--pk-t-caption);
+  color: var(--pk-text-secondary);
+}
+
+/* ── the deck given the whole window ── */
+.room {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, min(560px, 64vh)) minmax(320px, 420px);
+  justify-content: center;
+  align-items: start;
+  gap: clamp(36px, 5cqi, 80px);
+  min-height: calc(100vh - 36px);
+  margin-top: calc(-1 * var(--mast-room));
+  padding: 56px 40px 40px;
+  color: var(--pk-text-primary);
+}
+.roomStage,
+.roomSide {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.roomSide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+}
+.roomSide .deckTop {
+  margin-bottom: -8px;
+}
+@container (width < 860px) {
+  .room {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .roomStage {
+    width: min(380px, 100%);
+    margin-inline: auto;
+  }
+}
+
+/* ── the library pages ── */
+.page {
+  width: calc(100% - 64px);
+  max-width: 1200px;
+  margin-inline: auto;
+  color: var(--pk-text-primary);
+}
+/* a page's title and its tools on one line, centred on each other. The tools are first in the row
+   (row-reverse draws them on the right); when the two don't fit, the title wraps to a second line that
+   the head's height hides, so it goes whole rather than cut short. The padding is room for a lit
+   control's ring inside the clip. */
+.pageHead {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 20px;
+  /* one row exactly: a second (the wrapped title) starts where the clip is */
+  max-height: calc(var(--head-row) + 6px);
+  overflow: hidden;
+  margin: -6px -6px var(--pk-heading-bottom);
+  padding: 6px 6px 0;
+  --head-row: 48px;
+}
+.pageHead > h1,
+.pageTools {
+  display: flex;
+  align-items: center;
+  height: var(--head-row);
+}
+.pageHead > h1 {
+  flex: none;
+  margin: 0 auto 0 0;
+}
+/* the search page's head: the field itself, as big as a page's title */
+.searchHead {
+  margin-bottom: 18px;
+}
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 18px;
+  border-radius: var(--pk-r-pill); /* a field you type into is a capsule */
+  background: var(--pk-surface-raised);
+  color: var(--pk-text-secondary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 6%, transparent);
+}
+.searchField:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--pk-text-secondary);
+}
+.searchField input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--pk-text-primary);
+  font: 700 24px/1 var(--pk-f-display);
+  letter-spacing: 0.02em;
+  appearance: none;
+}
+.searchField input:focus,
+.searchField input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.searchField input::placeholder {
+  color: var(--pk-text-tertiary);
+}
+.searchField input::-webkit-search-cancel-button {
+  display: none;
+}
+.searchCount {
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-tertiary);
+}
+.shelfRow {
+  margin-bottom: 8px;
+}
+.plainLink {
+  color: var(--pk-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.devSection {
+  max-width: 640px;
+}
+.devLabel {
+  margin: 18px 0 8px;
+  padding-left: 14px;
+}
+
+/* ── no page yet ── */
+.lost {
+  width: calc(100% - 64px);
+  max-width: 1200px;
+  margin: 40px auto 0;
+  color: var(--pk-text-primary);
+}
+.lostHead {
+  margin: 0 0 22px;
+  font: var(--pk-t-page-title);
+  letter-spacing: var(--pk-k-page-title);
+  text-transform: uppercase;
+}
+.lost .lostLink {
+  font: var(--pk-t-pill);
+  letter-spacing: var(--pk-k-pill);
+  text-transform: uppercase;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 4px;
+}
+
+/* ── the toolbar: back and forward, and the page's name once its title has scrolled away ── */
+/* laid over the top of the pane (the same grid cell), so the page scrolls beneath it */
+.toolbar {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  /* its right edge is where the page's scroll track starts, measured (DeskShell Toolbar): the column's
+     edge under overlay scrollbars, short of the track when it has a lane of its own */
+  padding: 0 24px;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+.toolbar[data-scrolled] {
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.8);
+}
+.history {
+  display: flex;
+  gap: 2px;
+}
+.navKey {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: transparent;
+  color: var(--pk-text-primary);
+  cursor: pointer;
+}
+.navKey:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+}
+.navKey:disabled {
+  color: var(--pk-text-tertiary);
+  cursor: default;
+}
+.navKey:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.flip {
+  rotate: 180deg;
+}
+.toolTitle {
+  margin: 0;
+  overflow: hidden;
+  font: var(--pk-t-nav-title);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-primary);
+  opacity: 0;
+  translate: 0 4px;
+  transition:
+    opacity 0.2s,
+    translate 0.2s;
+}
+.toolbar[data-scrolled] .toolTitle {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* ── controls a desktop page heads with ── */
+.headTools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.plainButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pk-text-primary);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── Home: On repeat as quick cards ── */
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── Albums as a list ── */
+.albumTable {
+  display: grid;
+  --cols: 44px minmax(0, 2fr) minmax(0, 1.3fr) 64px 120px 52px;
+}
+.atHead,
+.atRow {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  gap: 16px;
+  padding: 0 10px;
+}
+.atHead {
+  position: sticky;
+  z-index: 2;
+  top: var(--sticky-top);
+  height: 34px;
+  margin-bottom: 4px;
+  background: var(--surface);
+}
+.atHead button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--pk-t-section-label);
+  letter-spacing: var(--pk-k-section-label);
+  text-transform: uppercase;
+  color: var(--pk-text-tertiary);
+  cursor: pointer;
+}
+.atHead button[aria-sort="ascending"],
+.atHead button[aria-sort="descending"] {
+  color: var(--pk-text-primary);
+}
+.sortMark {
+  rotate: 90deg;
+}
+.atRow {
+  height: 60px;
+  border-radius: var(--pk-r-control);
+}
+.atRow:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 5%, transparent);
+}
+.atRow[data-selected] {
+  background: color-mix(in srgb, var(--pk-text-primary) 10%, transparent);
+}
+.atArt {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--pk-r-artwork-tile);
+  background: var(--pk-surface-elevated);
+}
+.atArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pane .atTitle {
+  overflow: hidden;
+  font: var(--pk-t-row-title);
+  font-size: 17px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-primary);
+}
+.atCell {
+  overflow: hidden;
+  font: var(--pk-t-caption);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-secondary);
+}
+.pane .atLink:hover,
+.pane .atTitle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.atPlay {
+  --disc: 34px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.atRow:hover .atPlay,
+.atRow:focus-within .atPlay {
+  opacity: 1;
+}
+
+.liveDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pk-accent-progress);
+}
+
+/* ── Devices: the map and the detail ── */
+/* rings around the computer (Shelves DeviceMap): a 640 x 360 plan scaled to the column; each device
+   on the ring for when it was last seen, smaller and quieter the further out */
+.rings {
+  position: relative;
+  width: min(100%, 780px);
+  aspect-ratio: 640 / 360;
+  margin: 6px 0 30px;
+  overflow: hidden;
+  border-radius: var(--pk-r-card);
+  background: var(--pk-surface-raised);
+}
+.ringsArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ringLine {
+  fill: none;
+  stroke: var(--pk-hairline);
+  stroke-width: 1.5;
+}
+.ringLine[data-ring="1"] {
+  stroke: color-mix(in srgb, var(--pk-hairline) 70%, transparent);
+  stroke-width: 1.2;
+}
+.ringLine[data-ring="2"] {
+  stroke: color-mix(in srgb, var(--pk-hairline) 45%, transparent);
+  stroke-width: 1;
+}
+.ringWord {
+  position: absolute;
+  font: var(--pk-t-section-label);
+  font-size: 11px;
+  letter-spacing: var(--pk-k-section-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--pk-text-tertiary);
+  translate: 0 -100%;
+}
+/* a place on the plan: the tile's middle sits on it, the words hang below */
+.ringAt {
+  --tile: 52px;
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 160px;
+  translate: -50% calc(var(--tile) / -2);
+}
+.ringAt:has(> .ringNode[data-ring="hub"]) {
+  --tile: 62px;
+}
+.ringAt:has(> .ringNode[data-ring="1"]) {
+  --tile: 36px;
+}
+.ringAt:has(> .ringNode[data-ring="2"]) {
+  --tile: 26px;
+}
+.ringNode {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  max-width: 160px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pk-text-primary);
+  text-align: center;
+  cursor: pointer;
+}
+.ringTile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--tile);
+  height: var(--tile);
+  margin-bottom: 4px;
+  border-radius: var(--pk-r-icon-tile);
+  background: var(--pk-surface-sunken);
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 0.15s;
+}
+.ringNode:hover .ringTile {
+  outline-color: color-mix(in srgb, var(--pk-text-primary) 28%, transparent);
+}
+.ringNode[aria-pressed="true"] .ringTile,
+.ringNode:focus-visible .ringTile {
+  outline-color: var(--pk-text-primary);
+}
+.ringNode:focus-visible {
+  outline: none;
+}
+.ringName {
+  max-width: 160px;
+  overflow: hidden;
+  font: var(--pk-t-row-title);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ringNode[data-ring="hub"] .ringName {
+  max-width: 170px;
+  white-space: normal;
+  text-wrap: balance;
+}
+.ringNode[data-ring="1"] .ringName {
+  font-size: 15px;
+}
+.ringNode[data-ring="2"] .ringName {
+  font-size: 13.5px;
+  color: var(--pk-text-secondary);
+}
+/* the words sit on the map's own colour, so a ring passing behind never runs through them */
+.ringName,
+.ringWhen,
+.ringStat {
+  padding-inline: 4px;
+  border-radius: var(--pk-r-small);
+  background: var(--pk-surface-raised);
+}
+.ringWhen,
+.ringStat {
+  font: var(--pk-t-caption);
+  font-size: 11.5px;
+  white-space: nowrap;
+  color: var(--pk-text-secondary);
+}
+.ringNode[data-ring="2"] .ringWhen {
+  font-size: 11px;
+  color: var(--pk-text-tertiary);
+}
+.ringNode[data-ring="2"] .ringTile {
+  color: var(--pk-text-tertiary);
+}
+.nodeLight {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--pk-surface-raised);
+  background: var(--pk-text-tertiary);
+}
+.nodeLight[data-light="live"] {
+  background: var(--pk-success);
+}
+.nodeLight[data-light="idle"] {
+  background: var(--pk-warning);
+}
+.detail {
+  margin-top: 4px;
+}
+.detail > h2:first-child {
+  margin-top: 0;
+}
+/* the figures are the kit's small Stats; the bar sits under them */
+.coverage {
+  position: relative;
+  height: 6px;
+  margin: 16px 0 18px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--pk-hairline);
+}
+.coverage > i {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  background: var(--pk-text-primary);
+}
+.detailTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-bottom: 16px;
+}
+.toolGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.toolWord {
+  font: var(--pk-t-caption);
+  color: var(--pk-text-secondary);
+}
+
+/* ── the A to Z: letter (or decade) sections and the index down the page's edge ── */
+.withIndex {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18px;
+  gap: 14px;
+}
+.group {
+  scroll-margin-top: 64px;
+}
+.groupHead {
+  margin: 26px 0 12px;
+  font: var(--pk-t-shout);
+  letter-spacing: var(--pk-k-shout);
+  color: var(--pk-text-primary);
+}
+.group:first-child .groupHead {
+  margin-top: 0;
+}
+.az {
+  position: sticky;
+  top: calc(var(--sticky-top) + 12px);
+  align-self: start;
+  display: grid;
+  justify-items: center;
+}
+.az > button,
+.az > span {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  font: 500 11px/1 var(--pk-f-mono);
+}
+.az > button {
+  color: var(--pk-text-secondary);
+  cursor: pointer;
+}
+.az > button:hover {
+  background: var(--pk-surface-elevated);
+  color: var(--pk-text-primary);
+}
+.az > button:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 1px;
+}
+.az > span {
+  color: var(--pk-hairline);
+}
+
+/* the cover size, the desktop's zoom */
+.sizer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-raised);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 5%, transparent);
+}
+.sizerSmall,
+.sizerBig {
+  flex: none;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1.5px var(--pk-text-secondary);
+}
+.sizerSmall {
+  width: 8px;
+  height: 8px;
+}
+.sizerBig {
+  width: 13px;
+  height: 13px;
+}
+.sizer input {
+  width: 96px;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--pk-text-primary);
+  appearance: none;
+  cursor: pointer;
+}
+.sizer input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--pk-hairline);
+}
+.sizer input::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: var(--pk-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  appearance: none;
+}
+.sizer input::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--pk-hairline);
+}
+.sizer input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--pk-text-primary);
+}
+.sizer input:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 4px;
+}
+
+/* ── the booth: a preview's video and its keys, at the top of the side view with the side view
+      carrying on beneath it, or floating as a card while the side view is away (Player.tsx Booth).
+      It unfolds when a preview starts and folds away when one ends (its height through one grid row,
+      so nothing beneath it jumps), drawn as a side view like any other (.asideHead, .lookTitle) ── */
+.booth {
+  flex: none;
+  display: grid;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  background: var(--pk-surface-base);
+  color: var(--pk-text-primary);
+  transition:
+    grid-template-rows 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.24s ease;
+}
+.boothInner {
+  min-height: 0;
+}
+.booth[data-unfold]:not([data-leaving]) {
+  animation: boothUnfold 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.booth[data-leaving] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+@keyframes boothUnfold {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .booth {
+    transition: none;
+  }
+  .booth[data-unfold]:not([data-leaving]) {
+    animation: none;
+  }
+}
+.boothBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 4px clamp(16px, 1.8vw, 24px) 18px;
+}
+/* "from YouTube", beside the Preview chip */
+.boothFrom {
+  flex: 1;
+  min-width: 0;
+  font: var(--pk-t-caption);
+  font-size: 12px;
+  color: var(--pk-text-tertiary);
+}
+/* the video's box: the column's width, its corners, never under 200 tall (YouTube's minimum); the
+   video is laid over it (DeskShell PreviewHost, which takes these corners). Folding away, the cover */
+.boothVideo {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  border-radius: var(--pk-r-player-artwork);
+  background: var(--pk-surface-elevated) center / cover no-repeat;
+}
+/* under the video, a line each: what it is, and whose */
+.boothText {
+  display: grid;
+  gap: 2px;
+}
+.boothText > .lookTitle,
+.boothText > .lookBy {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.boothText > .lookTitle {
+  font-size: 19px;
+}
+.boothText > .lookBy {
+  font-size: 15px;
+}
+/* the side view away: the booth floats as a card over the page's corner */
+.booth[data-float] {
+  position: fixed;
+  z-index: 40;
+  right: 18px;
+  bottom: calc(var(--bar) + 12px);
+  width: 380px;
+  border-radius: var(--pk-r-card);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 8%, transparent),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+}
+.booth[data-float] .boothBody {
+  padding: 4px 18px 18px;
+}
+/* a preview's video above it: the side view's own pictures drawn small beside their names, so a
+   laptop's screen still has room to browse beneath the video */
+.aside[data-video] .look {
+  grid-template-columns: 88px minmax(0, 1fr);
+  column-gap: 14px;
+}
+.aside[data-video] .look > * {
+  grid-column: 1 / -1;
+}
+.aside[data-video] .look > .lookArt {
+  grid-column: 1;
+}
+.aside[data-video] .look > .lookText {
+  grid-column: 2;
+  align-self: center;
+}
+.aside[data-video] .lookTitle {
+  font-size: 19px;
+}
+
+.miniPlay {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--pk-fill-selected);
+  color: var(--pk-surface-sunken);
+  cursor: pointer;
+}
+.miniPlay:hover {
+  background: var(--pk-fill-hover);
+}
+.miniPlay:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.miniPlay:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.topKey:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ── the shell's word (a song not on this Mac, a record that wouldn't load): bottom centre, brief ── */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--bar) + 16px);
+  z-index: 60;
+  transform: translateX(-50%);
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 11px 18px;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-elevated);
+  box-shadow: 0 0 0 1px var(--pk-hairline), 0 12px 32px rgb(0 0 0 / 0.45);
+  color: var(--pk-text-primary);
+  font: var(--pk-t-metadata);
+  text-align: center;
+  animation: toastIn 0.22s ease-out;
+}
+.toast[data-variant="error"] {
+  box-shadow: 0 0 0 1px var(--cs-orange), 0 12px 32px rgb(0 0 0 / 0.45);
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+/* ── a folder or files dragged over the window (DeskDrop, BUG-636): a veil on the kit's colours with the same
+   ring a field in the desk gets, and its words; the progress after the drop is the toast above ── */
+.dropOver {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--pk-surface-sunken) 78%, transparent);
+  animation: dropOverIn 0.2s ease-out;
+}
+.dropOver::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: var(--pk-r-panel);
+  box-shadow: inset 0 0 0 2px var(--pk-text-primary);
+}
+.dropOverTitle {
+  font: var(--pk-t-section-title);
+  color: var(--pk-text-primary);
+}
+.dropOverSub {
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-secondary);
+}
+@keyframes dropOverIn {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropOver {
+    animation: none;
+  }
+}
+
+/* ── the Mac not answering: the deck says so plainly, in place of the controls ── */
+.offline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--pk-surface-raised);
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-metadata);
+}
+.offline strong {
+  color: var(--pk-text-primary);
+  font-weight: 600;
+}
+
+/* ── a record on your Mac, as a page: your copy first ── */
+.record {
+  width: calc(100% - 64px);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--mast-room, 68px) 0 64px;
+  color: var(--pk-text-primary);
+}
+.recordTop {
+  display: grid;
+  grid-template-columns: clamp(180px, 26cqi, 280px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: end;
+}
+.recordArt {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--pk-surface-raised);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.45);
+}
+.recordKicker {
+  margin: 0 0 8px;
+  color: var(--pk-text-tertiary);
+  font: var(--pk-t-shout);
+  letter-spacing: var(--pk-k-shout);
+  text-transform: uppercase;
+}
+.recordTitle {
+  margin: 0;
+  font: var(--pk-t-page-title);
+  letter-spacing: var(--pk-k-page-title);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.recordBy {
+  margin: 6px 0 0;
+  color: var(--pk-tint-text, var(--pk-text-secondary));
+  font: var(--pk-t-answer);
+}
+.recordBy a {
+  color: inherit;
+}
+.recordFacts {
+  margin: 12px 0 18px;
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-metadata);
+}
+.recordSongs {
+  margin-top: 36px;
+}
+.recordPress {
+  margin-top: 48px;
+  padding: 26px 28px;
+  border-radius: 14px;
+  background: var(--pk-surface-raised);
+  max-width: 760px;
+}
+.recordQuote {
+  margin: 10px 0 12px;
+  font: var(--pk-t-answer);
+  font-size: 22px;
+  line-height: 1.35;
+}
+.recordCite {
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-metadata);
+}
+.recordMore {
+  display: inline-block;
+  margin-top: 18px;
+  font: var(--pk-t-pill);
+  letter-spacing: var(--pk-k-pill);
+  text-transform: uppercase;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 3px;
+}
+@container taste (max-width: 640px) {
+  .recordTop {
+    grid-template-columns: 1fr;
+  }
+  .recordArt {
+    max-width: 260px;
+  }
+}
+
+/* Up Next's heading with the phone's shuffle and repeat at its end */
+.upnextHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.upnextHead > :first-child {
+  min-width: 0;
+}
+/* THEN's Swap: a quiet word beside the heading (keep playing's next record down the list) */
+.swapKey {
+  flex: none;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: transparent;
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-caption);
+  cursor: pointer;
+}
+.swapKey:hover {
+  color: var(--pk-text-primary);
+}
+.swapKey:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+
+
+/* an artist's face: a circle (their photo, else their newest cover), the pencil over it */
+.artistFace {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--pk-surface-elevated);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.45);
+}
+.artistFace img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.artistFacePen {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: 50%;
+}
+.recordOn {
+  margin: 40px 0 0;
+}
+
+/* playlists: the name edited in place, the more key and the delete confirm (the new-playlist key is the
+   kit's Key) */
+.nameText {
+  cursor: text;
+}
+.nameField {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.5em;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-raised);
+  box-shadow: 0 0 0 2px var(--pk-text-primary);
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.nameField:focus {
+  outline: none;
+}
+/* the playlist's keys: Play and Shuffle, then "…" (or the delete confirm) on the same line */
+.heroKeys {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 440px;
+}
+.heroKeys > :first-child {
+  flex: 1 1 260px; /* the pills keep their own 380px cap */
+}
+.moreKey {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pk-text-secondary);
+  cursor: pointer;
+}
+.moreKey:hover {
+  background: var(--pk-surface-raised);
+  color: var(--pk-text-primary);
+}
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-metadata);
+}
+/* the same two keys wherever a delete asks first: on the playlist page (.confirm) and in the side view (.lookConfirm),
+   so neither shows the browser's own buttons (BUG-634) */
+.confirm button,
+.lookConfirm button {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  font: var(--pk-t-section-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.confirmYes {
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+}
+.confirmNo {
+  background: transparent;
+  color: var(--pk-text-primary);
+}
+
+/* an empty Mac: one plain line and the way to add music */
+.empty {
+  margin: 48px 0;
+}
+.emptyHead {
+  margin: 0 0 18px;
+  color: var(--pk-text-primary);
+  font: var(--pk-t-page-title);
+  letter-spacing: var(--pk-k-page-title);
+  text-transform: uppercase;
+}
+
+/* the dashboard's own Account, Appearance and Purchases pages, laid in the desk's pane */
+.settings {
+  width: calc(100% - 64px);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--mast-room, 68px) 0 64px;
+}
+
+/* no internet: a quiet line under the name (the page that needs it is below) */
+.offlineMark {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  margin: -6px 0 -4px 8px;
+  padding: 3px 9px 3px 8px;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-raised);
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-caption);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.offlineMark::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pk-text-tertiary);
+}
+/* folded: just the dot, centred under the mark, its word on hover */
+.side[data-slim] .offlineMark {
+  align-self: center;
+  margin: -6px 0 -4px;
+  padding: 5px;
+  font-size: 0;
+  gap: 0;
+}
+/* a narrow rail: the search key's hint gives its room to the words */
+.side {
+  container: rail / inline-size;
+}
+@container rail (width < 224px) {
+  .find kbd {
+    display: none;
+  }
+}
+.lostKeys {
+  display: flex;
+  gap: 22px;
+  margin-top: 22px;
+}
+.lost button.lostLink {
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: none;
+  color: inherit;
+  font: var(--pk-t-pill);
+  letter-spacing: var(--pk-k-pill);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* the playlist page's cover: the way to a new one. The whole cover is the key; a word on glass under
+   the pointer says so */
+.coverPickKey.coverPickKey {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.coverPick {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.coverPickHint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  translate: -50% 4px;
+  padding: 6px 12px;
+  border-radius: var(--pk-r-pill);
+  background: rgba(18, 15, 12, 0.55);
+  backdrop-filter: blur(12px) saturate(1.5);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: var(--pk-t-mini-title);
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    opacity 0.18s,
+    translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.coverPickKey:hover .coverPickHint,
+.coverPickKey[data-focus-visible] .coverPickHint {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+/* a station's own mark wherever it stands in for the station: rounded like an app icon (what it's
+   playing, a show's art or a record, keeps a cover's corners) */
+.lookArt[data-circle] {
+  border-radius: 50%;
+}
+.lookArt[data-app],
+.barArt[data-app] {
+  border-radius: var(--pk-shape-station);
+}
+
+/* a browser away from the Mac: where the music is, and what to do (Away) */
+.away {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 40px 24px;
+  background: var(--pk-surface-base);
+  color: var(--pk-text-primary);
+  text-align: center;
+}
+.awayMark {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 8px;
+  color: var(--pk-accent-text);
+}
+.awayHead {
+  margin: 0;
+  max-width: 22ch;
+  font: 800 34px/1.05 var(--pk-f-display);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.awayLine {
+  margin: 0;
+  max-width: 44ch;
+  font: var(--pk-t-body);
+  line-height: 1.5;
+  color: var(--pk-text-secondary);
+}
+.awayKeys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.awayPrimary,
+.awaySecondary {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: var(--pk-r-pill);
+  font: 700 14px/1 var(--pk-f-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.awayPrimary {
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+}
+.awaySecondary {
+  box-shadow: inset 0 0 0 1.5px var(--pk-hairline);
+  color: var(--pk-text-primary);
+}
+.awaySecondary:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 6%, transparent);
+}
+
+/* ── the old library's parts, inside the desk: their palette (--cs-*) re-rooted in the kit's, on the
+      body (DeskShell), so the editors, pickers, croppers, settings and panels the desk still mounts,
+      and their pop-ups, wear the desk's surfaces, inks, rules and corners rather than the old
+      library's. Its orange, fonts and spacing stay as they are (they're the same brand) ── */
+.deskBody {
+  --cs-bg: var(--pk-surface-base);
+  --cs-bg2: var(--pk-surface-raised);
+  --cs-bg3: var(--pk-surface-elevated);
+  --cs-bg4: color-mix(in oklch, var(--pk-surface-elevated) 85%, var(--pk-text-primary));
+  --cs-well: var(--pk-surface-sunken);
+  --cs-ink: var(--pk-text-primary);
+  --cs-ink1: var(--pk-text-primary);
+  --cs-ink2: var(--pk-text-secondary);
+  --cs-ink3: var(--pk-text-tertiary);
+  --cs-ink4: var(--pk-hairline);
+  --cs-border: var(--pk-hairline);
+  --cs-border-subtle: color-mix(in srgb, var(--pk-text-primary) 6%, transparent);
+  --cs-radius-sm: var(--pk-r-small);
+  --cs-radius-md: var(--pk-r-control);
+  --cs-radius-lg: var(--pk-r-card);
+  --cs-flair-radius: var(--pk-r-control);
+  --cs-font-display: var(--pk-f-display);
+  /* the old dialogs' orange stripe and serif subtitles: the desk's own dialogs have neither */
+  --cs-stripe: none;
+  --cs-font-serif: var(--pk-f-mono);
+  --cs-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --cs-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --cs-shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* ── an artist, the side view's and the page's (Artist.tsx): its sections and the playlist suggestion ── */
+.artistSection {
+  display: grid;
+  gap: 10px;
+}
+.record .artistSection {
+  margin-top: 40px;
+}
+.artistSection > .allSongs {
+  justify-self: start;
+}
+.artistMake {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--pk-surface-raised);
+}
+.record .artistMake {
+  max-width: 760px;
+  padding: 22px 26px;
+}
+.artistMake p {
+  margin: 0;
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-metadata);
+  line-height: 1.5;
+}
+.artistMake strong {
+  color: var(--pk-text-primary);
+  font-weight: 600;
+}
+.artistMakeKeys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.artistAlike {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-raised);
+  color: var(--pk-text-primary);
+  font: var(--pk-t-metadata);
+}
+.chip:hover {
+  background: var(--pk-surface-elevated);
+}
+
+/* ── Edit artist, in the kit's Dialog (its box, title, Field and Keys are the kit's): the picture beside
+      the name, the keys at the end. Mounted beside the window, it carries the window's paper in a
+      wrapper that draws no box of its own ── */
+.editorScope {
+  display: contents;
+}
+.dialogBody {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.dialogFace {
+  position: relative;
+  width: 120px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--pk-surface-raised);
+}
+.dialogFace img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dialogFields {
+  display: grid;
+  gap: 12px;
+}
+.dialogNote {
+  margin: 0;
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-metadata);
+  line-height: 1.45;
+}
+.dialogKeys {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── a made-for-you playlist's picture when it has no drawn cover: four of its records (MadeForYou.tsx) ── */
+.mixQuad {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 100%;
+  height: 100%;
+}
+.mixQuad > * {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+/* the playlists we make, under yours */
+.madeSection {
+  margin-top: 40px;
+}
+
+/* ── One Home: the one big card (Reach.tsx FeatureCard: Deep dive's, and Resume's wide one) ── */
+.deepDive {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 28px;
+}
+.deepDiveHead {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: var(--pk-t-shout);
+  letter-spacing: var(--pk-k-shout);
+  text-transform: uppercase;
+}
+.deepDiveHead em {
+  font: var(--pk-t-answer-compact);
+  color: var(--pk-tint-neutral-text);
+  text-transform: none;
+}
+/* Resume and Deep Dive are lit by their own record, as the iPhone's cards are: CoverGlass
+   (app/_taste/CoverGlass.tsx), the card's paper over the record's light (founder, 2026-10-29, 2026-11-02) */
+.deepDiveCard {
+  --glass-radius: var(--pk-r-panel);
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: end;
+  padding: 16px;
+  border-radius: var(--pk-r-panel);
+  background: var(--pk-surface-raised);
+}
+.deepDiveArt {
+  display: block;
+  aspect-ratio: 1;
+  max-width: 100%;
+  border-radius: var(--pk-r-artwork-tile);
+  overflow: hidden;
+  /* the words sit on the picture's foot, but a long title that runs taller meets its top instead:
+     never above the picture (founder, 2026-10-28; the album page's opener does the same) */
+  align-self: start;
+}
+/* Resume: the same card, shorter, leading Home */
+.deepDiveCard[data-size="wide"] {
+  grid-template-columns: 168px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 14px;
+}
+.deepDiveCard[data-size="wide"] .deepDiveTitle {
+  font: var(--pk-t-page-title);
+  letter-spacing: var(--pk-k-page-title);
+}
+.deepDiveLine {
+  margin-bottom: 8px;
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-secondary);
+}
+.deepDiveText {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+}
+.deepDiveTitle {
+  font: var(--pk-t-hero-name);
+  letter-spacing: -0.23px;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.deepDiveArtist {
+  font: var(--pk-t-answer);
+  /* the record's own colour, as the side view sets its artist line (FeatureCard's tint) */
+  color: var(--pk-tint-text, var(--pk-tint-neutral-text));
+  margin-bottom: 8px;
+}
+@container taste (max-width: 640px) {
+  .deepDiveCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── a Mac app's manners, in the Mac app only (html[data-shell="mac"]): the arrow over every control and
+      link (the founder, Q7, 2026-10-28), the hand kept for a plain link inside running text; the window's
+      words can't be dragged over and selected like a web page's, except fields and paragraphs; covers
+      can't be dragged out of the window as pictures (D-M14, D-M15) ── */
+:global(html[data-shell="mac"]) .app :is(a, button, label, summary, select, [role="button"], [role="link"], [role="tab"], [role="radio"], [role="switch"], [role="option"], [role="menuitem"], [role="slider"], input[type="range"], input[type="checkbox"]) {
+  cursor: default;
+}
+:global(html[data-shell="mac"]) .app :is(p, blockquote, li) > a:not([class]) {
+  cursor: pointer;
+}
+:global(html[data-shell="mac"]) .app {
+  -webkit-user-select: none;
+  user-select: none;
+}
+:global(html[data-shell="mac"]) .app :is(input, textarea, [contenteditable="true"], p, blockquote) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+:global(html[data-shell="mac"]) .app img {
+  -webkit-user-drag: none;
+}
+
+/* ── a page's slim bar (PageBar): once the head has scrolled away it rests just under the toolbar with a
+      small cover, the name and the same keys; lit faintly in the record's colour, glass over the songs.
+      It takes no room in the page (a zero-height sticky rail), and the toolbar's own scrolled title steps
+      aside while it shows ── */
+.pageBarRail {
+  position: sticky;
+  top: var(--sticky-top);
+  z-index: 15;
+  height: 0;
+}
+.pageBar {
+  position: absolute;
+  top: 4px;
+  left: -16px;
+  right: -16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 64px;
+  padding: 0 16px;
+  border-radius: var(--pk-r-large);
+  background:
+    radial-gradient(60% 160% at 6% 50%, color-mix(in srgb, var(--pk-tint-glow, var(--pk-tint-neutral-glow)) 22%, transparent), transparent),
+    color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 8%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 14px 30px -22px rgb(0 0 0 / 0.6);
+  opacity: 0;
+  translate: 0 -6px;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pageBar[data-shown] {
+  opacity: 1;
+  translate: 0 0;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pageBar {
+    translate: none;
+    transition: opacity 0.15s;
+  }
+}
+.pageBarArt {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--pk-r-artwork-row);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+}
+.pageBarArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pageBarWords {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.pageBarTitle,
+.pageBarBy {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pageBarTitle {
+  font: var(--pk-t-row-title);
+  font-size: 18px;
+  text-transform: uppercase;
+  color: var(--pk-text-primary);
+}
+.pageBarBy {
+  font: var(--pk-t-answer);
+  font-size: 15px;
+  color: var(--pk-tint-text, var(--pk-tint-neutral-text));
+}
+.pageBarKeys {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(360px, 46%);
+}
+.pageBarKeys > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.app:has(.pageBar[data-shown]) .toolTitle {
+  opacity: 0;
+}
+
+/* an album you own: the Hero, the songs, room at the foot */
+.albumPage {
+  padding-bottom: 64px;
+}
+/* the cover's "Edit" / "Change cover" word sits above the Hero cover's sheen */
+.coverPick .coverPickHint {
+  z-index: 2;
+}
+/* on a page with a bar, a song table's sticky column heads rest just under it, not behind it (the bar
+   shows before the heads reach the top: the keys it carries sit above the table) */
+.page:has(.pageBarRail) {
+  --pk-table-top: calc(var(--sticky-top) + 72px);
+}
+
+/* ── the disc in the drive (disc.tsx) ── */
+
+/* the sidebar's row: a touch taller than a library row for its cover (it confirms the match), the name
+   and one line, then Rip and Eject. Ripping, the cover softens under a ring that fills. */
+.discRow {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 2px;
+  padding: 5px 6px 5px 4px;
+  border-radius: var(--pk-r-control);
+  transition: background-color 0.15s;
+}
+.discRow:hover,
+.discRow[data-on] {
+  background: color-mix(in srgb, var(--pk-text-primary) 7%, transparent);
+}
+[data-slim] .discRow {
+  grid-template-columns: 40px;
+  justify-content: center;
+  padding-inline: 0;
+}
+.discThumb {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--pk-r-small);
+  background: var(--pk-surface-elevated);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+  cursor: pointer;
+}
+.discThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition:
+    filter 0.4s,
+    opacity 0.4s;
+}
+.discThumb > span:first-child {
+  font-size: 9px; /* floor: art, the lettering on a 40px disc's own art */
+}
+.discRow[data-moving] .discThumb img {
+  filter: blur(1.5px) saturate(0.85);
+  opacity: 0.5;
+}
+.discRing {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: conic-gradient(var(--pk-tint-text, var(--pk-text-primary)) var(--done), color-mix(in srgb, var(--pk-text-primary) 18%, transparent) 0);
+  mask: radial-gradient(circle, transparent 0 8.5px, #000 9px);
+}
+.discWords {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.discName {
+  overflow: hidden;
+  font: var(--pk-t-mini-title);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-primary);
+}
+.discLine {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  font: var(--pk-t-metadata);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-secondary);
+}
+.discRip {
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+  font: var(--pk-t-pill);
+  font-size: 11px;
+  letter-spacing: var(--pk-k-pill);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.discRip:hover:not(:disabled) {
+  background: var(--pk-fill-hover);
+}
+.discEject {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: transparent;
+  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--pk-text-primary) 25%, transparent);
+  color: var(--pk-text-secondary);
+  cursor: pointer;
+}
+.discEject:hover:not(:disabled) {
+  color: var(--pk-text-primary);
+  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--pk-text-primary) 60%, transparent);
+}
+.discRip:disabled,
+.discEject:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* the disc's page: the CD tucked in its sleeve (the Hero's peek), mostly inside, showing past the
+   sleeve's right edge; ringed by one segment per song; turning slowly while it copies */
+.discPeek {
+  position: absolute;
+  z-index: 0;
+  top: 10%;
+  left: 34%;
+  width: 80%;
+  aspect-ratio: 1;
+}
+.discSegs {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  mask: radial-gradient(circle, transparent 0 calc(50% - 6px), #000 calc(50% - 5px));
+}
+.discCd {
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--bg) 0 9%, rgb(0 0 0 / 0.12) 9.5% 11%, transparent 11.5% 30%, rgb(255 255 255 / 0.35) 31%, transparent 33%),
+    conic-gradient(from 0deg, #d9d6d2, #f6f2ec, #cfe3ea, #ece8e3, #e8d5e4, #f7f4ef, #d2cdc6, #eef0e2, #d9d6d2);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.08),
+    0 14px 30px -14px rgb(0 0 0 / 0.4);
+}
+.discPeek[data-spin] .discCd {
+  animation: discSpin 7s linear infinite;
+}
+@keyframes discSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .discPeek[data-spin] .discCd {
+    animation: none;
+  }
+}
+/* the drive with nothing in it (disc.tsx NoDisc): the page's middle. Just after an eject, the album's
+   sleeve with its CD rolled out beside it, a beat after the page changes; otherwise a CD resting */
+.noDisc {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  min-height: 58vh;
+  padding: 24px 0 40px;
+  text-align: center;
+}
+.noDiscArt {
+  position: relative;
+  width: 176px;
+  height: 176px;
+  margin-bottom: 26px;
+}
+.noDiscArt[data-sleeve] {
+  width: 284px;
+}
+.noDiscCd {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 176px;
+  height: 176px;
+}
+.noDiscArt[data-sleeve] .noDiscCd {
+  left: 108px;
+  animation: noDiscOut 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both;
+}
+@keyframes noDiscOut {
+  from {
+    translate: -108px 0;
+    rotate: -50deg;
+  }
+}
+.noDiscSleeve {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 176px;
+  height: 176px;
+  overflow: hidden;
+  border-radius: var(--pk-r-artwork-tile);
+  box-shadow: 0 18px 36px -18px rgb(0 0 0 / 0.5);
+}
+.noDiscSleeve img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.noDiscHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 4px 10px;
+  max-width: 560px;
+  margin: 0;
+  text-wrap: balance;
+}
+.noDiscShout {
+  font: var(--pk-t-shout);
+  letter-spacing: var(--pk-k-shout);
+  text-transform: uppercase;
+  color: var(--pk-text-primary);
+}
+.noDiscAnswer {
+  font: var(--pk-t-answer);
+  color: var(--pk-accent-answer);
+}
+.noDiscLine {
+  margin: 0;
+  font: var(--pk-t-caption);
+  font-size: 13px;
+  color: var(--pk-text-secondary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .noDiscArt[data-sleeve] .noDiscCd {
+    animation: none;
+  }
+}
+.discNot {
+  margin: 12px 0 0;
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-secondary);
+}
+.discNot a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.discNot a:hover {
+  color: var(--pk-text-primary);
+}
+/* the disc's songs: the record look of the song table (no heads, roomy rows), each ticking off */
+.discTracks {
+  display: grid;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.discTrack {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  height: 46px;
+  padding: 0 12px;
+  border-radius: var(--pk-r-control);
+  color: var(--pk-text-primary);
+}
+.discTrack[data-state="pending"] {
+  color: var(--pk-text-secondary);
+}
+.discTrack[data-state="ripping"],
+.discTrack[data-state="encoding"] {
+  background: color-mix(in srgb, var(--pk-tint-glow, var(--pk-tint-neutral-glow)) 9%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pk-tint-glow, var(--pk-tint-neutral-glow)) 24%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+.discNum {
+  justify-self: center;
+  font: var(--pk-t-metadata);
+  font-variant-numeric: tabular-nums;
+  color: var(--pk-tint-text, var(--pk-text-tertiary));
+}
+.discTitle {
+  overflow: hidden;
+  font: var(--pk-t-row-title);
+  font-size: 17px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.discMark {
+  display: flex;
+  align-items: center;
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-secondary);
+}
+.discTrack[data-state="done"] .discMark {
+  color: var(--pk-tint-text, var(--pk-text-primary));
+}
+.discTrack[data-state="error"] .discMark {
+  color: var(--pk-danger);
+}
+/* the drive panel's own steps, borrowed for choosing and naming */
+.discPanel {
+  max-width: 760px;
+}
+
+/* ── Devices, redrawn (2026-10-31): adding music first, devices weighted by use ── */
+
+/* adding music, first on the page: one glass card (and the disc's card beside it while one is in, the
+   same height, so nothing jumps while it rips); the two halves split down the middle */
+.addRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin: 0 0 24px;
+}
+.addRow[data-two] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container taste (max-width: 640px) {
+  .addRow[data-two] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.addCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 104px;
+  padding: 0 18px;
+  border-radius: var(--pk-r-card);
+  background: var(--pk-surface-raised);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 7%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+.addPlus {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--pk-r-pill);
+  color: var(--pk-text-primary);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pk-text-primary) 35%, transparent);
+}
+.addWords {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+button.addWords {
+  cursor: pointer;
+}
+.addKick {
+  font: var(--pk-t-section-label);
+  letter-spacing: var(--pk-k-section-label);
+  text-transform: uppercase;
+  color: var(--pk-text-secondary);
+}
+.addTitle {
+  overflow: hidden;
+  font: var(--pk-t-row-title);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-primary);
+}
+.addLine {
+  overflow: hidden;
+  font: var(--pk-t-caption);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-secondary);
+}
+.addBar {
+  display: block;
+  height: 3px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: var(--pk-r-pill);
+  background: color-mix(in srgb, var(--pk-text-primary) 12%, transparent);
+}
+.addBar > i {
+  display: block;
+  height: 100%;
+  background: var(--pk-text-primary);
+  transition: width 0.3s ease;
+}
+.addDiscArt {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--pk-r-small);
+  background: var(--pk-surface-elevated);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+  color: var(--pk-text-secondary);
+  cursor: pointer;
+}
+.addDiscArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.addCard[data-moving] .addDiscArt img {
+  filter: blur(1.5px) saturate(0.85);
+  opacity: 0.5;
+}
+.addDiscArt .discRing {
+  inset: 18px;
+  mask: radial-gradient(circle, transparent 0 15px, #000 16px);
+}
+/* an album you own: More by and Sits beside it, well below the songs */
+.albumMore {
+  margin-top: 72px;
+}
+
+/* a disc with no cover yet: the disc itself on the sleeve's ground, turning while it's being read */
+.discBare {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--pk-surface-elevated);
+}
+.discBare::before {
+  content: "";
+  position: absolute;
+  inset: 9%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--pk-surface-elevated) 0 10%, rgb(0 0 0 / 0.12) 10.5% 12%, transparent 12.5% 30%, rgb(255 255 255 / 0.35) 31%, transparent 33%),
+    conic-gradient(from 0deg, #d9d6d2, #f6f2ec, #cfe3ea, #ece8e3, #e8d5e4, #f7f4ef, #d2cdc6, #eef0e2, #d9d6d2);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.08),
+    0 6px 16px -8px rgb(0 0 0 / 0.35);
+}
+.discBare[data-spin]::before {
+  animation: discSpin 2.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .discBare[data-spin]::before {
+    animation: none;
+  }
+}
+/* the songs to come, while the disc is read: soft bars where the titles will be */
+.discTrack[data-ghost] {
+  color: var(--pk-text-tertiary);
+}
+.discGhostBar {
+  display: block;
+  height: 12px;
+  border-radius: var(--pk-r-pill);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pk-text-primary) 7%, transparent), color-mix(in srgb, var(--pk-text-primary) 13%, transparent), color-mix(in srgb, var(--pk-text-primary) 7%, transparent));
+  background-size: 200% 100%;
+  animation: ghostSweep 1.6s ease-in-out infinite;
+}
+@keyframes ghostSweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .discGhostBar {
+    animation: none;
+  }
+}
+
+/* a Radio tile's foot on Home (Shelves StationFoot, the founder 2026-11-07): one height for every tile in
+   the row, saying why the station is there: saved (a check), the records of yours it sounds like ("Like
+   your" and their covers), or on its turn on the dial its usual line. The row never grows */
+.stFoot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  min-width: 0;
+}
+.stFoot > svg {
+  flex: none;
+  color: var(--pk-accent-text);
+}
+.stFootLine {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.stFootWord {
+  flex: none;
+  font: var(--pk-t-section-label);
+  font-size: 11px;
+  letter-spacing: var(--pk-k-section-label);
+  text-transform: uppercase;
+  color: var(--pk-text-tertiary);
+}
+.stFootCovers {
+  display: flex;
+  min-width: 0;
+}
+.stFootCover {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  overflow: hidden;
+  border-radius: var(--pk-r-small);
+  box-shadow: 0 0 0 2px var(--surface, var(--pk-surface-base));
+}
+.stFootCover + .stFootCover {
+  margin-left: -6px;
+}
+
+/* ── room for the tails: the window's names held to one line hide their overflow, and the display
+      face's line is shorter than its letters, so a "g" or "y" lost its tail. Each gives its line the
+      face's drop underneath (the kit's --pk-drop) and takes it back from the margin, so nothing moves.
+      Last in the file so no earlier margin undoes it. The kit's own names do the same (kit.module.css). ── */
+.addTitle,
+.barTitle,
+.discName,
+.discTitle,
+.libTitle,
+.ringName,
+.onAirStation,
+.pane .atTitle,
+.stShowName,
+.stSongTitle,
+.toolTitle,
+.lookConfirm > span,
+.boothText > .lookBy {
+  padding-bottom: var(--pk-drop);
+  margin-bottom: calc(-1 * var(--pk-drop));
+}
+
+/* a second computer (ThisComputer): the switch screen's counts, its warning key, and Home's strip that
+   says where the music comes from */
+.switchFacts {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 0;
+  max-width: 46ch;
+  text-align: left;
+}
+.switchFacts > div {
+  display: grid;
+  grid-template-columns: 9.5em 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.switchFacts dt {
+  font: 700 14px/1.2 var(--pk-f-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pk-text-primary);
+}
+.switchFacts dd {
+  margin: 0;
+  font: var(--pk-t-body);
+  line-height: 1.45;
+  color: var(--pk-text-secondary);
+}
+.awayWarn {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: var(--pk-r-pill);
+  font: 700 14px/1 var(--pk-f-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1.5px var(--pk-accent-text);
+  color: var(--pk-accent-text);
+}
+.awayPrimary:disabled,
+.awaySecondary:disabled,
+.awayWarn:disabled {
+  opacity: 0.55;
+}
+.hereStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 12px 24px 0;
+  padding: 10px 14px;
+  border-radius: var(--pk-r-pill);
+  box-shadow: inset 0 0 0 1px var(--pk-hairline);
+  background: color-mix(in srgb, var(--pk-accent-text) 8%, transparent);
+}
+.hereLine {
+  flex: 1 1 24ch;
+  margin: 0;
+  font: var(--pk-t-body);
+  line-height: 1.4;
+  color: var(--pk-text-primary);
+}
+.hereNote {
+  color: var(--pk-text-secondary);
+}
+.hereLink {
+  font: 700 13px/1 var(--pk-f-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pk-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hereKey {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: var(--pk-r-pill);
+  font: 700 13px/1 var(--pk-f-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+}
+.hereClose {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--pk-r-pill);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--pk-text-secondary);
+}
+.hereClose:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 6%, transparent);
+}

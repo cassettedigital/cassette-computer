@@ -1,0 +1,1025 @@
+/*
+ * The album page (/album/[slug]): the September shape (/preview/hobby/[slug]) in the
+ * dark taste language. Tokens, paper, stocks and type roles come from the shared taste set (src/app/
+ * _taste/taste.module.css, as k), and so do the buttons, heads, facts, press cards and bylines, the Buy
+ * menu, the covers and their glow, the measured bar and the playing bars; this file holds the page's own
+ * layout. The record's colour arrives as --accent-c on .page (its text-safe version as --accent-ink) and
+ * is the only colour that changes; the kit's orange is for the playing state alone.
+ *
+ * Widths query the `taste` size container (the <main>): phone below 760, wide from 760.
+ * `.root a { color: inherit }` in the shared paper outranks a single class, so any rule here that
+ * colours a link carries a second class.
+ */
+
+.page {
+  position: relative;
+}
+
+/* ═══ 1. the opener (The Feature's, feature.module.css:91-322) ═══ */
+.opener {
+  position: relative;
+  padding: clamp(28px, 4cqi, 60px) 0 var(--sec);
+  /* sideways only: the cover's light spills up under the masthead and down into the tracklist */
+  overflow-x: clip;
+}
+.openGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(20px, 2.6cqi, 36px);
+  align-items: end;
+}
+.coverCol {
+  position: relative;
+  grid-column: 1 / span 5;
+  /* the lockup sits on the cover's foot, but when it's taller than the cover (a long title in a narrow
+     window) the cover meets its top instead: the title never rises above the cover (founder, 2026-10-28) */
+  align-self: start;
+}
+/* the cover's own light is the shared CoverGlow; the cover has the one shadow and corner. The frame is a plain
+   sleeve (the kit's cover box, as every other cover sits in) until the cover lands and fades in over it */
+.coverFrame {
+  position: relative;
+  z-index: 1;
+  aspect-ratio: 1;
+  border-radius: var(--r-cover);
+  background: var(--sleeve);
+  box-shadow: var(--cover-shadow);
+}
+.coverFrame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--r-cover);
+}
+.lockup {
+  position: relative;
+  z-index: 1;
+  grid-column: 6 / span 7;
+  padding-left: clamp(0px, 1.6cqi, 20px);
+  container: lockup / inline-size;
+}
+/* no cover: the lockup takes the row */
+.opener[data-nocover] .lockup {
+  grid-column: 1 / -1;
+  padding-left: 0;
+}
+.title {
+  margin: 0;
+  /* as big as its longest word allows, the cap for its length, and small enough to sit in about two
+     lines of the lockup (the letters run about half their size wide, with room for the breaks) */
+  font: 800 clamp(36px, min(calc(100cqi / (var(--word) * 0.5)), calc(100cqi * 3.6 / var(--len, 12))), var(--max)) / 0.86 var(--f-display);
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  color: var(--ink-e);
+}
+.artist {
+  margin: 20px 0 0;
+  font: italic 400 28px/1.15 var(--f-serif);
+}
+.page .artist a {
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+.page .artist a:hover {
+  border-color: currentColor;
+}
+
+/* the facts are the shared labelled boxes */
+/* two classes, so the gap outweighs the shared Facts' own margin whichever stylesheet loads first
+   (production loaded it after this one, 2026-10-21) */
+.lockup .facts {
+  margin-top: 22px;
+}
+
+/* the critics strip: beside the cover, never on it; no rules; each outlet's mark (or name) and its
+   grade as plain type. It is one button into the press, lit when pointed at */
+.strip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin: 22px 0 0 -8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--r-small);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.strip:hover {
+  background: var(--wash);
+}
+.stripItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.stripName {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* the row of buttons is the box the Buy menu hangs from (its start, at every width) */
+.actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+/* Want it: a round key of the buttons' height (a circle), its bookmark filled in the record's colour once on the list */
+.actions .want {
+  width: 48px;
+  padding: 0;
+  gap: 0;
+}
+.want[data-on] svg path {
+  fill: var(--accent-c);
+  stroke: var(--accent-c);
+}
+
+/* ═══ shared section frame: one gap between sections, the kit's --sec ═══ */
+.section {
+  padding: var(--sec) 0;
+}
+/* section heads are the shared SectionHead: the big size for the tracklist and the press, the smaller
+   one for the meter, More by and Further listening */
+
+/* ═══ 2. the tracklist and "Preview the album" (September HobbyBackCover.tsx + hobby.module.css:231-500) ═══ */
+/* The grid row is sized by the list alone: the pane's content is positioned inside its column, which
+   stretches to the row, so the two columns are one height and the pane scrolls within it. */
+.tl {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  column-gap: 48px;
+}
+.tl[data-solo] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.listCol {
+  min-width: 0;
+}
+.tl[data-solo] .list:not([data-cols]) {
+  max-width: 640px;
+}
+.disc {
+  margin: 28px 0 8px;
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--accent-ink, var(--accent-c));
+  transition: color 0.2s;
+}
+.listCol > .disc:first-child {
+  margin-top: 0;
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.list[data-cols] {
+  columns: 2;
+  column-gap: 48px;
+}
+.list[data-cols] > li {
+  break-inside: avoid;
+}
+.row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 12px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px 8px 6px;
+  border: 0;
+  border-radius: var(--r-small);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+button.row:hover,
+button.row[aria-pressed="true"] {
+  background: var(--wash);
+}
+/* the number, or the kit's hover-play over it when pointed at (PlayOver), or the shared playing bars for
+   the docked song */
+.n {
+  position: relative;
+  font: var(--t-meta);
+  line-height: 1;
+  letter-spacing: var(--t-meta-track);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.n > b {
+  font-weight: 500;
+}
+.nMark {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+}
+button.row:hover .n > b,
+button.row:focus-visible .n > b,
+.row[aria-pressed="true"] .n > b {
+  visibility: hidden;
+}
+/* every song at full ink, with or without a preview: the list's song title, the same as the artist's */
+.t {
+  font: 400 18px/1.3 var(--f-serif);
+  color: var(--ink-e);
+  text-wrap: pretty;
+}
+.feat {
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.len {
+  font: var(--t-meta);
+  line-height: 1;
+  letter-spacing: var(--t-meta-track);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.paneCol {
+  position: relative;
+  min-width: 0;
+  /* never fewer than three items tall */
+  min-height: 255px;
+}
+.paneIn {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+/* the previews as the player's panel (Tracklist.tsx, portalled under the video): the rest of the panel's
+   height, the list scrolling in itself */
+.railPane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+.paneHead {
+  margin: 0;
+  padding: 4px 0 0 6px;
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pane {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 24px 0;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-4) transparent;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+.pv {
+  display: grid;
+  /* 128 at 16:9 is 72 tall: YouTube asks 120 by 70 at least of a still that starts a song */
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--r-small);
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.pv:hover,
+.pv[aria-pressed="true"] {
+  background: var(--wash);
+}
+/* a preview in a list: its song's number first (.n, the tracklist's), centred on the still; the playing
+   bars stand in the number's place, not before the title */
+.pv[data-n] {
+  grid-template-columns: 28px 128px minmax(0, 1fr);
+}
+.pv[data-n] .pvBars {
+  display: none;
+}
+.pv[data-n] .n {
+  display: grid;
+  align-items: center;
+}
+.pv:hover .n > b,
+.pv:focus-visible .n > b,
+.pv[aria-pressed="true"] .n > b {
+  visibility: hidden;
+}
+.thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: #000;
+}
+.thumb > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* YouTube gave no picture: the record's own cover, whole, on black, and nothing laid over it */
+.thumb[data-fail] > img {
+  object-fit: contain;
+}
+.thumb[data-fail] .dur {
+  display: none;
+}
+.dur {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  padding: 2px 5px;
+  border-radius: var(--r-small);
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font: var(--t-meta);
+  line-height: 1;
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+}
+/* a preview's title is a caption to its still; the docked one leads with the shared playing bars */
+.pvTitle {
+  font: 400 15px/1.3 var(--f-serif);
+  color: var(--ink-e);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pvBars {
+  margin-right: 8px;
+  vertical-align: -1px;
+}
+
+/* five songs or fewer: one column, the list and then the previews as a row of tiles (September's rule) */
+.tlStack {
+  display: grid;
+  gap: 28px;
+}
+.tlStack .list {
+  max-width: 640px;
+}
+.tlStack .paneHead {
+  padding: 0 0 12px;
+}
+.tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px;
+}
+.tiles .pv {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 0;
+  background: none;
+}
+.tiles .pv[aria-pressed="true"] .thumb {
+  outline: 2px solid var(--ink-3);
+  outline-offset: 2px;
+}
+.tiles .pv[data-status="playing"] .thumb {
+  outline-color: var(--cs-orange);
+}
+
+/* ═══ 3. press: the September card family on dark paper (preview/hobby/[slug]/hobby.module.css:52-229, 577-667) ═══ */
+.press {
+  scroll-margin-top: 16px;
+}
+.anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+}
+.cols {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin-top: 18px;
+}
+.col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+/* the cards themselves are the shared QuoteCard (src/app/_taste/quote.module.css) */
+
+/* the grade-only entries: one row of the shared byline (the outlet's mark, its name, the grade) */
+.grades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 30px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.grades > li {
+  min-width: 0;
+}
+
+/* Read all: the quoted rest opens downward, 0fr to 1fr (The Feature, feature.module.css:805-816) */
+.reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.7s var(--touch);
+}
+.reveal[data-open] {
+  grid-template-rows: 1fr;
+}
+.revealIn {
+  min-height: 0;
+  overflow: hidden;
+}
+.revealIn > .cols:first-child {
+  margin-top: 18px;
+}
+.moreRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+.writing {
+  margin: 0;
+  font: italic 400 24px/1.3 var(--f-serif);
+  color: var(--ink-e);
+}
+
+/* ═══ the record in words (RecordWords.tsx): its own words as quiet chips, the artist's words beneath ═══ */
+.wordList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.word {
+  font: 400 18px/1.3 var(--f-serif);
+  color: var(--ink-e);
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--ink-e) 7%, transparent);
+}
+.wordsKept {
+  margin: 14px 0 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* a song's own words, under its title in the tracklist */
+.songWords {
+  display: block;
+  margin-top: 2px;
+  font: italic 400 14px/1.3 var(--f-serif);
+  color: var(--ink-3);
+}
+
+/* ═══ 4. the meter: no rules between rows; each scale is the shared measured bar ═══ */
+.meterRows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.meterRow {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 0.8fr) minmax(220px, 1.3fr) 76px;
+  align-items: center;
+  column-gap: clamp(16px, 2.4cqi, 40px);
+  padding: 18px 0;
+}
+.mDim {
+  font: var(--t-label);
+  line-height: 1.2;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.mTag {
+  font: 700 28px/1 var(--f-display);
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--ink-e);
+}
+.mScale {
+  min-width: 0;
+}
+.mWord {
+  justify-self: end;
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  color: var(--accent-ink, var(--accent-c));
+  transition: color 0.2s;
+}
+.meterRow[data-word="step"] .mWord {
+  color: var(--ink-3);
+}
+.band > .section + .section {
+  padding-top: 0;
+}
+/* More by and Albums like share one cover column: --n across the page's column, --cg apart, so the two
+   rows line up cover for cover (the founder, 2026-11-06: they read uneven and different in size) */
+.band {
+  --n: 5;
+  --cg: 24px;
+}
+@container taste (width >= 960px) {
+  .band {
+    --n: 6;
+  }
+}
+@container taste (width >= 1200px) {
+  .band {
+    --n: 7;
+  }
+}
+
+/* ═══ 5. More by: one row of the shared covers at every width, this record marked under its cover ═══ */
+.mb {
+  list-style: none;
+  margin: 0 calc(-1 * var(--edge, 0px));
+  padding: 4px var(--edge, 0px) 14px;
+  display: flex;
+  gap: var(--cg);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--edge, 0px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-4) transparent;
+}
+.mb > li {
+  flex: none;
+  width: calc((100% - (var(--n) - 1) * var(--cg)) / var(--n));
+  scroll-snap-align: start;
+}
+.mb[data-fade="end"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent);
+}
+.mb[data-fade="start"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 64px), transparent);
+}
+.mb[data-fade="both"] {
+  mask-image: linear-gradient(to right, transparent, #000 64px, #000 calc(100% - 64px), transparent);
+}
+.mbTile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* a cover we do not have: its title typeset in the sleeve */
+.mbNoArt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: end;
+  padding: 10px;
+  font: 700 15px/1 var(--f-display);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* ═══ 6. Albums like: the shared covers on More by's columns, in whole rows only (the founder, 2026-11-06:
+      one short row says that's all there is; a short second one says we stopped in the wrong place). The
+      page asks for more than fits (FURTHER_ASK) and the shelf keeps two full rows when it has them, else
+      one, else the few there are ═══ */
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 36px var(--cg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@container taste (760px <= width < 960px) {
+  .shelf > li:nth-child(n + 11),
+  .shelf:not(:has(> li:nth-child(10))) > li:nth-child(n + 6) {
+    display: none;
+  }
+}
+@container taste (960px <= width < 1200px) {
+  .shelf > li:nth-child(n + 13),
+  .shelf:not(:has(> li:nth-child(12))) > li:nth-child(n + 7) {
+    display: none;
+  }
+}
+@container taste (width >= 1200px) {
+  .shelf > li:nth-child(n + 15),
+  .shelf:not(:has(> li:nth-child(14))) > li:nth-child(n + 8) {
+    display: none;
+  }
+}
+
+/* ═══ 7. sources: one control and one line, closing the page with the footer (the founder, 2026-10-21:
+      "The footer is MASSIVE on this page, too"). It sits on the footer's own paper, so it takes a short
+      space after the stock change above and almost none below: the source line and the footer read as
+      one close end, as compact as the artist page's, with no dead band between them ═══ */
+.sources {
+  padding: clamp(28px, 3.4cqi, 44px) 0 clamp(2px, 0.6cqi, 8px);
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--wash);
+  color: var(--ink-2);
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.pill:hover {
+  background: var(--track);
+  color: var(--ink-e);
+}
+.avatars {
+  display: inline-flex;
+}
+.avatars > * {
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.avatars > * + * {
+  margin-left: -6px;
+}
+.chev {
+  transition: rotate 0.2s var(--ease);
+}
+.pill[aria-expanded="true"] .chev {
+  rotate: 180deg;
+}
+.srcList {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+}
+.page .srcList a,
+.page .srcList span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--t-caption);
+  color: var(--ink-2);
+  transition: color 0.2s;
+}
+.page .srcList a:hover {
+  color: var(--ink-e);
+}
+.line {
+  margin: 22px 0 0;
+  max-width: 40em;
+  font: var(--t-caption);
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+/* ═══ phone (below 760) ═══ */
+@container taste (width < 760px) {
+  .opener {
+    padding: 8px 0 56px;
+  }
+  .openGrid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 28px;
+  }
+  .coverCol,
+  .lockup,
+  .opener[data-nocover] .lockup {
+    grid-column: 1 / -1;
+    padding-left: 0;
+  }
+  .coverCol {
+    width: min(100%, 300px);
+  }
+  .title {
+    font-size: clamp(36px, min(calc(100cqi / (var(--word) * 0.5)), calc(100cqi * 3.6 / var(--len, 12))), min(calc(var(--max) * 0.6), 76px));
+  }
+  .artist {
+    margin-top: 12px;
+    font-size: 24px;
+  }
+  /* Preview album takes the row, Buy keeps to its word, Want it (the website's alone) to its square */
+  .actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-columns: auto;
+    gap: 10px;
+  }
+  /* one of Preview and Buy (no previews in an iPhone app older than CassetteApp/2): the buttons sit together */
+  .actions[data-single] {
+    display: flex;
+  }
+
+  .tl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* listening first: the previews come before the list */
+  .paneCol {
+    order: -1;
+    min-height: 0;
+    margin-bottom: 18px;
+  }
+  .paneIn {
+    position: static;
+    display: block;
+  }
+  /* "Tracklist." sits right above the previews on a phone, so the pane's own head goes */
+  .paneHead {
+    display: none;
+  }
+  .tlStack .paneHead {
+    display: block;
+    padding: 0 0 10px;
+  }
+  .pane {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* sideways here: hold a sideways swipe in the row, but let an up-and-down scroll over it move the page */
+    overscroll-behavior: auto;
+    overscroll-behavior-x: contain;
+    padding: 0 var(--gutter) 6px;
+    margin: 0 calc(-1 * var(--gutter));
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+    mask-image: none;
+  }
+  .pane > li {
+    flex: none;
+    width: 168px;
+    scroll-snap-align: start;
+  }
+  .pane .pv,
+  .tiles .pv {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 0;
+    background: none;
+  }
+  .pane .pv .n {
+    display: none;
+  }
+  .pane .pv[data-n] .pvBars {
+    display: inline-flex;
+  }
+  .pane .pv[aria-pressed="true"] .thumb {
+    outline: 2px solid var(--ink-3);
+    outline-offset: 2px;
+  }
+  .pane .pv[data-status="playing"] .thumb {
+    outline-color: var(--cs-orange);
+  }
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .list[data-cols] {
+    columns: auto;
+  }
+  .row {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .cols {
+    flex-direction: column;
+  }
+  .col {
+    display: contents;
+  }
+  /* the cards keep the server's phone order (--o on each card) */
+  .col > * {
+    order: var(--o);
+  }
+  .grades {
+    gap: 12px 22px;
+  }
+  .writing {
+    font-size: 21px;
+  }
+
+  .meterRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "dim word"
+      "tag tag"
+      "scale scale";
+    row-gap: 12px;
+    padding: 18px 0;
+  }
+  .mDim {
+    grid-area: dim;
+  }
+  .mWord {
+    grid-area: word;
+  }
+  .mTag {
+    grid-area: tag;
+    font-size: 24px;
+  }
+  .mScale {
+    grid-area: scale;
+    margin-top: 18px;
+  }
+
+  .mb {
+    --edge: var(--gutter);
+    gap: 14px;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+  }
+  .mb > li,
+  .shelf > li {
+    flex: none;
+    width: 120px;
+    scroll-snap-align: start;
+  }
+
+  .shelf {
+    display: flex;
+    gap: 14px;
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 0 var(--gutter) 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+
+  .srcList {
+    gap: 10px 18px;
+  }
+}
+
+/* ═══ inside the iPhone app (html[data-surface="app"], lib/app-surface.ts) ═══
+   The top of the page reads like the app's own album screen, so a record opened from the radio or a link isn't
+   another app (the founder, 2026-10-31): the cover centred at the app's size, the title a size down, the artist
+   in the record's colour, the facts as one line (Opener.tsx), Preview and Buy as two equal halves like its Play
+   and Shuffle, and the songs straight under them as its list is, the previews after. Press, More by and the rest
+   stay the page's own. */
+.factLine {
+  margin: 14px 0 0;
+  font: var(--t-label);
+  line-height: 1.2;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+@container taste (width < 760px) {
+  :global(html[data-surface="app"]) .opener {
+    padding: 4px 0 36px;
+  }
+  :global(html[data-surface="app"]) .openGrid {
+    row-gap: 24px;
+  }
+  :global(html[data-surface="app"]) .coverCol {
+    width: min(100%, 240px);
+    justify-self: center;
+  }
+  :global(html[data-surface="app"]) .title {
+    font-size: clamp(26px, min(calc(100cqi / (var(--word) * 0.5)), calc(100cqi * 2.4 / var(--len, 12))), 34px);
+    line-height: 0.95;
+  }
+  :global(html[data-surface="app"]) .page .artist {
+    margin-top: 8px;
+    font-size: 23px;
+  }
+  :global(html[data-surface="app"]) .page .artist a {
+    color: var(--accent-ink, var(--accent-c));
+  }
+  /* the iPhone app's two keys share the row in halves; the account window's side panel (data-frame="panel",
+     lib/app-surface) keeps the website's one row, Want it included, since it has room */
+  :global(html[data-surface="app"]:not([data-frame="panel"])) .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row;
+    margin-top: 22px;
+  }
+  :global(html[data-surface="app"]:not([data-frame="panel"])) .actions[data-single] {
+    display: grid;
+  }
+  :global(html[data-surface="app"]:not([data-frame="panel"])) .actions > *,
+  :global(html[data-surface="app"]:not([data-frame="panel"])) .actions > div > button {
+    width: 100%;
+  }
+  /* the songs follow the buttons with no head, as the app's list does; the previews come after them */
+  :global(html[data-surface="app"]) .section:global(#songs) {
+    padding-top: 0;
+  }
+  :global(html[data-surface="app"]) .section:global(#songs) > div > h2 {
+    display: none;
+  }
+  :global(html[data-surface="app"]) .paneCol {
+    order: 0;
+    margin: 28px 0 0;
+  }
+  :global(html[data-surface="app"]) .paneHead {
+    display: block;
+    padding: 0 0 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .chev {
+    transition: none;
+  }
+}
+
+
+/* ── the share key beside each song (ShareSong.tsx): its own column after the row, faint until the row
+   is pointed at or holds the focus, always faintly there on a touch screen, which can't point ── */
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 2px;
+}
+.share {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.item:hover .share,
+.item:focus-within .share,
+.share[data-open] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .share {
+    opacity: 0.7;
+  }
+}
+
+/* an artist's own uploaded music video (Tracklist.tsx, BUG-539): opens under its song, across the song's whole
+   row (past the share key's column), at the list's width */
+.ownVideo {
+  grid-column: 1 / -1;
+  padding: 6px 6px 16px;
+}
+.ownVideo video {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  border-radius: var(--r-small);
+  background: #000;
+}

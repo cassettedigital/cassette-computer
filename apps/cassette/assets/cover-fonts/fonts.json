@@ -1,0 +1,314 @@
+[
+  {
+    "file": "barlow-condensed-700.ttf",
+    "family": "Barlow Condensed",
+    "weight": 700,
+    "style": "normal",
+    "bytes": 87120,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "barlow-condensed-800.ttf",
+    "family": "Barlow Condensed",
+    "weight": 800,
+    "style": "normal",
+    "bytes": 87556,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "dm-mono-400.ttf",
+    "family": "DM Mono",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 44784,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "dm-mono-500.ttf",
+    "family": "DM Mono",
+    "weight": 500,
+    "style": "normal",
+    "bytes": 45308,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "unbounded-500.ttf",
+    "family": "Unbounded",
+    "weight": 500,
+    "style": "normal",
+    "bytes": 347348,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "unbounded-600.ttf",
+    "family": "Unbounded",
+    "weight": 600,
+    "style": "normal",
+    "bytes": 348108,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "space-mono-400.ttf",
+    "family": "Space Mono",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 81124,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "space-mono-700.ttf",
+    "family": "Space Mono",
+    "weight": 700,
+    "style": "normal",
+    "bytes": 79904,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "rubik-mono-one-400.ttf",
+    "family": "Rubik Mono One",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 116664,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "kanit-900-italic.ttf",
+    "family": "Kanit",
+    "weight": 900,
+    "style": "italic",
+    "bytes": 181044,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "press-start-2p-400.ttf",
+    "family": "Press Start 2P",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 115280,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "schibsted-grotesk-500.ttf",
+    "family": "Schibsted Grotesk",
+    "weight": 500,
+    "style": "normal",
+    "bytes": 94224,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "schibsted-grotesk-700.ttf",
+    "family": "Schibsted Grotesk",
+    "weight": 700,
+    "style": "normal",
+    "bytes": 94380,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "archivo-black-400.ttf",
+    "family": "Archivo Black",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 87996,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "mr-dafoe-400.ttf",
+    "family": "Mr Dafoe",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 46100,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "outfit-600.ttf",
+    "family": "Outfit",
+    "weight": 600,
+    "style": "normal",
+    "bytes": 48456,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "bungee-400.ttf",
+    "family": "Bungee",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 110456,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "bricolage-grotesque-800.ttf",
+    "family": "Bricolage Grotesque",
+    "weight": 800,
+    "style": "normal",
+    "bytes": 82136,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "anton-400.ttf",
+    "family": "Anton",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 130324,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "dela-gothic-one-400.ttf",
+    "family": "Dela Gothic One",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 2477372,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "permanent-marker-400.ttf",
+    "family": "Permanent Marker",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 73276,
+    "license": "Apache License 2.0"
+  },
+  {
+    "file": "rock-salt-400.ttf",
+    "family": "Rock Salt",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 118864,
+    "license": "Apache License 2.0"
+  },
+  {
+    "file": "reenie-beanie-400.ttf",
+    "family": "Reenie Beanie",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 131552,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "homemade-apple-400.ttf",
+    "family": "Homemade Apple",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 108704,
+    "license": "Apache License 2.0"
+  },
+  {
+    "file": "nothing-you-could-do-400.ttf",
+    "family": "Nothing You Could Do",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 31728,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "shadows-into-light-400.ttf",
+    "family": "Shadows Into Light",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 39508,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "covered-by-your-grace-400.ttf",
+    "family": "Covered By Your Grace",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 41124,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "sue-ellen-francisco-400.ttf",
+    "family": "Sue Ellen Francisco",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 45108,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "zeyada-400.ttf",
+    "family": "Zeyada",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 48520,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "caveat-500.ttf",
+    "family": "Caveat",
+    "weight": 500,
+    "style": "normal",
+    "bytes": 251752,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "instrument-serif-400-italic.ttf",
+    "family": "Instrument Serif",
+    "weight": 400,
+    "style": "italic",
+    "bytes": 64208,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "ultra-400.ttf",
+    "family": "Ultra",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 50824,
+    "license": "Apache License 2.0"
+  },
+  {
+    "file": "sacramento-400.ttf",
+    "family": "Sacramento",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 64108,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "yellowtail-400.ttf",
+    "family": "Yellowtail",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 60864,
+    "license": "Apache License 2.0"
+  },
+  {
+    "file": "bebas-neue-400.ttf",
+    "family": "Bebas Neue",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 56136,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "monoton-400.ttf",
+    "family": "Monoton",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 49768,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "lobster-400.ttf",
+    "family": "Lobster",
+    "weight": 400,
+    "style": "normal",
+    "bytes": 392208,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "fraunces-900-soft.ttf",
+    "family": "Fraunces",
+    "weight": 900,
+    "style": "normal",
+    "bytes": 71648,
+    "license": "SIL Open Font License 1.1"
+  },
+  {
+    "file": "fraunces-600-italic.ttf",
+    "family": "Fraunces",
+    "weight": 600,
+    "style": "italic",
+    "bytes": 85044,
+    "license": "SIL Open Font License 1.1"
+  }
+]

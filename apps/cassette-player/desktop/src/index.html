@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cassette</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: grid;
+        place-items: center;
+        background: #1c1913;
+        color: #ede4d0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      /* the wordmark's own face, as the app's library column draws it (Barlow Condensed ExtraBold, OFL):
+         carried here, capitals only, because this page shows before anything else has loaded */
+      @font-face {
+        font-family: "Cassette Mark";
+        src: url("assets/barlow-condensed-800-caps.woff") format("woff");
+        font-weight: 800;
+        font-display: block;
+      }
+      .boot { text-align: center; transform: translateY(-6%); }
+      .mark {
+        font-family: "Cassette Mark", "Barlow Condensed", -apple-system, sans-serif;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        padding-left: 0.14em; /* the tracking trails the last letter: this keeps the word centred */
+        font-size: 34px;
+        /* warm tube-light bloom, matches the app's "Analog" POV */
+        color: #ede4d0;
+        text-shadow: 0 0 22px rgba(232, 120, 48, 0.35);
+      }
+      .tick {
+        margin-top: 22px;
+        height: 3px;
+        width: 132px;
+        margin-inline: auto;
+        border-radius: 3px;
+        background: rgba(237, 228, 208, 0.14);
+        overflow: hidden;
+      }
+      .tick::after {
+        content: "";
+        display: block;
+        height: 100%;
+        width: 42%;
+        border-radius: 3px;
+        background: #e87830;
+        box-shadow: 0 0 12px rgba(232, 120, 48, 0.7);
+        animation: slide 1.15s ease-in-out infinite;
+      }
+      @keyframes slide {
+        0%   { transform: translateX(-120%); }
+        100% { transform: translateX(320%); }
+      }
+      .hint {
+        margin-top: 16px;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: rgba(237, 228, 208, 0.5);
+      }
+      /* the shell writes the reason here when start-up stalls (BUG-782) */
+      .hint.fail {
+        max-width: 340px;
+        margin-inline: auto;
+        font-size: 13px;
+        line-height: 1.5;
+        letter-spacing: 0;
+        color: rgba(237, 228, 208, 0.82);
+      }
+      .tick.slow::after { animation-duration: 2.4s; opacity: 0.5; }
+      @media (prefers-reduced-motion: reduce) {
+        .tick::after { animation: none; width: 100%; }
+      }
+      /* a Mac set to light: the light card stock, the same paper the window opens onto */
+      @media (prefers-color-scheme: light) {
+        :root { color-scheme: light; }
+        body { background: #f3eadb; color: #15110e; }
+        .mark { color: #15110e; text-shadow: 0 0 22px rgba(232, 120, 48, 0.22); }
+        .tick { background: rgba(21, 17, 14, 0.12); }
+        .tick::after { background: #cc6a2a; box-shadow: 0 0 10px rgba(204, 106, 42, 0.45); }
+        .hint { color: rgba(21, 17, 14, 0.62); }
+        .hint.fail { color: rgba(21, 17, 14, 0.82); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="boot">
+      <div class="mark">CASSETTE</div>
+      <div class="tick" aria-hidden="true"></div>
+      <div class="hint">Starting Cassette…</div>
+    </div>
+  </body>
+</html>

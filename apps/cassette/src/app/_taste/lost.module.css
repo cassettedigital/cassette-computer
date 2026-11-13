@@ -1,0 +1,34 @@
+/*
+ * EmptyState (EmptyState.tsx): a missing page (Lost) and a page that failed to load (Failed), inside
+ * whatever frame they land in (the root's own page frame; the artist and album pages', where the dock
+ * keeps playing; Discover's, help's and the guides'). The paper, the wrap, the button and the links come
+ * from the shared taste set.
+ */
+.lost {
+  padding: clamp(80px, 14cqi, 180px) 0 clamp(80px, 12cqi, 160px);
+  display: grid;
+  gap: 28px;
+  justify-items: start;
+}
+.line {
+  margin: 0;
+  font: 800 clamp(48px, 9cqi, 128px) / 0.9 var(--f-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.lede {
+  margin: 0;
+  max-width: 34em;
+  font: var(--t-body);
+  color: var(--ink-2);
+}
+
+/* the search form (the kit's SearchForm), no wider than this */
+.findBox {
+  width: min(100%, 560px);
+}
+
+/* the way home, which the iPhone app leaves to its own back (BUG-641) */
+:global(html[data-surface="app"]) .webOnly {
+  display: none;
+}

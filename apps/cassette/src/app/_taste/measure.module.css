@@ -1,0 +1,100 @@
+/*
+ * The one measured bar (P10): a 1px track at ink-4, a 3px fill in the record's colour, an optional 10px
+ * dot and an optional tick for "their usual". It fills once when its list scrolls in.
+ */
+.measure {
+  position: relative;
+  display: block;
+  height: 14px;
+}
+/* the track */
+.measure::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--ink-4);
+}
+.fill {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--lo) * 100%);
+  width: calc(var(--span) * 100%);
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px; /* corner: art (a meter line) */
+  background: var(--ink-3);
+  transform: scaleX(0);
+  transform-origin: var(--origin);
+  transition:
+    transform 0.9s var(--touch) calc(var(--i) * 80ms),
+    background-color 0.2s;
+}
+.rail {
+  position: absolute;
+  inset: 0;
+  transform: translateX(calc(var(--shift) * 100%));
+  transition: transform 0.9s var(--touch) calc(var(--i) * 80ms);
+}
+.dot {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--to) * 100%);
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  box-shadow: 0 0 0 3px var(--own);
+  transition: background-color 0.2s;
+}
+.measure[data-lit] .fill,
+.measure[data-lit] .dot {
+  background: var(--accent-c);
+}
+/* their usual: a short upright line in ink, its words over it on the first row */
+.tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--tick) * 100%);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink-e);
+}
+.usual {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  translate: -50% 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+.usual[data-anchor="start"] {
+  left: 0;
+  translate: 0 0;
+}
+.usual[data-anchor="end"] {
+  right: 0;
+  left: auto;
+  translate: 0 0;
+}
+
+/* the focal fill: once the list it sits in has scrolled in */
+:where([data-shown]) .fill,
+:where([data-shown]) .rail {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill,
+  .rail {
+    transform: none;
+    transition: none;
+  }
+}

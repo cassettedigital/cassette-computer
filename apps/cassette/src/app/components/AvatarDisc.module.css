@@ -1,0 +1,48 @@
+/* Avatar disc chrome — same milled key as IconButton (bg3 + raise). */
+
+.key {
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cs-bg3);
+  border: 1px solid var(--cs-border-subtle);
+  box-shadow: var(--cs-raise);
+  overflow: hidden;
+}
+
+.silhouette {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* No disc fill — the cream person.circle glyph IS the mark (matches iOS). */
+  color: var(--cs-cream);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.photo {
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  display: block;
+  /* the key's own ground, as the initials and emoji keys: a sticker (a transparent picture) sat on a
+     black vinyl disc that stayed black on the light paper and read as a bug (founder, 2026-10-29) */
+  background: var(--cs-bg3);
+  border: 1px solid var(--cs-border-subtle);
+  box-shadow: var(--cs-raise);
+}
+
+.initials {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  color: var(--cs-ink);
+  letter-spacing: 0.02em;
+}
+
+.emoji {
+  line-height: 1;
+}

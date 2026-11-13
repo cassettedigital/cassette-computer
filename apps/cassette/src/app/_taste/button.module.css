@@ -1,0 +1,150 @@
+/*
+ * The printed label button (P1) and the links (P2). Colours come from the stock the part sits on, so the
+ * same filled button is cream on the dark paper and ink on the homepage's light card stock.
+ *
+ * Selector weights: .btn is one class and a look two, so a look always wins over the button; the links
+ * carry a second class where they must outweigh the paper's own `.root a` rule.
+ */
+
+/* ── the button: the player kit's pill (the founder, 2026-10-29: round everywhere), its letters, one height and
+      one padding everywhere ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--control-h);
+  padding: 0 22px;
+  border: var(--control-line) solid transparent;
+  border-radius: var(--r-pill);
+  font: var(--t-button);
+  letter-spacing: var(--t-button-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s,
+    gap 0.25s var(--spring);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn > svg {
+  flex: none;
+}
+/* a trailing arrow's gap opens on the spring */
+.btn:has(> svg:last-child):hover {
+  gap: 17px;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* filled: the stock's primary fill (the ink on the dark stock, an espresso on the light one: one primary
+   dark, the player kit's too), its paper as the label */
+.btn.filled {
+  background: var(--fill);
+  color: var(--on-fill, var(--bg));
+}
+.btn.filled:hover {
+  background: var(--fill-hover);
+}
+/* live (something playing): the glyph in the orange */
+.btn.filled[data-live] > svg:first-child {
+  color: var(--cs-orange);
+}
+
+/* outlined: the kit's ghost pill, a line of the ink at --control-line-alpha, twice that pointed at */
+.btn.outlined {
+  border-color: color-mix(in srgb, var(--ink-e) var(--control-line-alpha), transparent);
+  background: transparent;
+  color: var(--ink-e);
+}
+.btn.outlined:hover {
+  border-color: color-mix(in srgb, var(--ink-e) calc(var(--control-line-alpha) * 2), transparent);
+  background: var(--wash);
+}
+
+/* latched on (a key that stays down, aria-pressed: My library): its line in the full ink on a wash, so it
+   never reads as the filled main action beside it; the page shows a check in it */
+.btn.outlined[aria-pressed="true"] {
+  border-color: var(--ink-e);
+  background: var(--wash);
+}
+
+/* not available yet (a form still sending, a code not yet six digits): the stock's quiet steps, no hover */
+.btn.btn:disabled {
+  cursor: default;
+}
+.btn.filled:disabled {
+  background: var(--ink-4);
+  color: var(--bg);
+}
+.btn.outlined:disabled {
+  border-color: var(--track);
+  background: transparent;
+  color: var(--ink-3);
+}
+
+/* a one-line label that may run long ("Preview" and a band's name): cut short with an ellipsis */
+.one {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* ── the arrow link: the link letters (typewriter caps) underlined, its arrow's gap opening on the spring ── */
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 5px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: none;
+  color: inherit;
+  font: var(--t-link);
+  letter-spacing: var(--t-link-track);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    gap 0.25s var(--spring),
+    color 0.2s;
+}
+/* its line is the border; a column's own link underline (the reading column's) never adds a second */
+.arrow.arrow.arrow {
+  text-decoration: none;
+}
+.arrow > svg {
+  flex: none;
+}
+.arrow:has(> svg):hover {
+  gap: 13px;
+}
+.arrow:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* ── the inline link: a link inside a sentence, in the sentence's own letter, underlined ── */
+.inline.inline {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+.inline.inline:hover {
+  color: var(--ink-e);
+}
+.inline:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}

@@ -1,0 +1,57 @@
+/*
+ * The section head (P5): the head type role, scaled to the page's size container so a small screen isn't
+ * all heads, a size down for the smaller sections. In its stock's ink; a word in it may take the record's
+ * colour.
+ */
+.head {
+  margin: 0 0 clamp(16px, 2cqi, 28px);
+  font: var(--t-head);
+  letter-spacing: var(--t-head-track);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.head.small {
+  margin-bottom: clamp(12px, 1.6cqi, 20px);
+  font: var(--t-head-small);
+}
+/* a word in the record's colour */
+.head em {
+  font-style: normal;
+  color: var(--accent-ink, var(--accent-c));
+  transition: color 0.2s;
+}
+
+/* a small control right after the text, on the head's baseline (the records' view options). The row
+   carries the head's space under it and is the box a phone's menu hangs from */
+.withAfter {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: clamp(8px, 1cqi, 14px);
+  margin-bottom: clamp(16px, 2cqi, 28px);
+}
+.withAfter > .head {
+  min-width: 0;
+  margin-bottom: 0;
+}
+/* inline: the control is the sentence's last word, so the row is a line of the head's own type (its em units
+   are the head's) and the gap is a word space, not a control's breathing room */
+.withAfter[data-inline] {
+  column-gap: 0.26em;
+  font: var(--t-head);
+}
+.withAfter[data-inline][data-small] {
+  font: var(--t-head-small);
+}
+
+/* a control at the head's far end */
+.withTrail {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px 20px;
+}
+.withTrail > .head {
+  min-width: 0;
+}

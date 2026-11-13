@@ -1,0 +1,70 @@
+[package]
+name = "cassette-desktop"
+version = "0.1.0"
+description = "Cassette Player desktop shell"
+authors = ["Cassette"]
+edition = "2021"
+
+[lib]
+# The `_lib` suffix keeps the lib name distinct from the bin name (Windows quirk,
+# see rust-lang/cargo#8519).
+name = "cassette_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+# Passive auto-update: the shell checks a signed release feed on launch and, when
+# a newer notarized build exists, downloads + installs it (minisign-verified) and
+# offers a relaunch. Dialog powers the "Update ready" prompt.
+tauri-plugin-updater = "2"
+tauri-plugin-dialog = "2"
+# Single-instance guard: a second launch focuses the running window and exits, so
+# two copies can never double-spawn Navidrome on the shared hub ports.
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+# The per-launch key the shell shares with the hub and audio helper, and the
+# one-time code on its own pairing (pairing.rs). Already in the tree via tauri.
+getrandom = "0.2"
+serde_json = "1"
+# Free space before adding music (add_music.rs); already in the tree via tauri.
+libc = "0.2"
+# Pairing's sealed sign-in (pairing.rs open_sealed): X25519, HKDF and AES-GCM, and the base64url it rides in.
+# Both already in the tree (ring via the updater's TLS, base64 via tauri).
+ring = "0.17"
+base64 = "0.22"
+
+# OS secret store for the per-device bearer token, one keyring crate with a per-OS
+# backend feature. The keyring API in pairing.rs is OS-neutral (Entry::new /
+# get_password / set_password / delete_credential), so only the feature differs by
+# target: macOS uses the Keychain (apple-native), Windows the Credential Manager
+# (windows-native), Linux the D-Bus Secret Service (GNOME Keyring / KWallet).
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+# The icon by the clock (lib.rs tray_icon): Windows has no Dock to bring a closed window back.
+tauri = { version = "2", features = ["tray-icon"] }
+# Windows' own answers to lsof, kill, proc_pidpath, statvfs and a device number (src/win.rs). Already in the
+# tree through tauri; these are only the parts the shell calls.
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_NetworkManagement_IpHelper",
+  "Win32_Security",
+  "Win32_Storage_FileSystem",
+  "Win32_System_JobObjects",
+  "Win32_System_Threading",
+] }
+
+# sync-secret-service enables the D-Bus Secret Service backend but does not itself
+# pull in a crypto backend for the session encryption, so crypto-rust is required
+# too or the crate fails to compile. crypto-rust (pure-Rust) is chosen over
+# crypto-openssl specifically because the shipped binary runs inside a portable
+# AppImage - crypto-openssl would make it depend on the end user's system
+# libssl.so at runtime, which is exactly the portability trap this port avoids.
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }

@@ -1,0 +1,134 @@
+/*
+ * StationCard on the taste paper: no box; a 64px square (art, or the station's colour as a tile), the
+ * kicker over the name in the display face, the description in the caption type, the live line after the
+ * one orange dot, then the two keys (Tune in, the filled pill; Save, the outlined one). The grid is one column on a phone, two from 760, three from 1100.
+ * The card's link carries a second class so it outweighs the paper's own link rule.
+ */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 36px clamp(24px, 3.5cqi, 56px);
+}
+.cell {
+  min-width: 0;
+}
+@container taste (width >= 760px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid > .cell[data-past2] {
+    display: none;
+  }
+}
+@container taste (width >= 1100px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .grid > .cell[data-past2] {
+    display: block;
+  }
+  .grid > .cell[data-past3] {
+    display: none;
+  }
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.card .top {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  color: var(--ink-e);
+}
+.card .top:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-cover);
+  object-fit: cover;
+  background: var(--sleeve);
+  font: 700 21px/1 var(--f-display);
+  letter-spacing: 0.01em;
+  color: var(--ink-e);
+}
+.art[data-tile] {
+  background: color-mix(in srgb, var(--station, var(--sleeve)) 50%, var(--raised));
+}
+.titles {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.kicker {
+  overflow: hidden;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+.name {
+  font: 700 21px/1.05 var(--f-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.card .top:hover .name {
+  color: var(--ink-2);
+}
+.sub {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font: var(--t-caption);
+  color: var(--ink-2);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.live,
+.liveNext {
+  overflow: hidden;
+  margin: 0;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-e);
+}
+.liveNext {
+  padding-left: 14px;
+  color: var(--ink-3);
+}
+/* live: the one orange */
+.liveDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cs-orange);
+}
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+}

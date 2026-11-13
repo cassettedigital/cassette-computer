@@ -1,0 +1,17 @@
+{
+  "name": "@discovery/cassette-player",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Cassette Player — GPL v3 Navidrome fork with Cassette design system",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "dev": "bash scripts/dev.sh",
+    "build": "bash scripts/build.sh",
+    "update-upstream": "bash scripts/update-upstream.sh",
+    "analyze": "bash scripts/analyze-filesystem.sh ./navidrome",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f navidrome"
+  },
+  "license": "GPL-3.0"
+}

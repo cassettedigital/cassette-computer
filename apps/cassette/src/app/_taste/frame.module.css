@@ -1,0 +1,48 @@
+/*
+ * The page frame's own pieces (PageFrame.tsx): the body of a page still drawn in the old kit, and a page's
+ * head. The paper, the masthead, the footer and the size container are the shared taste set's.
+ */
+
+/* a page still in the old kit: its --cs- roles written from this paper (generated), its text in the body face */
+.oldKit {
+  composes: cs from "@discovery/cassette-kit/taste.module.css";
+  font-family: var(--f-serif);
+}
+
+/* a page's head: the title in the display role (a page's one poster line, as the homepage's), the lede under
+   it, the gap below it the sections' own */
+.head {
+  display: grid;
+  gap: 18px;
+  padding: clamp(28px, 5cqi, 64px) 0 var(--sec);
+}
+.eyebrow {
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* a link in the eyebrow (the way back up): the full ink, underlined; two classes to outweigh the paper's link rule */
+.head .eyebrow a {
+  color: var(--ink-e);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+}
+.head .eyebrow a:hover {
+  text-decoration-color: var(--ink-e);
+}
+.title {
+  margin: 0;
+  font: var(--t-display);
+  letter-spacing: var(--t-display-track);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.lede {
+  margin: 0;
+  max-width: 38em;
+  font: var(--t-body);
+  color: var(--ink-2);
+}

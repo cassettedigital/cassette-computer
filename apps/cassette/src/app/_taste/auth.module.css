@@ -1,0 +1,200 @@
+/*
+ * The account pages' column (AuthCard.tsx) and the pieces their forms share: one narrow column on the
+ * paper, everything in it left-aligned and spaced by the column's own gap. No card, no stripe: the title
+ * carries the page. Links and buttons inside carry a second class, so they outweigh the paper's own
+ * `.root a` rule whatever order the build loads the sheets in.
+ */
+.shell {
+  width: min(calc(100% - 2 * var(--gutter)), 420px);
+  margin-inline: auto;
+  padding: clamp(40px, 8cqi, 112px) 0 clamp(64px, 10cqi, 144px);
+  display: grid;
+  gap: 28px;
+}
+.head {
+  display: grid;
+  gap: 14px;
+}
+.eyebrow {
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.title {
+  margin: 0;
+  font: var(--t-head);
+  letter-spacing: var(--t-head-track);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.subtitle {
+  margin: 0;
+  font: var(--t-body);
+  color: var(--ink-2);
+}
+/* a name or an address said in the line: the full ink */
+.strong {
+  color: var(--ink-e);
+  font-weight: 600;
+}
+
+/* a form, and a pair of buttons, as one column */
+.form,
+.stack {
+  display: grid;
+  gap: 18px;
+}
+.stack {
+  gap: 12px;
+}
+.shell .block {
+  width: 100%;
+}
+
+/* a message from the form: on the raised stock, an error in the danger ink */
+.notice {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--r-card);
+  background: var(--raised);
+  font: var(--t-caption);
+  color: var(--ink-e);
+}
+.notice.noticeError {
+  color: var(--danger);
+}
+.noticeOk,
+.noticeAmber {
+  color: var(--ink-e);
+}
+
+/* between the Google button and the email form */
+.divider {
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink-3);
+}
+
+/* the small print under a form: a block, so a sentence and its link stay one line of text; paragraphs
+   in it are spaced apart */
+.footer {
+  font: var(--t-caption);
+  color: var(--ink-3);
+}
+.shell .footer > * + * {
+  margin-top: 14px;
+}
+.note {
+  margin: 0;
+  font: var(--t-caption);
+  color: var(--ink-3);
+}
+.fine {
+  margin: 0;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  color: var(--ink-3);
+}
+.shell .note a,
+.shell .fine a,
+.shell .footer a,
+.shell .subtitle a {
+  color: var(--ink-e);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+.shell .note a:hover,
+.shell .fine a:hover,
+.shell .footer a:hover,
+.shell .subtitle a:hover {
+  text-decoration-color: var(--ink-e);
+}
+
+/* a quiet link under a form ("Forgot your password?") */
+.shell .subtleLink {
+  justify-self: start;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  transition: color 0.2s;
+}
+.shell .subtleLink:hover {
+  color: var(--ink-e);
+}
+
+/* the six-digit code: the field's own height, its digits a little larger and spaced (beats the field's code look) */
+.shell .codeInput.codeInput {
+  font: 500 20px / 1 var(--f-mono);
+  letter-spacing: 0.4em;
+}
+
+/* send the code again (and the phone's Allow page's own keys): a label-role link on a button */
+.resend {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-e);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.resend:disabled {
+  color: var(--ink-3);
+  text-decoration: none;
+  cursor: default;
+}
+.resend:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.resendNote {
+  margin: 0;
+  font: var(--t-caption);
+  color: var(--ink-2);
+}
+.resendNote.resendNoteError {
+  color: var(--danger);
+}
+
+/* a key inside a line of small print ("Didn't get it? Send a new code"): the line's own links' look */
+.shell .inlineKey {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink-e);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: text-decoration-color 0.2s;
+}
+.shell .inlineKey:hover:not(:disabled) {
+  text-decoration-color: var(--ink-e);
+}
+.shell .inlineKey:disabled {
+  color: var(--ink-3);
+  text-decoration: none;
+  cursor: default;
+}
+.shell .inlineKey:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--r-small);
+}

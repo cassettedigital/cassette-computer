@@ -1,0 +1,156 @@
+[
+  {
+    "name": "ascii baseline",
+    "artist": "Bon Iver",
+    "title": "Day One",
+    "duration_seconds": 184,
+    "expected_local_id": "f9fb3ba93022d599de45fc3016168ee1"
+  },
+  {
+    "name": "diacritic strip",
+    "artist": "Sigur Rós",
+    "title": "Glósóli",
+    "duration_seconds": 372,
+    "expected_local_id": "4cb557cb6f7c6c4a10d6b9e7d3ffe59b"
+  },
+  {
+    "name": "whitespace collapse",
+    "artist": "  Bon   Iver  ",
+    "title": "Day  One",
+    "duration_seconds": 184,
+    "expected_local_id": "f9fb3ba93022d599de45fc3016168ee1"
+  },
+  {
+    "name": "case insensitive",
+    "artist": "BON IVER",
+    "title": "day one",
+    "duration_seconds": 184,
+    "expected_local_id": "f9fb3ba93022d599de45fc3016168ee1"
+  },
+  {
+    "name": "duration rounding down",
+    "artist": "Bon Iver",
+    "title": "Day One",
+    "duration_seconds": 184.4,
+    "expected_local_id": "f9fb3ba93022d599de45fc3016168ee1"
+  },
+  {
+    "name": "duration rounding up",
+    "artist": "Bon Iver",
+    "title": "Day One",
+    "duration_seconds": 184.5,
+    "expected_local_id": "5b831cbfa09a67ad6e5b100bdb47ac3b"
+  },
+  {
+    "name": "unicode nfkc fullwidth",
+    "artist": "ＦＯＮＴＡＩＮＥＳ Ｄ.Ｃ.",
+    "title": "Romance",
+    "duration_seconds": 200,
+    "expected_local_id": "8236342b131ab02b2a8ebcfd95d50c55"
+  },
+  {
+    "name": "empty title",
+    "artist": "Various",
+    "title": "",
+    "duration_seconds": 1,
+    "expected_local_id": "6d68c305ff4f2f73fcd1eea46a356b27"
+  },
+  {
+    "name": "empty artist and title",
+    "artist": "",
+    "title": "",
+    "duration_seconds": 0,
+    "expected_local_id": "7d4a8d99d1d2920565f89a68db351172"
+  },
+  {
+    "name": "long unicode title",
+    "artist": "Björk",
+    "title": "Jóga (Strings & Vocal)",
+    "duration_seconds": 308,
+    "expected_local_id": "c6361ef0692d0a6f3bae5f05a1425968"
+  },
+  {
+    "name": "pipe and separator chars",
+    "artist": "AC/DC",
+    "title": "Touch Too Much",
+    "duration_seconds": 269,
+    "expected_local_id": "6f0429f8367668526a32524e8e05e45d"
+  },
+  {
+    "name": "negative duration treated as 0",
+    "artist": "Test",
+    "title": "Test",
+    "duration_seconds": -10,
+    "expected_local_id": "68b14e11af6d15e022daacbcccf0b4d0"
+  },
+  {
+    "name": "null duration treated as 0",
+    "artist": "Test",
+    "title": "Test",
+    "duration_seconds": null,
+    "expected_local_id": "68b14e11af6d15e022daacbcccf0b4d0"
+  },
+  {
+    "name": "tab and newline whitespace",
+    "artist": "Bon\tIver",
+    "title": "Day\nOne",
+    "duration_seconds": 184,
+    "expected_local_id": "f9fb3ba93022d599de45fc3016168ee1"
+  },
+  {
+    "name": "nbsp whitespace U+00A0",
+    "artist": "Bon Iver",
+    "title": "Day One",
+    "duration_seconds": 184,
+    "expected_local_id": "f9fb3ba93022d599de45fc3016168ee1"
+  },
+  {
+    "name": "ideographic + em space",
+    "artist": "Bon　Iver",
+    "title": "Day One",
+    "duration_seconds": 184,
+    "expected_local_id": "f9fb3ba93022d599de45fc3016168ee1"
+  },
+  {
+    "name": "fi ligature compat decomp",
+    "artist": "Final",
+    "title": "ﬁnale",
+    "duration_seconds": 100,
+    "expected_local_id": "2f0cfc376ca957a85fe21222b64b00e5"
+  },
+  {
+    "name": "mixed leading/trailing/internal",
+    "artist": "  Sigur   Rós ",
+    "title": "  Glósóli  ",
+    "duration_seconds": 372,
+    "expected_local_id": "4cb557cb6f7c6c4a10d6b9e7d3ffe59b"
+  },
+  {
+    "name": "very long title",
+    "artist": "Long",
+    "title": "la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la",
+    "duration_seconds": 100,
+    "expected_local_id": "84af32d1cc9a8d12038c4117eff3e821"
+  },
+  {
+    "name": "punctuation heavy",
+    "artist": "Sigur Rós",
+    "title": "[Track #1] — \"Glósóli\" (Live!)",
+    "duration_seconds": 372,
+    "expected_local_id": "c411aa9a863b08f938003ca6e8c42b42"
+  },
+  {
+    "name": "turkish dotted capital I",
+    "artist": "İSTANBUL",
+    "title": "Diyarbakır",
+    "duration_seconds": 100,
+    "expected_local_id": "1f409853246d3fcfae8e006a4b5725e3"
+  },
+  {
+    "name": "combining mark inside block (latin)",
+    "artist": "Café",
+    "title": "Resumé",
+    "duration_seconds": 100,
+    "expected_local_id": "27ce466a8ad4ee15a712c286fd427bfd"
+  }
+]

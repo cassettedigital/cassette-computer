@@ -1,0 +1,155 @@
+/* RailAccountMenu — the one account pane, shared by every workspace rail
+   (library / studio / admin). Just the avatar as a plain icon button — no
+   name, no bar — opening a pop-up menu that carries the cross-nav between
+   workspaces. One source of truth so the rails never drift again. */
+
+.footer {
+  flex: none;
+  position: relative;
+  margin-top: auto;
+  padding: var(--cs-space-4);
+}
+
+/* Avatar + the desktop update pill share one row (pill to the right of the disc). */
+.footerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menu {
+  position: absolute;
+  bottom: calc(100% + var(--cs-space-2));
+  left: var(--cs-space-3);
+  right: var(--cs-space-3);
+  z-index: var(--cs-z-overlay);
+  background: var(--cs-bg3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  box-shadow: var(--cs-shadow-lg);
+  padding: 6px;
+}
+
+.email {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink2);
+  padding: 7px 10px;
+  word-break: break-all;
+}
+
+/* A hairline splits the workspace-jump links from the account links. */
+.divider {
+  height: 1px;
+  background: var(--cs-border-subtle);
+  margin: 4px 6px;
+}
+
+/* Just the avatar, clickable — no row, no bar, no name. */
+.account {
+  display: inline-flex;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow var(--cs-hover-dur) var(--cs-ease);
+}
+.account:hover {
+  box-shadow: 0 0 0 2px var(--cs-border);
+}
+.account:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font-family: var(--cs-font-display);
+  font-size: var(--cs-text-body);
+  letter-spacing: 0.005em;
+  color: var(--cs-ink2);
+  padding: 8px 10px;
+  border-radius: var(--cs-radius-lg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color var(--cs-hover-dur) var(--cs-ease),
+    background var(--cs-hover-dur) var(--cs-ease);
+}
+.item:hover {
+  color: var(--cs-ink);
+  background: var(--cs-bg2);
+}
+.item:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: -2px;
+  color: var(--cs-ink);
+}
+.item svg {
+  flex: none;
+  color: var(--cs-ink3);
+}
+
+/* Workspace-jump links (Library / Studio / Admin) — a distinct row shape
+   (icon + label + trailing chevron) so they read as "go here", not as a
+   status chip. Plain ink for the label: orange text elsewhere in the rail
+   means "this is where you currently are" (NavRailItem's selected state),
+   so reusing it here read as a status statement instead of a destination —
+   only the leading icon keeps a touch of accent. */
+.jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font-family: var(--cs-font-display);
+  font-size: var(--cs-text-body);
+  letter-spacing: 0.005em;
+  color: var(--cs-ink);
+  padding: 8px 10px;
+  border-radius: var(--cs-radius-lg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--cs-hover-dur) var(--cs-ease);
+}
+.jump:hover {
+  background: var(--cs-bg2);
+}
+.jump:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: -2px;
+}
+.jumpIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--cs-orange);
+}
+.jumpLabel {
+  flex: 1;
+  min-width: 0;
+}
+.jumpGo {
+  flex: none;
+  color: var(--cs-ink3);
+}
+
+/* compact: the rail lays the avatar out itself (the desk's foot row); the menu
+   opens up from the avatar's left edge at its own width. */
+.compact {
+  margin-top: 0;
+  padding: 0;
+}
+.compact .menu {
+  left: 0;
+  right: auto;
+  width: 224px;
+}
+

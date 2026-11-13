@@ -1,0 +1,231 @@
+/*
+ * Dashboard left rail — index column. Width is the shell contract (236px).
+ * Row padding / section gaps / leading slot come from --cs-space-*.
+ * No filled selection wash. Account console pinned on a hairline.
+ */
+
+.rail {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--cs-space-4) 0 0;
+  border-right: 1px solid var(--cs-border-subtle);
+  background: var(--cs-bg);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+/* 16px playlist cover thumb in the lead slot; empty variant is a quiet well. */
+.plThumb {
+  width: var(--cs-space-4);
+  height: var(--cs-space-4);
+  border-radius: 2px;
+  object-fit: cover;
+  display: block;
+  background: var(--cs-bg3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.plThumbEmpty {
+  width: var(--cs-space-4);
+  height: var(--cs-space-4);
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cs-bg3);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+  color: var(--cs-ink2);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: var(--cs-space-4);
+}
+
+/* Foldable section header: the label row still navigates (a full NavRailItem),
+   and a chevron sits in the right gutter to fold the rows below it. Kept as
+   siblings — never a <button> nested in the row's <a>. */
+.foldHead {
+  display: flex;
+  align-items: center;
+}
+.foldHeadLink {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.foldToggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* right pad matches the account chevron's inset from the rail edge */
+  padding: var(--cs-space-2) var(--cs-space-5) var(--cs-space-2) 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cs-ink2);
+  transition: color var(--cs-hover-dur) var(--cs-ease);
+}
+.foldToggle:hover {
+  color: var(--cs-ink);
+}
+.foldToggle:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: -2px;
+}
+/* Chevron points right when folded, down when open. */
+.foldChev {
+  transform: rotate(-90deg);
+  transition: transform 0.18s var(--cs-ease);
+}
+.foldChevOpen {
+  transform: rotate(0deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .foldChev {
+    transition: none;
+  }
+}
+
+/* ── Devices fold (founder pass 2026-08-13) ─────────────────────────────
+   Resting lamps read as clutter: the StatusDot lives in the trailing slot
+   and reveals on row hover/focus. The hub is marked by a tiny inline tag
+   beside its name, and the seated disc gets its own row (RailDiscSlot). */
+
+.deviceGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.rowLamp {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity var(--cs-hover-dur) var(--cs-ease);
+}
+.deviceRow:hover .rowLamp,
+.deviceRow:focus-visible .rowLamp {
+  opacity: 1;
+}
+
+.hubTag {
+  font-family: var(--cs-font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cs-ink2);
+  opacity: 0.8;
+}
+
+/* Disc row — same metrics as an entry row, one type size, no lamp. */
+.discRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-2) var(--cs-space-5) var(--cs-space-2) var(--cs-space-4);
+  text-decoration: none;
+}
+.discIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--cs-ink2);
+}
+.discSpin {
+  animation: railDiscSpin 4s linear infinite;
+}
+@keyframes railDiscSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.discName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.01em;
+  color: var(--cs-ink2);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.discRow:hover .discName {
+  color: var(--cs-ink);
+}
+.discCount,
+.discLook {
+  flex: none;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.05em;
+}
+.discCount {
+  color: var(--cs-orange);
+}
+.discLook {
+  color: var(--cs-ink2);
+}
+.discRip {
+  flex: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cs-orange);
+  transition: text-shadow 0.16s ease;
+}
+.discRip:hover {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--cs-orange) 45%, transparent);
+}
+.discRip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.discRip:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discSpin {
+    animation: none;
+  }
+  .rowLamp,
+  .discName,
+  .discRip {
+    transition: none;
+  }
+}
+
+.spacer {
+  flex: 1;
+  min-height: var(--cs-space-4);
+}
+
+.dropWrap {
+  border-radius: 0;
+  transition: background 0.2s, box-shadow 0.15s;
+}
+
+/* The account console at the base of the rail is the shared RailAccountMenu
+   (used by the studio rail too) — its styles live in RailAccountMenu.module.css. */

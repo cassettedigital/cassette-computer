@@ -1,0 +1,33 @@
+{
+  "name": "@discovery/cassette-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cassette's player kit: one token source (tokens.json, lifted from the iPhone app) for iOS, Android, the desktop app and the web player, plus the React parts named after their iPhone twins.",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.json": "./tokens.json",
+    "./taste.module.css": "./src/taste.module.css",
+    "./images": "./src/images.ts",
+    "./picture": "./src/Picture.tsx",
+    "./play-over": "./src/PlayOver.tsx"
+  },
+  "scripts": {
+    "generate": "node generate.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "lucide-react": ">=1",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "lucide-react": "^1.18.0",
+    "react": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

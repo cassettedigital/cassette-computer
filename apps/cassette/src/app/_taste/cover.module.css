@@ -1,0 +1,73 @@
+/*
+ * The cover (P8): one shadow, one hover, one caption, one marker for the record you are on.
+ */
+.art {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--r-cover);
+  background: var(--sleeve);
+  box-shadow: var(--cover-shadow);
+  transition: translate 0.35s var(--spring);
+}
+.art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* the one hover: the cover lifts when its link is pointed at or focused */
+:is(a, button):hover > .art,
+:is(a, button):focus-visible > .art,
+a.art:hover,
+a.art:focus-visible {
+  translate: 0 var(--cover-lift);
+}
+/* the one ring, as an outline: the cover's box-shadow is its shadow */
+a.art:focus-visible {
+  outline: var(--ring-line);
+  outline-offset: 3px;
+  box-shadow: var(--cover-shadow);
+}
+
+/* the record you are on: a short bar in its colour under the cover */
+.mark {
+  display: block;
+  height: 3px;
+  margin-top: 8px;
+  border-radius: var(--r-cover);
+  background: transparent;
+  transition: background-color 0.2s;
+}
+.mark[data-on] {
+  background: var(--accent-c);
+}
+
+/* the one caption */
+.title {
+  display: -webkit-box;
+  margin-top: 10px;
+  overflow: hidden;
+  font: 400 15px/1.3 var(--f-serif);
+  color: var(--ink-e);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.mark + .title {
+  margin-top: 8px;
+}
+.meta {
+  margin-top: 5px;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art {
+    transition: none;
+  }
+}

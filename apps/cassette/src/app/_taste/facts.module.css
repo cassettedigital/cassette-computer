@@ -1,0 +1,73 @@
+/*
+ * The facts (P11): a row of small labels over their values, like a record sleeve's credits. No fill, no
+ * border, no rule: the gaps between them are the only structure. The label in the label type at ink-3,
+ * the value in the serif at full ink.
+ */
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 40px;
+  margin: 0;
+  padding: 0;
+}
+.fact {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.fact dt {
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fact dd {
+  margin: 0;
+  font: 400 18px/1.2 var(--f-serif);
+  color: var(--ink-e);
+  white-space: nowrap;
+}
+
+/* a fact that is a way out (an artist's own website): the value in the same serif, underlined the way the prose
+   underlines a link (ink-4, the full ink when pointed at), the arrow leaning out after it. A long address is cut
+   short rather than pushing the row wide. Two classes, so it outweighs the paper's own `.root a` */
+.fact .out.out {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  color: var(--ink-e);
+  text-decoration: none;
+}
+.outText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+.out > svg {
+  flex: none;
+  color: var(--ink-3);
+}
+.fact .out:hover .outText {
+  text-decoration-color: var(--ink-e);
+}
+.fact .out:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--r-small);
+}
+
+@container taste (width < 760px) {
+  .facts {
+    gap: 12px 28px;
+  }
+  .fact dd {
+    font-size: 17px;
+  }
+}

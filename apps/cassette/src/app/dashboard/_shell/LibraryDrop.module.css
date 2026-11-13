@@ -1,0 +1,78 @@
+/*
+ * Whole-screen drop overlay + progress chip (SPEC This-Mac card, Job 3).
+ * The moment a file is dragged over the app the whole screen becomes a welcoming
+ * target — it settles in (fade, not a snap). Built from kit tokens.
+ */
+
+/*
+ * The live-drop state speaks the same language as the kit DropZone's
+ * [data-over] active state — a SOLID orange edge over a faint orange wash (the
+ * dashed well is the resting invitation; once a drag is live the system is
+ * "catching" it, so it goes solid), here scaled to fill the screen with a warm
+ * inset bloom that echoes the faceplate tube-light.
+ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cs-space-3);
+  text-align: center;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--cs-orange), transparent 92%),
+      color-mix(in srgb, var(--cs-orange), transparent 92%)
+    ),
+    color-mix(in srgb, var(--cs-bg) 78%, transparent);
+  border: 3px solid var(--cs-orange);
+  box-shadow: inset 0 0 90px color-mix(in srgb, var(--cs-orange) 20%, transparent);
+  animation: ld-settle 200ms var(--cs-ease, ease);
+}
+
+.title {
+  font-family: var(--cs-font-display);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cs-ink);
+}
+
+.sub {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink2);
+}
+
+/* Floating container only — the kit StatusDot inside owns the lamp + label voice. */
+.chip {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 10px 16px;
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg2);
+  border: 1px solid var(--cs-ink4);
+  box-shadow: var(--cs-shadow-lg);
+}
+
+@keyframes ld-settle {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}

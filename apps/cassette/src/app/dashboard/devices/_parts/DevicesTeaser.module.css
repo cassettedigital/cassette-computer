@@ -1,0 +1,27 @@
+/* Home teaser — shelf rows without the full-bleed band chrome. */
+
+.wrap {
+  --ds-rail: clamp(220px, 28vw, 320px);
+  --ds-gap: calc(var(--cs-space-5) + var(--cs-space-1));
+  border-top: 1px solid var(--cs-border-subtle);
+}
+
+.row {
+  padding: var(--cs-space-4) 0;
+  border-bottom: 1px solid var(--cs-border-subtle);
+  transition: background var(--cs-hover-dur) var(--cs-ease);
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--cs-ink) 2.5%, transparent);
+}
+
+.sync {
+  margin-top: var(--cs-space-2);
+}
+
+@media (max-width: 900px) {
+  .wrap {
+    --ds-rail: minmax(0, 1fr);
+  }
+}

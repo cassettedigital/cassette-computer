@@ -1,0 +1,223 @@
+/* Field — React Aria TextField reskin. RA ships unstyled; every value here is a
+   design token. State is read off RA's data-* attributes. Matches the homepage
+   form inputs (recessed well, Newsreader body, orange focus). */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  min-width: 0;
+}
+
+.label {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+}
+
+/* Visually hidden but available to assistive tech (inline rows keep their label). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Leading glyph (search affordance) — vertically centered inside the well. */
+.icon {
+  position: absolute;
+  left: var(--cs-space-4);
+  display: inline-flex;
+  align-items: center;
+  color: var(--cs-ink3);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  font-family: var(--cs-font-body); /* Newsreader — forms & prose inputs */
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink);
+  background: var(--cs-well);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-pill); /* a field you type into is a capsule (the founder, 2026-10-29) */
+  padding: var(--cs-space-3) var(--cs-space-4);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  outline: none;
+  transition:
+    border-color var(--cs-hover-dur) var(--cs-ease),
+    box-shadow var(--cs-hover-dur) var(--cs-ease);
+}
+/* Quiet well — the calmer treatment used by the top-bar search: subtle hairline,
+   no recessed inset shadow, softer corner. Keeps dense field stacks from reading
+   as high-contrast zebra striping. Focus still lights the orange ring below. */
+.input.quiet {
+  border-color: var(--cs-border-subtle);
+  border-radius: var(--cs-radius-pill);
+  box-shadow: none;
+}
+/* Focus still lights the ring, but without re-introducing the recess. */
+.input.quiet[data-focused] {
+  border-color: var(--cs-orange);
+  box-shadow: var(--cs-focus-ring);
+}
+/* Hover stays gentle — the default lifts to ink3, which is loud on a quiet well. */
+.input.quiet[data-hovered] {
+  border-color: var(--cs-ink4);
+}
+
+/* Soft well — blends into whatever surface it's on: a gentle translucent darken
+   instead of a solid --cs-well, a border that's there for layout but invisible
+   until focus, and no recess. For calm editing panes (Studio) where a stamped-on
+   box reads as too aggressive. Keeps the 1px border width so focus adds no shift. */
+.input.soft {
+  background: var(--cs-input-soft-bg, rgba(0, 0, 0, 0.14));
+  border-color: transparent;
+  border-radius: var(--cs-radius-pill);
+  box-shadow: none;
+}
+.input.soft[data-hovered] {
+  background: var(--cs-input-soft-bg-strong, rgba(0, 0, 0, 0.2));
+  border-color: transparent;
+}
+.input.soft[data-focused] {
+  background: var(--cs-input-soft-bg-strong, rgba(0, 0, 0, 0.2));
+  border-color: var(--cs-orange);
+  box-shadow: var(--cs-focus-ring);
+}
+
+/* Reserve room for the leading glyph: pad-left + 16px icon + gap. */
+.input.hasIcon {
+  padding-left: calc(var(--cs-space-4) + 16px + var(--cs-space-2));
+}
+/* Reserve room for the trailing inset action cap. */
+.input.hasAction {
+  padding-right: 52px;
+}
+
+/* ── Inset action cap — the "button in a field" convention ──
+   Anchored inside the recessed well. ASLEEP when the field is empty (quiet
+   raised cap, shrunk + dimmed); WAKES on focus/typing into the orange faceplate.
+   No layout shift — it is always present, it just comes alive. */
+.action {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  bottom: 5px;
+  aspect-ratio: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--cs-radius-pill);
+  color: var(--cs-ink3);
+  background: var(--cs-raise-bg);
+  box-shadow: var(--cs-raise-shadow);
+  transform: scale(0.9);
+  opacity: 0.72;
+  transition:
+    background 0.18s var(--cs-ease),
+    color 0.18s var(--cs-ease),
+    box-shadow 0.18s var(--cs-ease),
+    transform 0.18s var(--cs-ease),
+    opacity 0.18s var(--cs-ease),
+    filter 0.15s var(--cs-ease);
+}
+
+/* Awake: focused, or the field has content (placeholder no longer shown). */
+.input:focus ~ .action,
+.input:not(:placeholder-shown) ~ .action {
+  color: var(--cs-on-accent);
+  background: var(--cs-raise-bg-primary);
+  box-shadow: var(--cs-raise-shadow-primary);
+  transform: scale(1);
+  opacity: 1;
+}
+
+.input:focus ~ .action:hover,
+.input:not(:placeholder-shown) ~ .action:hover {
+  filter: brightness(1.06);
+}
+
+.action:active {
+  transform: scale(0.96) translateY(var(--cs-press-drop));
+  box-shadow: var(--cs-recess);
+  filter: none;
+}
+
+.action:focus-visible {
+  outline: none;
+  box-shadow: var(--cs-raise-shadow-primary), var(--cs-focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action {
+    transition: background 0.18s var(--cs-ease), color 0.18s var(--cs-ease),
+      box-shadow 0.18s var(--cs-ease);
+    transform: none;
+  }
+  .input:focus ~ .action,
+  .input:not(:placeholder-shown) ~ .action {
+    transform: none;
+  }
+}
+/* Invite + one-time codes: DM Mono, wide tracking, uppercase. */
+.mono {
+  font-family: var(--cs-font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.mono::placeholder {
+  letter-spacing: 0.12em;
+  text-transform: none;
+}
+
+/* Hint + error rows under the input — mono meta, matching the kit. */
+.desc {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  line-height: 1.5;
+  color: var(--cs-ink3);
+}
+.error {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  line-height: 1.5;
+  color: var(--cs-rust);
+}
+
+.input::placeholder {
+  color: var(--cs-ink3);
+  opacity: 1;
+}
+.input[data-hovered] {
+  border-color: var(--cs-ink3);
+}
+.input[data-focused] {
+  border-color: var(--cs-orange);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), var(--cs-focus-ring);
+}
+.input[data-invalid] {
+  border-color: var(--cs-rust);
+}
+.input[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

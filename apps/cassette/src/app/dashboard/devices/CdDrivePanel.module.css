@@ -1,0 +1,1250 @@
+/*
+ * The CD drive, as a quiet component of the Mac card.
+ *
+ * Footprint scales to state: a single calm line when there's nothing to do, a
+ * working strip while it rips. Never an alarm. It sits below the Mac's footprint
+ * with a hairline above it — a part of the computer, not a co-equal section.
+ */
+
+/* A sub-device: an additive layer — a module clipped onto its host (the
+   Mac), not inset/recessed (inset would read as "subtracted from the machine").
+   §7. */
+/* The deck chassis — a matte milled-metal faceplate: top-lit luminance spread
+   plus the rim/depth. The rip panel reads as a physical CD deck. */
+.drive {
+  /* A contained disc-drive UNIT in every state (idle · matched · ripping · done) —
+     so it never stops feeling like one thing mid-rip. ONE panel here, paired with
+     the add-music pane beside it (same bg3 + radius + padding); each inner state is
+     plain content, so there's no nested box-in-a-box. Hidden when there's nothing
+     to show (no drive + invite dismissed → the ladder renders null). */
+  margin-top: 0;
+  padding: var(--cs-space-3);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg3);
+  border: 1px solid var(--cs-border-subtle);
+}
+.drive:empty {
+  display: none;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  flex-wrap: wrap;
+}
+
+/* ── Calm capability / ready lines ───────────────────────────────────────────
+   "no drive" is an invitation in serif italic; "ready" is a flatter mono note. */
+
+.calm {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  color: var(--cs-ink3);
+}
+
+.calm svg {
+  flex: 0 0 auto;
+  color: var(--cs-ink3);
+}
+
+.calmReady {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-label);
+  color: var(--cs-ink2);
+}
+
+/* Job 5: quiet dismiss affordance on the no-drive invite (pushes to the right). */
+.dismiss {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: var(--cs-radius-sm, 6px);
+  background: transparent;
+  color: var(--cs-ink3);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.dismiss:hover {
+  background: color-mix(in srgb, var(--cs-ink3) 12%, transparent);
+}
+
+.dismiss:hover svg {
+  color: var(--cs-ink1);
+}
+
+/* Breathing standby light on the idle/ready state (Analog amber LED). */
+.standby {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cs-led-amber);
+  box-shadow: 0 0 var(--cs-led-amber-bloom, 4px) var(--cs-led-amber-glow);
+  animation: cd-breathe 3s ease-in-out infinite;
+}
+
+/* The same standby light, seated in the corner of an empty-state thumb. */
+.standbyThumb {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cs-led-amber);
+  box-shadow: 0 0 var(--cs-led-amber-bloom, 4px) var(--cs-led-amber-glow);
+  animation: cd-breathe 3s ease-in-out infinite;
+}
+
+@keyframes cd-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Setup / connection notice (display headline + serif body) ───────────────── */
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+}
+
+.noticeTitle {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-body);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--cs-ink);
+}
+
+.noticeBody {
+  font-family: var(--cs-font-serif);
+  font-size: var(--cs-text-body);
+  line-height: 1.5;
+  color: var(--cs-ink2);
+}
+
+/* ── Album header (cover + title/meta), shared by disc / ripping / done ──────── */
+
+.album {
+  display: flex;
+  /* Top-align: when the tracklist disclosure expands the column grows tall, and the
+     cover must stay pinned to the top (not drift to the vertical middle). */
+  align-items: flex-start;
+  gap: var(--cs-space-3);
+}
+
+.cover {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+}
+
+.albumMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Album title — a name is a find-it target: display face (title contract). */
+.albumTitle {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-row);
+  line-height: 1.1;
+  color: var(--cs-ink);
+}
+
+/* Artist · year · N tracks → mono (title contract). */
+.albumSub {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  margin-top: 3px;
+}
+
+/* Disc position for a multi-disc set — the "Disc 2 of 2" the detect card shows at
+   insert (the signal iTunes shows). Accent-orange engraved legend so it reads as a
+   deliberate label, not muted chrome; only rendered for a genuine multi-disc release. */
+.discTag {
+  margin-top: 5px;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cs-orange);
+}
+
+/* ── Progress strip ──────────────────────────────────────────────────────────── */
+
+.progress {
+  flex: 1;
+  min-width: 0;
+}
+
+/* rip progress — a segmented amber LED meter (discrete, all-or-nothing cells),
+   shared with the device coverage meter. Rendered by <LedMeter>; the lit cells ARE
+   the drawn rectangles (amber, brighter center + bloom), the gaps are the panel's
+   own bg — no dark dividing lines. Spaced like the old bar sat. */
+.ledRow {
+  margin: var(--cs-space-2) 0 6px;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--cs-space-3);
+}
+
+.progressCount {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink2);
+}
+
+/* ── Tracks disclosure ──────────────────────────────────────────────────────── */
+
+.disclosure {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-label);
+  color: var(--cs-ink3);
+  letter-spacing: 0.04em;
+}
+
+.disclosure:hover {
+  color: var(--cs-ink);
+}
+
+.disclosure svg {
+  transition: transform 0.2s var(--cs-ease);
+}
+
+.disclosureOpen svg {
+  transform: rotate(90deg);
+}
+
+.tracks {
+  border-top: 1px solid var(--cs-border-subtle);
+  margin-top: var(--cs-space-1);
+  padding-top: var(--cs-space-2);
+  display: flex;
+  flex-direction: column;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  padding: 5px 0;
+}
+
+.trackNum {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  width: 22px;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+/* Track title — a name is a find-it target: display face (title contract). */
+.trackName {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--cs-font-display);
+  font-weight: 500;
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackState {
+  flex: 0 0 auto;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+}
+
+/* ── Confirm pick-list (0 < confidence < threshold) ──────────────────────────── */
+
+.confirmHead {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-body);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cs-ink);
+  text-shadow: var(--cs-emboss); /* stamped deck legend */
+}
+
+.confirmList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+/* Each candidate is a tap target: album as a title (Newsreader), the
+   artist · year · N tracks meta as data (DM Mono). A matte additive row. */
+.candidate {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg2);
+  transition:
+    border-color 0.15s var(--cs-ease),
+    background 0.15s var(--cs-ease);
+}
+
+.candidate:hover:not(:disabled) {
+  border-color: var(--cs-border-accent);
+  background: var(--cs-dragover-bg);
+}
+
+.candidate:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.candidate svg {
+  flex: 0 0 auto;
+  color: var(--cs-ink3);
+}
+
+.candidateText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.candidateAlbum {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-body);
+  line-height: 1.1;
+  color: var(--cs-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.candidateMeta {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+}
+
+
+/* ── Search-and-match (JOB 4) ────────────────────────────────────────────────── */
+
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink);
+  background: var(--cs-bg2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  padding: var(--cs-space-2) var(--cs-space-3);
+}
+
+.searchInput::placeholder {
+  color: var(--cs-ink3);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--cs-border-accent);
+}
+
+/* ── Confident match card (JOB 1: the cover IS the disc) ─────────────────────── */
+
+/* Grow-open: the card eases in when a match lands. */
+@keyframes cd-grow {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.grow {
+  animation: cd-grow 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Between-state transition: each disc state fades in on change (keyed wrapper). */
+@keyframes cd-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.stateView {
+  animation: cd-fade 180ms ease;
+}
+
+.matchRow {
+  display: flex;
+  gap: var(--cs-space-4);
+  align-items: flex-start;
+}
+
+/* The cover seats in on load — the disc settling into the tray. Relative so the
+   "In library" seal can sit on the art. */
+.coverSeat {
+  position: relative;
+  flex: 0 0 auto;
+  animation: cd-seat 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* "In library" seal on the cover art, centered on the bottom edge — and the quiet
+   link to the library (so no separate button is needed). Amber-on-dark ownership
+   voice, no checkmark: the word alone reads on a small sleeve. */
+.coverBadge {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 8px);
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cs-led-amber);
+  background: rgba(0, 0, 0, 0.88);
+  border: 1px solid color-mix(in srgb, var(--cs-led-amber), black 45%);
+  text-decoration: none;
+}
+
+.coverBadge:hover {
+  background: rgba(0, 0, 0, 0.95);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* "Rip again" + its help hint sit together as one action; relative so the tooltip
+   anchors to it. */
+.ripAgainWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.help {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cs-ink3);
+  cursor: help;
+}
+
+.ripAgainWrap:hover .help,
+.help:focus-visible {
+  color: var(--cs-ink2);
+  outline: none;
+}
+
+/* A real hover/focus tooltip — native `title` was too easy to miss. Solid dark chip
+   above the action, left-anchored so it never runs off the card edge. Shows on hover
+   of the whole "Rip again" control and on keyboard focus of the help icon. */
+.helpBubble {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg2);
+  border: 1px solid var(--cs-border);
+  box-shadow: var(--cs-shadow-md);
+  color: var(--cs-ink);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  line-height: 1.5;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.ripAgainWrap:hover .helpBubble,
+.ripAgainWrap:focus-within .helpBubble {
+  opacity: 1;
+  visibility: visible;
+}
+
+.matchCover {
+  box-shadow: var(--cs-shadow-md);
+}
+
+@keyframes cd-seat {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.matchInfo {
+  min-width: 0;
+  padding-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+}
+
+.matchTitle {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-row); /* 18px — a calm card title; --cs-text-title (28px) is a page-title scale */
+  line-height: 1.2;
+  color: var(--cs-ink);
+}
+
+.matchMeta {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink2);
+}
+
+.matchActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cs-space-4);
+}
+
+/* Partial ownership — "12 of 19 already in your library". Amber to speak the same
+   ownership voice as the cover "In library" seal, one notch quieter. */
+.ownedPartial {
+  align-self: flex-start;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-led-amber);
+}
+
+/* The picker face — flips in place (Job 3). */
+.pickerHead {
+  font-family: var(--cs-font-serif);
+  font-weight: 500;
+  font-size: var(--cs-text-title);
+  color: var(--cs-ink);
+}
+
+.pickerFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding-top: var(--cs-space-3);
+  border-top: 1px solid var(--cs-border-subtle);
+}
+
+/* ── Empty / dormant states (compact; the panel grows open when a disc seats) ──── */
+
+.emptyCard {
+  display: flex;
+  gap: var(--cs-space-4);
+  align-items: flex-start;
+}
+
+.emptyThumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg2);
+  color: var(--cs-ink3);
+}
+
+.emptyBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+}
+
+.emptyTitle {
+  font-family: var(--cs-font-serif);
+  font-weight: 500;
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink);
+}
+
+.emptyText {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+}
+
+/* No-drive invite — one compact dismissible line (icon · text · how-it-works · ✕).
+   De-paneled: `.drive` now provides the frame, so the invite is just its content
+   (a bg3 panel here would double the box). */
+.invite {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+}
+
+.inviteIcon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg);
+  color: var(--cs-ink3);
+}
+
+.inviteBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.inviteTitle {
+  font-family: var(--cs-font-serif);
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink);
+  line-height: 1.2;
+}
+
+.inviteText {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  margin-top: 1px;
+}
+
+/* The calm "not this album?" escape — quiet text, not a button. */
+.notThis {
+  appearance: none;
+  align-self: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--cs-border);
+  padding: 4px 8px;
+}
+
+.notThis:hover:not(:disabled) {
+  color: var(--cs-ink2);
+  text-decoration-color: currentColor;
+}
+
+/* Interrupted-rip notice — a rip that never finished (the app was killed mid-rip).
+   One quiet amber-edged line above the drive card so a half-ripped album isn't
+   lost silently. Dismissible (clears the sidecar's marker). */
+.interrupted {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  margin-bottom: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-left: 3px solid var(--cs-led-amber);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg);
+}
+
+.interruptedText {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink2);
+  line-height: 1.4;
+}
+
+.interruptedText strong {
+  color: var(--cs-ink);
+  font-weight: 600;
+}
+
+.interruptedDismiss {
+  appearance: none;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cs-ink3);
+  border-radius: var(--cs-radius-sm);
+}
+
+.interruptedDismiss:hover {
+  color: var(--cs-ink);
+}
+
+.notThis:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Cover-picker grid (JOB 3: "not this album?" → tappable covers) ──────────── */
+
+.coverGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--cs-space-3);
+}
+
+.coverTile {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: var(--cs-space-2);
+  cursor: pointer;
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: var(--cs-radius-md, 10px);
+  background: var(--cs-bg2);
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.coverTile:hover:not(:disabled) {
+  border-color: var(--cs-border-accent);
+  background: var(--cs-bg3, var(--cs-bg2));
+}
+
+.coverTile:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.coverTileImg {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+}
+
+.coverTileTitle {
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-body);
+  line-height: 1.2;
+  color: var(--cs-ink);
+  /* keep tiles even — clamp long titles to two lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.coverTileSub {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-micro);
+  color: var(--cs-ink3);
+}
+
+/* ── Compare-and-confirm (JOB 6) ─────────────────────────────────────────────── */
+
+.backLink {
+  appearance: none;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  letter-spacing: 0.03em;
+}
+
+.backLink:hover:not(:disabled) {
+  color: var(--cs-ink);
+}
+
+.compare {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg2);
+  overflow: hidden;
+}
+
+.compareHeadRow,
+.compareRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--cs-space-3);
+  padding: 5px var(--cs-space-3);
+}
+
+.compareHeadRow {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cs-ink3);
+  border-bottom: 1px solid var(--cs-border-subtle);
+}
+
+.compareRow {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink2);
+  border-bottom: 1px solid var(--cs-border-subtle);
+}
+
+.compareRow:last-child {
+  border-bottom: none;
+}
+
+/* A track whose duration is wildly off — flagged, not silently accepted. */
+.compareOff {
+  background: var(--cs-dragover-bg);
+  color: var(--cs-ink);
+}
+
+.compareCell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Name-first gap flow: a short note explaining what we couldn't place, and the
+   inline input that sits in the "this release" cell for each gap track. */
+.gapNote {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink2);
+  background: var(--cs-dragover-bg);
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: var(--cs-radius-sm);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  line-height: 1.4;
+}
+
+.gapInput {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink);
+  background: var(--cs-bg2);
+  border: 1px solid var(--cs-border-accent);
+  border-radius: var(--cs-radius-sm);
+  padding: 2px var(--cs-space-2);
+}
+
+.gapInput::placeholder {
+  color: var(--cs-ink3);
+}
+
+.gapInput:focus {
+  outline: none;
+  border-color: var(--cs-orange);
+}
+
+/* Single resolved tracklist (JOB 6) — the disc with the names we'll give it. One
+   list, one point of reference. */
+.tracklist {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg2);
+  overflow: hidden;
+}
+
+.trackRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  padding: 5px var(--cs-space-3);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  border-bottom: 1px solid var(--cs-border-subtle);
+}
+
+.trackRow:last-child {
+  border-bottom: none;
+}
+
+.trackNum {
+  color: var(--cs-ink3);
+  min-width: 1.8em;
+}
+
+.trackTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cs-ink);
+}
+
+.trackDur {
+  color: var(--cs-ink3);
+  font-variant-numeric: tabular-nums;
+}
+
+.matchDetails {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+}
+
+.matchSummary {
+  cursor: pointer;
+  color: var(--cs-ink3);
+  padding: var(--cs-space-1) 0;
+}
+
+.matchSummary:hover {
+  color: var(--cs-ink2);
+}
+
+.matchBody {
+  color: var(--cs-ink3);
+  line-height: 1.5;
+  padding: var(--cs-space-2) 0;
+}
+
+/* ── Inline naming during/after a "Just rip it" (JOB 5d) ──────────────────────── */
+
+.nameFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.nameSummary {
+  cursor: pointer;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  letter-spacing: 0.03em;
+}
+
+.nameSummary:hover {
+  color: var(--cs-ink);
+}
+
+.nameGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  margin-top: var(--cs-space-2);
+}
+
+/* ── Incomplete rip (A3/A4 — partial, never silently "done") ──────────────────── */
+
+.incompleteHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cs-space-2);
+  font-family: var(--cs-font-display);
+  font-size: var(--cs-text-body);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--cs-ink);
+}
+
+.incompleteHead svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.incompleteList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.incompleteRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border-accent);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-dragover-bg);
+}
+
+.incompleteRow .trackName {
+  flex: 1;
+}
+
+/* ── Stop control (J4) — quiet, not an alarm ─────────────────────────────────── */
+
+/* Disc card layout: state content on the left, a single control vertically
+   centered on the right (Stop while ripping, Eject otherwise). */
+.discRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-4);
+}
+.discRow .stateView {
+  flex: 1;
+  min-width: 0;
+}
+.discCtlSlot {
+  flex: none;
+}
+
+/* The one disc control — a quiet raised key (Stop / Eject), vertically centered
+   on the right of the disc row. */
+.discCtl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-2) var(--cs-space-4);
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cs-ink2);
+  background: var(--cs-bg3);
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: 2px;
+  box-shadow: var(--cs-raise);
+  cursor: pointer;
+  transition: box-shadow 0.1s var(--cs-ease), transform 0.08s var(--cs-ease), color 0.15s var(--cs-ease);
+}
+.discCtl:hover:not(:disabled) {
+  color: var(--cs-ink);
+}
+.discCtl:active:not(:disabled) {
+  box-shadow: var(--cs-recess);
+  transform: translateY(var(--cs-press-drop));
+}
+.discCtl:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Done row ───────────────────────────────────────────────────────────────── */
+
+.done {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+}
+
+.doneIcon {
+  color: var(--cs-green);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.doneText {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-label);
+  color: var(--cs-ink2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A simple status line (detecting / registering / error). */
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink);
+}
+
+.line svg {
+  flex: 0 0 auto;
+}
+
+.muted {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  line-height: 1.5;
+}
+
+.spin {
+  display: inline-flex;
+  color: var(--cs-orange);
+  animation: cd-spin 1s linear infinite;
+}
+
+@keyframes cd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .grow,
+  .stateView,
+  .coverSeat,
+  .standby,
+  .standbyThumb {
+    animation: none;
+  }
+  .standby,
+  .standbyThumb {
+    opacity: 0.85;
+  }
+}
+
+
+/* ── Cert warning (rides on every poll; quiet, not an alarm) ─────────────────── */
+
+/* Quiet "how it works" link → the help page (replaced the old inline FAQ unfold).
+   The voice (mono, ink2, tracked) is the kit TextLink `quiet` variant now — this
+   class only owns the invite-row layout so the link doesn't grow or wrap. */
+.helpLink {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* Keyboard focus for the bespoke rip-flow controls (kit-audit finding: hover
+   states existed but keyboard users got no focus indication). Additive only —
+   resting/hover visuals unchanged; the bespoke flow itself is KEPT per the
+   styleguide decisions page. */
+.discCtl:focus-visible,
+.candidate:focus-visible,
+.coverTile:focus-visible,
+.disclosure:focus-visible,
+.backLink:focus-visible,
+.inlineLink:focus-visible {
+  outline: 2px solid var(--cs-orange);
+  outline-offset: 2px;
+}
+
+/* BUG-277 — the "we couldn't identify this" prompt on the Unknown card. A plain
+   sentence, not a button row, whose two escapes (figure it out / search) are inline
+   accent links. Keeps the action area calm and readable instead of crowded. */
+.unknownPrompt {
+  margin: 0;
+  font-family: var(--cs-font-serif);
+  font-size: var(--cs-text-row); /* 15px body — reads as a sentence, not a control */
+  line-height: 1.5;
+  color: var(--cs-ink2);
+  max-width: 46ch;
+}
+
+.inlineLink {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--cs-orange);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--cs-orange) 45%, transparent);
+}
+
+.inlineLink:hover:not(:disabled) {
+  text-decoration-color: currentColor;
+}
+
+.inlineLink:disabled {
+  color: var(--cs-ink3);
+  cursor: default;
+}

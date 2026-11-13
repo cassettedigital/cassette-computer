@@ -1,0 +1,910 @@
+/**
+ * Cassette Player — Theme Override
+ * GPL v3 fork of Navidrome — https://github.com/navidrome/navidrome
+ *
+ * This file applies Cassette's design system to Navidrome's Material UI
+ * frontend. It's injected into the running Navidrome instance via a CSS
+ * file mount (see docker-compose.yml).
+ *
+ * STATUS: Speculative targeting — class names and selectors are educated
+ * guesses based on MUI conventions and Navidrome's source code structure.
+ * Every selector marked TODO: INSPECT needs to be verified against the
+ * real DOM once the app is running.
+ *
+ * Workflow for refining this file:
+ *   1. Start Navidrome: pnpm docker:up
+ *   2. Open http://localhost:4533 in Chrome
+ *   3. Use DevTools → Elements to find real class names
+ *   4. Update selectors below and remove the TODO: INSPECT comments
+ *   5. Reload the page to see changes (or use Stylus extension for hot reload)
+ */
+
+/* =============================================================================
+   1. FONTS
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&display=swap');
+
+/* =============================================================================
+   2. DESIGN TOKENS
+   ============================================================================= */
+
+:root {
+  /* Palette */
+  --cs-bg:     #1C1914;
+  --cs-bg2:    #221F19;
+  --cs-bg3:    #2A261E;
+  --cs-bg4:    #342E24;
+  --cs-ink:    #EDE4D0;
+  --cs-ink2:   #A89878;
+  --cs-ink3:   #6E6050;
+  --cs-ink4:   #3E3628;
+  --cs-red:    #D42E2E;
+  --cs-orange: #E87830;
+  --cs-yellow: #E8C820;
+  --cs-green:  #38A038;
+  --cs-blue:   #2878D0;
+  --cs-purple: #7828C0;
+  --cs-cream:  #EDE4D0;
+  --cs-amber:  #D4A020;
+  --cs-sage:   #48987A;
+  --cs-coral:  #E85C3A;
+
+  /* Typography */
+  --cs-font-display: 'Barlow Condensed', sans-serif;
+  --cs-font-serif:   'Newsreader', Georgia, serif;
+  --cs-font-mono:    'DM Mono', monospace;
+
+  /* Geometry */
+  --cs-radius-sm: 3px;
+  --cs-radius-md: 4px;
+  --cs-radius-lg: 5px;
+
+  /* Shadows — warm-tinted, never pure black */
+  --cs-shadow-sm:  0 1px 3px rgba(28, 20, 10, 0.5);
+  --cs-shadow-md:  0 2px 8px rgba(28, 20, 10, 0.6);
+  --cs-shadow-lg:  0 4px 20px rgba(28, 20, 10, 0.7);
+  --cs-shadow-inset-track: inset 0 1px 3px rgba(10, 7, 3, 0.7);
+  --cs-shadow-orange-glow: 0 0 8px rgba(232, 120, 48, 0.5), 0 0 16px rgba(232, 120, 48, 0.25);
+
+  /* MUI overrides via CSS custom properties (MUI v5 supports CSS variables) */
+  --mui-palette-primary-main:       #E87830;
+  --mui-palette-primary-light:      #F09550;
+  --mui-palette-primary-dark:       #C86020;
+  --mui-palette-background-default: #1C1914;
+  --mui-palette-background-paper:   #221F19;
+  --mui-palette-text-primary:       #EDE4D0;
+  --mui-palette-text-secondary:     #A89878;
+  --mui-palette-divider:            #342E24;
+}
+
+/* =============================================================================
+   3. GLOBAL RESET & BASE STYLES
+   ============================================================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  background-color: var(--cs-bg) !important;
+  color: var(--cs-ink) !important;
+  font-family: var(--cs-font-display) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbars — webkit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--cs-bg2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cs-bg4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cs-ink3);
+}
+
+/* Selection */
+::selection {
+  background: rgba(232, 120, 48, 0.3);
+  color: var(--cs-ink);
+}
+
+/* =============================================================================
+   4. MUI GLOBAL OVERRIDES
+   ============================================================================= */
+
+/* --- Paper / Card surfaces --- */
+/* TODO: INSPECT — confirm MuiPaper-root is the right selector */
+.MuiPaper-root {
+  background-color: var(--cs-bg2) !important;
+  background-image: none !important; /* remove MUI's default elevation overlay */
+  color: var(--cs-ink) !important;
+  border-radius: var(--cs-radius-md) !important;
+  box-shadow: var(--cs-shadow-md) !important;
+}
+
+/* --- Dividers --- */
+.MuiDivider-root {
+  border-color: var(--cs-bg4) !important;
+}
+
+/* --- Tooltips --- */
+.MuiTooltip-tooltip {
+  background-color: var(--cs-bg4) !important;
+  color: var(--cs-ink) !important;
+  font-family: var(--cs-font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--cs-ink4);
+  box-shadow: var(--cs-shadow-md) !important;
+}
+
+/* --- Chips --- */
+.MuiChip-root {
+  background-color: var(--cs-bg3) !important;
+  color: var(--cs-ink2) !important;
+  font-family: var(--cs-font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--cs-bg4) !important;
+}
+.MuiChip-root:hover {
+  background-color: var(--cs-bg4) !important;
+  color: var(--cs-orange) !important;
+  border-color: var(--cs-orange) !important;
+}
+
+/* --- Icon color --- */
+.MuiSvgIcon-root {
+  color: var(--cs-ink2);
+}
+
+/* =============================================================================
+   5. APP BAR / TOP HEADER
+   ============================================================================= */
+
+/* TODO: INSPECT — Navidrome's app bar selector */
+.MuiAppBar-root {
+  background-color: var(--cs-bg2) !important;
+  border-bottom: 1px solid var(--cs-bg4) !important;
+  box-shadow: none !important;
+}
+
+/* Logo / app name in header */
+/* TODO: INSPECT — find the actual selector */
+.MuiToolbar-root .MuiTypography-h6,
+.MuiToolbar-root .appTitle {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 900 !important;
+  font-size: 18px !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  color: var(--cs-cream) !important;
+}
+
+/* =============================================================================
+   6. SIDEBAR / NAVIGATION DRAWER
+   ============================================================================= */
+
+/* TODO: INSPECT — Navidrome's sidebar drawer */
+.MuiDrawer-root .MuiDrawer-paper {
+  background-color: var(--cs-bg2) !important;
+  border-right: 1px solid var(--cs-bg4) !important;
+  box-shadow: none !important;
+}
+
+/* Nav list items */
+.MuiDrawer-root .MuiListItemButton-root,
+.MuiDrawer-root .MuiListItem-root {
+  color: var(--cs-ink2) !important;
+  border-radius: var(--cs-radius-sm) !important;
+  margin: 2px 8px !important;
+  padding: 8px 12px !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.MuiDrawer-root .MuiListItemButton-root:hover {
+  background-color: var(--cs-bg3) !important;
+  color: var(--cs-ink) !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root:hover .MuiSvgIcon-root {
+  color: var(--cs-orange) !important;
+}
+
+/* Active nav item */
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected,
+.MuiDrawer-root .MuiListItemButton-root[aria-selected="true"] {
+  background-color: rgba(232, 120, 48, 0.12) !important;
+  color: var(--cs-orange) !important;
+  border-left: 2px solid var(--cs-orange) !important;
+}
+
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiSvgIcon-root {
+  color: var(--cs-orange) !important;
+}
+
+/* Nav labels */
+.MuiDrawer-root .MuiListItemText-primary {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+/* Active nav label — LED pulse dot indicator */
+.MuiDrawer-root .MuiListItemButton-root.Mui-selected .MuiListItemText-primary::after {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: var(--cs-orange);
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: middle;
+  box-shadow: 0 0 4px var(--cs-orange), 0 0 8px rgba(232, 120, 48, 0.5);
+  animation: led-pulse 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   7. TYPOGRAPHY OVERRIDES
+   ============================================================================= */
+
+/* Headlines / titles */
+.MuiTypography-h1,
+.MuiTypography-h2,
+.MuiTypography-h3,
+.MuiTypography-h4,
+.MuiTypography-h5,
+.MuiTypography-h6 {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: var(--cs-ink) !important;
+}
+
+/* Track / song titles */
+/* TODO: INSPECT — find Navidrome's song title class */
+.ndSong-title,
+[data-testid="song-title"],
+.songTitle {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--cs-ink) !important;
+}
+
+/* Artist / album names */
+/* TODO: INSPECT */
+.ndSong-artist,
+.ndAlbum-artist,
+[data-testid="song-artist"],
+.artistName {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.04em !important;
+  color: var(--cs-ink2) !important;
+}
+
+/* Metadata: duration, bitrate, track number, year, file type */
+/* TODO: INSPECT */
+.ndSong-duration,
+.ndSong-bitRate,
+.ndSong-trackNumber,
+.ndSong-year,
+[data-column="duration"],
+[data-column="bitRate"],
+[data-column="trackNumber"],
+[data-column="year"],
+.duration,
+.bitrate,
+.trackNumber {
+  font-family: var(--cs-font-mono) !important;
+  font-size: 12px !important;
+  letter-spacing: 0.04em !important;
+  color: var(--cs-ink3) !important;
+}
+
+/* Body / subtitle text */
+.MuiTypography-body1 {
+  font-family: var(--cs-font-display) !important;
+  color: var(--cs-ink) !important;
+}
+
+.MuiTypography-body2 {
+  font-family: var(--cs-font-display) !important;
+  color: var(--cs-ink2) !important;
+}
+
+.MuiTypography-caption {
+  font-family: var(--cs-font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  color: var(--cs-ink3) !important;
+}
+
+/* =============================================================================
+   8. DATA TABLE / SONG LIST
+   ============================================================================= */
+
+/* TODO: INSPECT — Navidrome uses react-admin's Datagrid */
+.RaDatagrid-root,
+.MuiTableContainer-root {
+  background-color: transparent !important;
+}
+
+.MuiTableHead-root .MuiTableCell-root {
+  background-color: var(--cs-bg2) !important;
+  color: var(--cs-ink3) !important;
+  font-family: var(--cs-font-mono) !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  border-bottom: 1px solid var(--cs-bg4) !important;
+  padding: 8px 12px !important;
+}
+
+.MuiTableBody-root .MuiTableRow-root {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--cs-bg4) !important;
+  transition: background-color 0.12s ease;
+}
+
+.MuiTableBody-root .MuiTableRow-root:hover {
+  background-color: var(--cs-bg3) !important;
+}
+
+/* Playing row highlight */
+.MuiTableBody-root .MuiTableRow-root.playing,
+.MuiTableBody-root .MuiTableRow-root[data-playing="true"] {
+  background-color: rgba(232, 120, 48, 0.08) !important;
+  border-left: 2px solid var(--cs-orange);
+}
+
+.MuiTableBody-root .MuiTableCell-root {
+  color: var(--cs-ink) !important;
+  border-bottom: none !important;
+  padding: 10px 12px !important;
+}
+
+/* =============================================================================
+   9. ALBUM / ARTIST GRID CARDS
+   ============================================================================= */
+
+/* TODO: INSPECT — Navidrome's album card component */
+.ndAlbumCard,
+.albumCard,
+[class*="AlbumCard"],
+[class*="albumCard"] {
+  background-color: var(--cs-bg2) !important;
+  border-radius: var(--cs-radius-md) !important;
+  border: 1px solid var(--cs-bg4) !important;
+  box-shadow: var(--cs-shadow-sm) !important;
+  overflow: hidden !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+}
+
+.ndAlbumCard:hover,
+.albumCard:hover,
+[class*="AlbumCard"]:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--cs-shadow-lg) !important;
+  border-color: var(--cs-orange) !important;
+}
+
+/* Album cover art — give it space, let it breathe */
+.ndAlbumCard img,
+.albumCard img,
+[class*="AlbumCard"] img {
+  width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* Album title */
+.ndAlbumCard .title,
+.albumCard .title,
+[class*="AlbumCard"] .title {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  color: var(--cs-ink) !important;
+  padding: 8px 10px 2px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Artist name under album */
+.ndAlbumCard .artist,
+.albumCard .artist,
+[class*="AlbumCard"] .artist {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 300 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.04em !important;
+  color: var(--cs-ink2) !important;
+  padding: 0 10px 8px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* =============================================================================
+   10. NOW PLAYING BAR (bottom / persistent player)
+   ============================================================================= */
+
+/* TODO: INSPECT — the persistent bottom player bar */
+#nd-player,
+.ndPlayer,
+[class*="Player"],
+[id*="player"] {
+  background-color: var(--cs-bg3) !important;
+  border-top: 1px solid var(--cs-bg4) !important;
+  box-shadow: 0 -4px 20px rgba(28, 20, 10, 0.6) !important;
+}
+
+/* Now playing track info */
+.ndPlayer .trackInfo,
+[class*="Player"] .trackInfo {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+/* Track name in player */
+.ndPlayer .trackName,
+[class*="Player"] .trackName {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 800 !important;
+  font-size: 14px !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--cs-ink) !important;
+}
+
+/* Artist name in player */
+.ndPlayer .artistName,
+[class*="Player"] .artistName {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 300 !important;
+  font-size: 12px !important;
+  color: var(--cs-ink2) !important;
+}
+
+/* Timestamps */
+.ndPlayer .timestamp,
+.ndPlayer .currentTime,
+.ndPlayer .totalTime,
+[class*="Player"] [class*="time"],
+[class*="Player"] [class*="Time"] {
+  font-family: var(--cs-font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.04em !important;
+  color: var(--cs-ink3) !important;
+}
+
+/* =============================================================================
+   11. PROGRESS / SEEK BAR
+   ============================================================================= */
+
+/* The seek bar track */
+.MuiLinearProgress-root,
+.MuiSlider-root[aria-label*="seek"],
+.MuiSlider-root[aria-label*="progress"],
+[class*="seekBar"],
+[class*="SeekBar"] {
+  background-color: var(--cs-bg4) !important;
+  border-radius: 2px !important;
+  box-shadow: var(--cs-shadow-inset-track) !important;
+  height: 4px !important;
+}
+
+/* The filled portion */
+.MuiLinearProgress-bar,
+.MuiSlider-track {
+  background: linear-gradient(90deg, var(--cs-orange), #F09550) !important;
+  box-shadow: var(--cs-shadow-orange-glow) !important;
+  border-radius: 2px !important;
+}
+
+/* The scrubber thumb */
+.MuiSlider-thumb {
+  background-color: var(--cs-orange) !important;
+  border: 2px solid var(--cs-cream) !important;
+  box-shadow: 0 0 6px rgba(232, 120, 48, 0.8), 0 0 12px rgba(232, 120, 48, 0.4) !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.MuiSlider-thumb:hover,
+.MuiSlider-thumb.Mui-active {
+  box-shadow: 0 0 10px rgba(232, 120, 48, 1), 0 0 20px rgba(232, 120, 48, 0.6) !important;
+}
+
+/* Volume slider */
+.MuiSlider-root[aria-label*="volume"],
+.MuiSlider-root[aria-label*="Volume"] {
+  color: var(--cs-orange) !important;
+}
+
+/* =============================================================================
+   12. TRANSPORT CONTROLS (play, pause, skip, shuffle, repeat)
+   ============================================================================= */
+
+/* All transport icon buttons */
+/* TODO: INSPECT — find Navidrome's transport button selectors */
+[class*="transport"] .MuiIconButton-root,
+[class*="Transport"] .MuiIconButton-root,
+.ndPlayer .MuiIconButton-root,
+[class*="controls"] .MuiIconButton-root {
+  color: var(--cs-ink2) !important;
+  transition: color 0.15s ease, transform 0.1s ease !important;
+  border-radius: 50% !important;
+}
+
+[class*="transport"] .MuiIconButton-root:hover,
+[class*="Transport"] .MuiIconButton-root:hover,
+.ndPlayer .MuiIconButton-root:hover,
+[class*="controls"] .MuiIconButton-root:hover {
+  color: var(--cs-orange) !important;
+  transform: scale(1.08) !important;
+  background-color: rgba(232, 120, 48, 0.1) !important;
+}
+
+/* Play/Pause button — the big orange circle */
+/* TODO: INSPECT — Navidrome may have a specific class for the main play button */
+[class*="playButton"],
+[class*="PlayButton"],
+[aria-label*="Play"],
+[aria-label*="Pause"] {
+  background: linear-gradient(160deg, #F09550 0%, var(--cs-orange) 50%, #C86020 100%) !important;
+  color: var(--cs-cream) !important;
+  border-radius: 50% !important;
+  width: 48px !important;
+  height: 48px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 220, 0.25),
+    inset 0 -1px 0 rgba(28, 20, 10, 0.3),
+    0 0 12px rgba(232, 120, 48, 0.5),
+    0 2px 8px rgba(28, 20, 10, 0.5) !important;
+}
+
+[class*="playButton"]:hover,
+[class*="PlayButton"]:hover,
+[aria-label*="Play"]:hover,
+[aria-label*="Pause"]:hover {
+  background: linear-gradient(160deg, #F8A060 0%, #F09040 50%, #D07028 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 220, 0.3),
+    inset 0 -1px 0 rgba(28, 20, 10, 0.2),
+    0 0 18px rgba(232, 120, 48, 0.7),
+    0 3px 12px rgba(28, 20, 10, 0.5) !important;
+  transform: scale(1.04) !important;
+}
+
+/* Active shuffle/repeat — orange tint */
+[class*="shuffle"][aria-pressed="true"],
+[class*="Shuffle"][aria-pressed="true"],
+[class*="repeat"][aria-pressed="true"],
+[class*="Repeat"][aria-pressed="true"],
+[data-active="true"] {
+  color: var(--cs-orange) !important;
+}
+
+/* =============================================================================
+   13. FAVORITE / STAR / RATING
+   ============================================================================= */
+
+/* TODO: INSPECT */
+[aria-label*="favorite"],
+[aria-label*="Favorite"],
+[class*="favorite"],
+[class*="Favorite"] {
+  transition: color 0.15s ease, transform 0.1s ease !important;
+}
+
+[aria-label*="favorite"]:hover,
+[aria-label*="Favorite"]:hover {
+  color: var(--cs-orange) !important;
+  transform: scale(1.15) !important;
+}
+
+[class*="favorited"],
+[aria-pressed="true"][aria-label*="favorite"] {
+  color: var(--cs-orange) !important;
+}
+
+/* Star rating */
+.MuiRating-iconFilled {
+  color: var(--cs-amber) !important;
+}
+
+.MuiRating-iconHover {
+  color: var(--cs-orange) !important;
+}
+
+/* =============================================================================
+   14. SEARCH
+   ============================================================================= */
+
+/* Search input */
+/* TODO: INSPECT */
+[class*="search"] .MuiInputBase-root,
+[class*="Search"] .MuiInputBase-root {
+  background-color: var(--cs-bg3) !important;
+  color: var(--cs-ink) !important;
+  border-radius: var(--cs-radius-md) !important;
+  border: 1px solid var(--cs-bg4) !important;
+  font-family: var(--cs-font-display) !important;
+}
+
+[class*="search"] .MuiInputBase-root:hover,
+[class*="Search"] .MuiInputBase-root:hover {
+  border-color: var(--cs-ink3) !important;
+}
+
+[class*="search"] .MuiInputBase-root.Mui-focused,
+[class*="Search"] .MuiInputBase-root.Mui-focused {
+  border-color: var(--cs-orange) !important;
+  box-shadow: 0 0 0 2px rgba(232, 120, 48, 0.15) !important;
+}
+
+[class*="search"] .MuiInputBase-input::placeholder,
+[class*="Search"] .MuiInputBase-input::placeholder {
+  color: var(--cs-ink3) !important;
+  opacity: 1 !important;
+  font-family: var(--cs-font-display) !important;
+}
+
+/* =============================================================================
+   15. BUTTONS
+   ============================================================================= */
+
+/* Primary contained buttons */
+.MuiButton-containedPrimary {
+  background: linear-gradient(160deg, #F09550 0%, var(--cs-orange) 50%, #C86020 100%) !important;
+  color: var(--cs-cream) !important;
+  font-family: var(--cs-font-display) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  border-radius: var(--cs-radius-md) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 220, 0.2),
+    inset 0 -1px 0 rgba(28, 20, 10, 0.25),
+    0 1px 4px rgba(28, 20, 10, 0.4) !important;
+}
+
+.MuiButton-containedPrimary:hover {
+  background: linear-gradient(160deg, #F8A060 0%, #F09040 50%, #D07028 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 220, 0.25),
+    0 0 10px rgba(232, 120, 48, 0.4),
+    0 2px 6px rgba(28, 20, 10, 0.4) !important;
+}
+
+/* Text buttons */
+.MuiButton-text {
+  color: var(--cs-ink2) !important;
+  font-family: var(--cs-font-display) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.MuiButton-text:hover {
+  color: var(--cs-orange) !important;
+  background-color: rgba(232, 120, 48, 0.08) !important;
+}
+
+/* =============================================================================
+   16. MENUS & DROPDOWNS
+   ============================================================================= */
+
+.MuiMenu-paper,
+.MuiPopover-paper {
+  background-color: var(--cs-bg3) !important;
+  border: 1px solid var(--cs-bg4) !important;
+  box-shadow: var(--cs-shadow-lg) !important;
+}
+
+.MuiMenuItem-root {
+  color: var(--cs-ink) !important;
+  font-family: var(--cs-font-display) !important;
+  font-size: 13px !important;
+  letter-spacing: 0.03em !important;
+}
+
+.MuiMenuItem-root:hover {
+  background-color: var(--cs-bg4) !important;
+  color: var(--cs-orange) !important;
+}
+
+.MuiMenuItem-root.Mui-selected {
+  background-color: rgba(232, 120, 48, 0.12) !important;
+  color: var(--cs-orange) !important;
+}
+
+/* =============================================================================
+   17. DIALOGS / MODALS
+   ============================================================================= */
+
+.MuiDialog-paper {
+  background-color: var(--cs-bg2) !important;
+  border: 1px solid var(--cs-bg4) !important;
+  box-shadow: 0 8px 40px rgba(28, 20, 10, 0.8) !important;
+}
+
+.MuiDialogTitle-root {
+  font-family: var(--cs-font-display) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--cs-ink) !important;
+  border-bottom: 1px solid var(--cs-bg4) !important;
+}
+
+.MuiDialogContent-root {
+  color: var(--cs-ink2) !important;
+}
+
+/* =============================================================================
+   18. FORM INPUTS
+   ============================================================================= */
+
+.MuiOutlinedInput-root {
+  background-color: var(--cs-bg3) !important;
+  color: var(--cs-ink) !important;
+  font-family: var(--cs-font-display) !important;
+  border-radius: var(--cs-radius-md) !important;
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--cs-bg4) !important;
+}
+
+.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--cs-ink3) !important;
+}
+
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--cs-orange) !important;
+  border-width: 1px !important;
+}
+
+.MuiInputLabel-root {
+  color: var(--cs-ink3) !important;
+  font-family: var(--cs-font-display) !important;
+  letter-spacing: 0.04em !important;
+}
+
+.MuiInputLabel-root.Mui-focused {
+  color: var(--cs-orange) !important;
+}
+
+/* =============================================================================
+   19. TABS
+   ============================================================================= */
+
+.MuiTabs-root {
+  border-bottom: 1px solid var(--cs-bg4) !important;
+}
+
+.MuiTab-root {
+  color: var(--cs-ink3) !important;
+  font-family: var(--cs-font-display) !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  min-height: 42px !important;
+}
+
+.MuiTab-root.Mui-selected {
+  color: var(--cs-orange) !important;
+}
+
+.MuiTabs-indicator {
+  background-color: var(--cs-orange) !important;
+  height: 2px !important;
+  box-shadow: var(--cs-shadow-orange-glow) !important;
+}
+
+/* =============================================================================
+   20. CASSETTE-SPECIFIC FLOURISHES
+   ============================================================================= */
+
+/* LED Pulse animation — used on active/playing indicators */
+@keyframes led-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 4px var(--cs-orange), 0 0 8px rgba(232, 120, 48, 0.5);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 2px var(--cs-orange), 0 0 4px rgba(232, 120, 48, 0.3);
+  }
+}
+
+/* Now playing indicator dot — used in song list rows */
+/* TODO: INSPECT — find Navidrome's now-playing indicator */
+.playing-indicator,
+[class*="playingIcon"],
+[class*="PlayingIcon"],
+[data-playing="true"]::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--cs-orange);
+  border-radius: 50%;
+  box-shadow: 0 0 4px var(--cs-orange), 0 0 8px rgba(232, 120, 48, 0.5);
+  animation: led-pulse 2s ease-in-out infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Noise texture overlay on album art (subtle physicality) */
+/* Applied via pseudo-element on the album art container */
+/* TODO: INSPECT — find the album art container */
+[class*="coverArt"]::after,
+[class*="CoverArt"]::after,
+[class*="albumCover"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  border-radius: inherit;
+  mix-blend-mode: overlay;
+}
+
+/* Sheen effect on album art on hover */
+[class*="coverArt"]:hover::before,
+[class*="CoverArt"]:hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 245, 235, 0.08) 0%,
+    transparent 50%,
+    rgba(28, 20, 10, 0.1) 100%
+  );
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Login page */
+/* TODO: INSPECT — Navidrome's login page */
+[class*="login"],
+[class*="Login"] {
+  background-color: var(--cs-bg) !important;
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgba(232, 120, 48, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(212, 160, 32, 0.04) 0%, transparent 60%) !important;
+}
+
+[class*="login"] .MuiPaper-root,
+[class*="Login"] .MuiPaper-root {
+  background-color: var(--cs-bg2) !important;
+  border: 1px solid var(--cs-bg4) !important;
+  box-shadow: 0 8px 40px rgba(28, 20, 10, 0.7) !important;
+}

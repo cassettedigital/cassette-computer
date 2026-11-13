@@ -1,0 +1,143 @@
+/* Appearance picker: selectable cards for light or dark and the skins, on the player kit's paper.
+ * Selection reads as a ring in the kit's one primary fill + a check badge (never colour alone). The cards
+ * sit on the raised paper with no outline; the previews inside are the real paper and the real skin. */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 16px;
+}
+
+/* One selectable option. It's a <button> so keyboard + focus come free. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 0;
+  text-align: left;
+  background: var(--pk-surface-raised);
+  border-radius: var(--pk-r-card);
+  color: var(--pk-text-primary);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pk-text-primary) 18%, transparent);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+
+.card.selected,
+.card.selected:hover {
+  box-shadow: inset 0 0 0 2px var(--pk-fill-selected);
+}
+
+/* Lit check badge, top-right — the "selected" tell. */
+.check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+}
+
+/* ── Skin swatch: a mini faceplate previewing the accent on the warm chassis ── */
+.swatch {
+  height: 68px;
+  border-radius: var(--pk-r-small);
+  background:
+    linear-gradient(180deg, var(--cs-gray-4, #332e24), var(--cs-gray-2, #23201a));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  overflow: hidden;
+}
+
+/* the "needle" — the accent solid */
+.swatchBar {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--pk-r-pill);
+}
+
+/* a lit pip beside it */
+.swatchPip {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--pk-r-pill);
+  flex: none;
+}
+
+/* ── Light or dark: a mini page on the paper itself. Each side is the taste stock held by data-paper, so
+      --bg and --ink-* are the real paper's; Auto is both side by side. ── */
+.paper {
+  height: 68px;
+  display: flex;
+  border-radius: var(--pk-r-small);
+  overflow: hidden;
+}
+
+.paperSide {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--bg);
+}
+
+/* a record's cover */
+.paperCover {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 3px;
+  background: var(--cs-orange);
+}
+
+/* its title and a line under it, in the paper's ink */
+.paperLines {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+}
+
+.paperLine {
+  height: 6px;
+  border-radius: var(--pk-r-pill);
+  background: var(--ink-e);
+}
+
+.paperLine + .paperLine {
+  width: 60%;
+  background: var(--ink-4);
+}
+
+.cardName {
+  font: var(--pk-t-row-title);
+  letter-spacing: var(--pk-k-row-title);
+  text-transform: uppercase;
+  color: var(--pk-text-primary);
+}
+
+.cardBlurb {
+  font: var(--pk-t-caption);
+  line-height: 1.45;
+  color: var(--pk-text-secondary);
+}

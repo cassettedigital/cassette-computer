@@ -1,0 +1,26 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "dev",
+  "description": "Cassette Dev.app only (tauri.dev.conf.json lists it; the shipped app does not): the same window rights for the local dev server on :3100.",
+  "windows": [
+    "main"
+  ],
+  "remote": {
+    "urls": [
+      "http://localhost:3100/*"
+    ]
+  },
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-internal-toggle-maximize",
+    "opener:default",
+    "dialog:allow-message",
+    "allow-clear-device-token",
+    "allow-begin-pairing",
+    "allow-check-for-update",
+    "allow-install-update",
+    "allow-add-music",
+    "dialog:allow-open"
+  ]
+}

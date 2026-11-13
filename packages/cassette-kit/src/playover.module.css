@@ -1,0 +1,86 @@
+/*
+ * The one hover-play (PlayOver.tsx): on a song list, a plain triangle in the page's colour where the number
+ * is (bare); on a tile or a cover, a big round play disc over the art of anything a click plays, shown
+ * while its link or button (or a [data-play-host]) is pointed at or focused. Self-contained values, so it
+ * draws the same on the website's pages and in the desk, whichever stylesheet set loads around it.
+ */
+.over {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 8, 6, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.over[data-bare] {
+  background: none;
+}
+.face {
+  display: grid;
+  place-items: center;
+  height: var(--over, min(64px, 72%));
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(18, 15, 12, 0.66);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 4px 14px rgba(0, 0, 0, 0.32);
+  color: #fff;
+  scale: 0.86;
+  transition: scale 0.25s cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+/* no art under it (a track number): only the play triangle, in the page's accent (the record's colour made
+   readable on the paper showing, --accent-ink; a page with no record colour, its paper's own, --accent-c;
+   else the desk's tint), standing where the number starts */
+.over[data-bare] {
+  place-items: center start;
+}
+.over[data-bare][data-align="end"] {
+  place-items: center end;
+}
+/* a table's number cell centres its number, and the triangle with it */
+.over[data-bare][data-align="center"] {
+  place-items: center;
+}
+.tri {
+  display: block;
+  height: var(--over, 16px);
+  width: auto;
+  aspect-ratio: 16 / 18;
+  fill: var(--accent-ink, var(--accent-c, var(--pk-tint-text, var(--ink-e, #15110e))));
+  scale: 0.86;
+  transform-origin: left center;
+  transition: scale 0.25s cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+.over[data-align="end"] .tri {
+  transform-origin: right center;
+}
+.over[data-align="center"] .tri {
+  transform-origin: center;
+}
+.face svg {
+  width: 46%;
+  height: 46%;
+}
+:is(a, button, [data-play-host]):is(:hover, :focus-visible) .over {
+  opacity: 1;
+}
+:is(a, button, [data-play-host]):is(:hover, :focus-visible) :is(.face, .tri) {
+  scale: 1;
+}
+/* a touch screen has no pointing: a tap plays, and a disc left showing after it would only be in the way */
+@media (hover: none) {
+  .over {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .over,
+  .face,
+  .tri {
+    transition: none;
+  }
+}

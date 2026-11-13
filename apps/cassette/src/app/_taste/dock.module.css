@@ -1,0 +1,682 @@
+/*
+ * The player (Dock.tsx), a shade under the paper so it reads as a separate object. Two shapes:
+ *   rail  a panel down the right of a wide window (PlayerDock.tsx says how wide), the video at its top,
+ *         the song (cover, title, Close) and the keys under it, then the page's list (or the queue)
+ *         filling the rest and scrolling inside itself. The page steps aside for it (taste.module.css,
+ *         .root[data-rail]).
+ *   top   pinned along the top of a narrower window, the video the full width, the song and the keys in
+ *         one row under it. The page starts below it (taste.module.css, .root[data-topdock]).
+ * The video is never smaller than 200 by 200 and nothing is laid over it (YouTube's rules for its player).
+ * No progress line of our own: YouTube's frame has its own (the founder, 2026-11-06).
+ */
+.dock {
+  z-index: 330; /* above the radio dock (320, RadioDock.module.css:8) */
+  box-sizing: border-box;
+  background: light-dark(#e9dfcd, #110d0a); /* a shade under the paper, so the player reads as a separate object */
+  color: var(--ink-e);
+  font-family: var(--f-mono);
+}
+.dock[data-mode="rail"] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--rail-w);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 0;
+  box-shadow: -18px 0 40px light-dark(rgba(52, 34, 16, 0.16), rgba(0, 0, 0, 0.45));
+  /* first open only; changing songs does not re-run it. Backwards, not both: once it has run it leaves no
+     transform behind, which would make the panel the box the enlarged video is placed in */
+  animation: railIn 0.45s var(--ease) backwards;
+}
+@keyframes railIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+/* in the account window's side panel: a drawer in the page's hidden strip on its left (taste.module.css), its
+   parts sliding out from the panel's edge as the window uncovers the strip, in step with it (RecordFrame) */
+@media (min-width: 780px) {
+  :global(html[data-frame="panel"]) .dock[data-mode="rail"] {
+    left: 0;
+    right: auto;
+    box-shadow: none;
+    overflow: hidden;
+    animation: none;
+  }
+  :global(html[data-frame="panel"]) .dock[data-mode="rail"] > * {
+    animation: drawerOut 0.3s var(--ease) backwards;
+  }
+}
+@keyframes drawerOut {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+.dock[data-mode="top"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding-top: env(safe-area-inset-top);
+  box-shadow: 0 18px 40px light-dark(rgba(52, 34, 16, 0.16), rgba(0, 0, 0, 0.45));
+  animation: topIn 0.35s var(--touch) backwards;
+}
+@keyframes topIn {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ── the video: its place keeps its size while the frame is lifted out and enlarged ── */
+.slot {
+  position: relative;
+  flex: none;
+  width: 100%;
+}
+/* the rail is never narrower than 400, so its 16:9 video is at least 360 by 202 */
+.dock[data-mode="rail"] .slot {
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+}
+/* the full width at 16:9, but at least 200 tall (a narrow phone letterboxes) and never more than 40% of
+   the window's height (a tablet letterboxes the other way) */
+.dock[data-mode="top"] .slot {
+  height: clamp(200px, 56.25vw, 40vh);
+}
+.stage {
+  position: absolute;
+  inset: 0;
+}
+.frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000 center / contain no-repeat; /* the cover backdrop is set inline, behind the video */
+}
+.dock[data-mode="rail"] .frame {
+  border-radius: var(--r-card);
+}
+.dim[hidden],
+.shut[hidden],
+.trap[hidden] {
+  display: none;
+}
+
+/* ── a shared song's arrival (the Cue): who sent it and their note at the rail's top, above the video's
+      place; their note scrolls in itself past a third of the window, so the video never leaves it ── */
+.lead {
+  flex: none;
+  display: grid;
+  gap: 10px;
+  padding: 4px 0 16px;
+}
+/* the song's still with one big Play, in the video's place until the press */
+.cue {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.cue img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cueDisc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding-left: 3px; /* the play glyph's weight sits left of its box */
+  border-radius: 50%;
+  background: rgba(18, 15, 12, 0.66);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  transition:
+    scale 0.25s var(--spring),
+    background-color 0.2s;
+}
+.cue:hover .cueDisc {
+  scale: 1.06;
+  background: rgba(18, 15, 12, 0.8);
+}
+.cue:focus-visible {
+  outline: none;
+}
+.cue:focus-visible .cueDisc {
+  box-shadow: var(--ring);
+}
+
+/* ── the song and the keys ──
+   rail: the cover, the title and its line, Close at the end of that line, apart from the playing keys;
+         under them the keys, the big filled play and next on the left, the song's own actions (share,
+         enlarge) on the right.
+   top:  one row, the cover, the words, then the keys and Close at the far end. */
+.bar {
+  flex: none;
+  display: grid;
+  gap: 14px;
+  padding: 16px 0 14px;
+}
+.now {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+.art {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-cover);
+  background: var(--sleeve) center / cover no-repeat;
+  box-shadow: 0 8px 18px -10px light-dark(rgba(52, 34, 16, 0.4), rgba(0, 0, 0, 0.7));
+}
+.meta {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.title {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font: 800 26px/0.95 var(--f-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.by {
+  margin: 0;
+  font: var(--t-label);
+  line-height: 1.2;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dock .by a:hover {
+  color: var(--ink-e);
+}
+/* only when something went wrong */
+.note {
+  margin: 0;
+  font: var(--t-label);
+  line-height: 1.2;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--danger);
+}
+/* Close sits at the top of the song's row, its glyph's edge on the panel's edge */
+.dismiss {
+  align-self: start;
+  margin: -6px -10px 0 0;
+}
+.keys {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.transport,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.transport {
+  gap: 10px;
+}
+.actions {
+  margin-left: auto;
+  margin-right: -10px; /* the last glyph's edge on the panel's edge, as Close's */
+}
+/* every key a round ghost key, its glyph at ink-2, lit when pointed at. The element and two classes, so a
+   part's own key in the row (the share key) takes the dock's size whichever sheet loads first */
+.dock .keys button,
+.dock .dismiss button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.dock .keys button:focus-visible,
+.dock .dismiss button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.dock .keys button:hover,
+.dock .dismiss button:hover {
+  background: var(--wash);
+  color: var(--ink-e);
+}
+.dock .keys button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dock .keys button:disabled:hover {
+  background: transparent;
+  color: var(--ink-2);
+}
+.dock .keys svg,
+.dock .dismiss svg {
+  width: 18px;
+  height: 18px;
+}
+/* the play key: big and filled, the one thing in the row that is plainly pressed to play */
+.dock .keys .play {
+  width: 52px;
+  height: 52px;
+  background: var(--fill);
+  color: var(--on-fill, var(--bg));
+}
+.dock .keys .play:hover {
+  background: var(--fill-hover, var(--fill));
+  color: var(--on-fill, var(--bg));
+}
+.dock .keys .play svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* along the top: one row, Close at the far end */
+.dock[data-mode="top"] .bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 10px var(--gutter);
+}
+.dock[data-mode="top"] .now,
+.dock[data-mode="top"] .keys {
+  display: contents;
+}
+.dock[data-mode="top"] .art {
+  order: 0;
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+.dock[data-mode="top"] .meta,
+.dock[data-mode="top"] .next {
+  order: 1;
+  flex: 1;
+}
+.dock[data-mode="top"] .transport {
+  order: 2;
+  gap: 4px;
+}
+.dock[data-mode="top"] .actions {
+  order: 3;
+  margin: 0;
+  gap: 0;
+}
+.dock[data-mode="top"] .dismiss {
+  order: 4;
+  align-self: center;
+  margin: 0;
+}
+.dock[data-mode="top"] .title {
+  font-size: 19px;
+  line-height: 1;
+  -webkit-line-clamp: 1;
+}
+.dock[data-mode="top"] .keys button,
+.dock[data-mode="top"] .dismiss button {
+  width: 36px;
+  height: 36px;
+}
+.dock[data-mode="top"] .keys .play {
+  width: 42px;
+  height: 42px;
+}
+/* a phone keeps the words: the video above already shows the song */
+@media (max-width: 559px) {
+  .dock[data-mode="top"] .art {
+    display: none;
+  }
+}
+
+/* ── between songs on a shared visit (DockUpNext), where the title was ── */
+.next {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.nextLabel,
+.nextWhen {
+  margin: 0;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  color: var(--ink-2);
+}
+.nextLabel {
+  text-transform: uppercase;
+}
+.nextLabel em {
+  font-style: normal;
+  color: var(--ink-e);
+}
+.nextTitle {
+  margin: 0;
+  font: 800 30px/0.95 var(--f-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.dock[data-mode="top"] .nextTitle {
+  font-size: 19px;
+  line-height: 1;
+}
+.nextKeys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.nextPlay.nextPlay,
+.nextStop.nextStop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--r-pill);
+  font: var(--t-button);
+  letter-spacing: var(--t-button-track);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.nextPlay.nextPlay {
+  border: 0;
+  background: var(--fill);
+  color: light-dark(#e9dfcd, #110d0a);
+}
+.nextStop.nextStop {
+  border: 1px solid var(--track);
+  background: transparent;
+  color: var(--ink-e);
+}
+.nextPlay.nextPlay:hover {
+  background: var(--fill-hover, #fff);
+}
+.nextStop.nextStop:hover {
+  background: var(--wash);
+}
+.dock[data-mode="top"] .nextPlay.nextPlay,
+.dock[data-mode="top"] .nextStop.nextStop {
+  height: 34px;
+  padding: 0 14px;
+}
+.nextAuto.nextAuto {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--ink-e);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.nextPlay.nextPlay:focus-visible,
+.nextStop.nextStop:focus-visible,
+.nextAuto.nextAuto:focus-visible {
+  outline: 2px solid var(--ink-e);
+  outline-offset: 2px;
+}
+
+/* ── the footer: Open on YouTube, the rail's last line; along the top, a slim line under the bar ── */
+.foot {
+  flex: none;
+  padding: 12px 0 16px;
+}
+.dock[data-mode="top"] .foot {
+  margin-top: -4px;
+  padding: 0 var(--gutter) 10px;
+}
+.footLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--t-label);
+  line-height: 1.2;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.footLink:hover {
+  color: var(--ink-e);
+}
+.footLink:focus-visible {
+  outline: 2px solid var(--ink-e);
+  outline-offset: 2px;
+}
+
+/* ── the rail's list: the page's own (portalled in) or the queue, filling the rest and scrolling in
+      itself; its last item scrolls clear of the window's foot ── */
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0 -20px 0 -14px;
+  padding: 4px 8px 0 8px;
+}
+.list > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.queue {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+/* the list's marks: Earlier, Now playing, Up next */
+.queueLabel {
+  padding: 14px 0 6px 6px;
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.queueLabel:first-child {
+  padding-top: 4px;
+}
+.queueList {
+  position: relative; /* the song playing is found by its place in the list (PlayerDock's Queue) */
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 24px 0;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-4) transparent;
+}
+.queueItem {
+  display: grid;
+  grid-template-columns: 28px 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--r-small);
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.queueItem:hover {
+  background: var(--wash);
+}
+/* what came before reads a step quieter; the song playing is the lit row, not a key */
+.queueItem[data-past] {
+  opacity: 0.62;
+  transition:
+    background-color 0.2s,
+    opacity 0.2s;
+}
+.queueItem[data-past]:hover,
+.queueItem[data-past]:focus-visible {
+  opacity: 1;
+}
+.queueItem[data-now] {
+  background: var(--wash);
+  cursor: default;
+}
+.queueItem:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+/* the song's place, as the page's numbered songs show theirs (songs.module.css .songN): pointed at, the
+   number gives way to the kit's hover-play, a plain triangle in the page's colour */
+.queueN {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  font: var(--t-meta);
+  line-height: 1;
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+  transition: color 0.18s;
+}
+.queueItem:is(:hover, :focus-visible) .queueN[data-over] {
+  color: transparent;
+}
+.queueCover {
+  overflow: hidden;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-cover);
+  background: var(--sleeve) center / cover no-repeat;
+}
+.queueText {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.queueTitle {
+  font: 400 15px/1.3 var(--f-serif);
+  color: var(--ink-e);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.queueBy {
+  font: var(--t-label);
+  line-height: 1.2;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── enlarged: the same frame, centred over a dimmed page, about 16:9 and at most min(960px, 90vw) wide
+      (and short enough to leave room for Collapse above it) ── */
+.dim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(10, 8, 6, 0.86);
+  cursor: zoom-out;
+}
+.dock[data-big] .stage {
+  position: fixed;
+  z-index: 2;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: min(960px, 90vw, calc((100dvh - 150px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  translate: -50% -50%;
+}
+.dock[data-big] .frame {
+  border-radius: var(--r-card);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
+}
+.shut {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--wash);
+  color: var(--ink-e);
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.shut:hover {
+  background: var(--track);
+}
+.shut:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock[data-mode],
+  .dock[data-mode] > *,
+  :global(html[data-frame="panel"]) .dock[data-mode="rail"] > * {
+    animation: none;
+  }
+}

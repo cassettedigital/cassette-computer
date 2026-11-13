@@ -1,0 +1,25 @@
+/* Hover-reveal pencil overlay over the artist source panel's round photo —
+   the wrapping circle in ArtistSourceInner clips this to match, same
+   technique as AlbumCoverReplaceButton's square cover overlay. */
+.editHint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--cs-gray-12);
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--cs-hover-dur) ease;
+}
+.editHint:hover,
+.editHint:focus-visible {
+  opacity: 1;
+}
+.editHint:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}

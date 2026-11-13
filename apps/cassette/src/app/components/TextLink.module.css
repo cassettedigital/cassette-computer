@@ -1,0 +1,45 @@
+/* TextLink — canonical inline link atom (graduated from styleguide-next kit).
+   RA ships unstyled; state is read off data-* attributes. Three voices via
+   data-variant: body (serif prose), quiet (mono utility), accent (orange "more →"). */
+
+.link {
+  cursor: pointer;
+  text-decoration: none;
+  outline: none;
+  border-radius: 2px;
+  transition: color var(--cs-hover-dur) var(--cs-ease);
+}
+.link[data-focus-visible] { box-shadow: var(--cs-focus-ring); }
+
+.link[data-variant="body"] {
+  font-family: var(--cs-font-serif);
+  font-size: var(--cs-text-body);
+  font-weight: 500;
+  color: var(--cs-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--cs-ink4);
+  text-underline-offset: 3px;
+}
+.link[data-variant="body"][data-hovered] { text-decoration-color: var(--cs-orange); }
+
+.link[data-variant="quiet"] {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.04em;
+  color: var(--cs-ink2);
+}
+.link[data-variant="quiet"][data-hovered] { color: var(--cs-ink); }
+
+.link[data-variant="accent"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--cs-font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--cs-orange);
+}
+.link[data-variant="accent"] .arrow { transition: transform var(--cs-hover-dur) var(--cs-ease); }
+.link[data-variant="accent"][data-hovered] { color: var(--cs-led-amber); }
+.link[data-variant="accent"][data-hovered] .arrow { transform: translateX(3px); }

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["appimage"],
+    "resources": {
+      "resources-linux/server": "server",
+      "resources-linux/node": "node",
+      "resources-linux/cassette-sidecar": "cassette-sidecar",
+      "resources-linux/navidrome": "navidrome",
+      "resources-linux/cassette.env": "cassette.env",
+      "resources-linux/bin": "bin"
+    }
+  }
+}

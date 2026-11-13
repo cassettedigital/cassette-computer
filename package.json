@@ -1,0 +1,17 @@
+{
+  "name": "cassette-computer",
+  "private": true,
+  "description": "Cassette for your computer: the hub, the window, the audio helper and the player screens",
+  "license": "GPL-3.0",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:packages": "pnpm -r --filter \"./packages/*\" build"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.0"
+  }
+}

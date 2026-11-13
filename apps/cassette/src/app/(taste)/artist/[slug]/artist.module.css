@@ -1,0 +1,754 @@
+/*
+ * The artist page (/artist/[slug]). Dark top to bottom: the header and the records on
+ * the press paper (the shared set's .ed), the songs, Known for and the artists like them on Cassette's
+ * flat stock (.own), no rule or hairline anywhere. Sizes come from the `taste` size container (phone
+ * below 760, wide at 760 and up, roomy at 1100), never the viewport. Every section is spaced by --sec
+ * and nothing more. Buttons, links, heads, quotes, the menu, the hand, the facts, the covers and their
+ * glow, the measured bar and the type roles are the shared set's (src/app/_taste); this file holds the
+ * page's own layout. Nothing moves on load or on scroll except the Known for bars; hover and press
+ * feedback stay. Orange only for something playing; a record's own colour arrives as --accent-c and,
+ * for anything set in it, --accent-ink.
+ */
+
+.page {
+  display: block;
+}
+
+/* ═════════════════════════════ 1. the header ═════════════════════════════ */
+/* The covers carry it (on top on a phone, on the right when wide); the photo is a small circle beside
+   the facts; the name is the one big moment, fitted to its column (useFitName). Nothing clips the
+   header: the covers' glow fades out before the page's margin and the top of the page (CoverGlow), so
+   no edge ever cuts it. */
+.intro {
+  position: relative;
+  padding: 16px 0 0;
+}
+.introGrid {
+  --cv: clamp(124px, 38cqi, 168px); /* a cover's side in the stack */
+  --colw: calc(100cqi - 2 * var(--gutter)); /* the text column, for the name's first-paint estimate */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  row-gap: 20px;
+}
+.introText {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+/* the covers: whole, overlapped, fanned; the front one is the most central record. Each is the shared
+   cover (its shadow, its corners, its lift when pointed at); the glow behind is the shared CoverGlow,
+   soft. Under them, the line that names the cover pointed at, kept even when empty */
+.stackBox {
+  display: grid;
+  justify-items: center;
+  row-gap: 4px;
+  justify-self: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.stack {
+  position: relative;
+  isolation: isolate;
+  width: calc(var(--cv) * 2.12);
+  height: calc(var(--cv) * 1.16);
+  /* on a phone the stack sits in the middle, further from the window's sides than the page's margin */
+  --glow-room: calc((100cqi - var(--cv) * 2.12) / 2 - 8px);
+}
+.stack[data-n="2"] {
+  width: calc(var(--cv) * 1.7);
+}
+.stack[data-n="1"] {
+  width: calc(var(--cv) * 1.2);
+}
+/* two classes, so the fan's placement outweighs the shared cover's own box */
+.stack .stackCover {
+  position: absolute;
+  top: calc(var(--cv) * 0.08);
+  left: 50%;
+  width: var(--cv);
+  height: var(--cv);
+  transform: translateX(-50%);
+  /* the fan moves on the touch curve (quick, then a long settle, no bounce); the shared lift keeps its own.
+     Leaving, a cover stays over the front one for a beat while it tucks back, then goes behind */
+  transition:
+    transform 0.5s var(--touch),
+    translate 0.35s var(--spring),
+    z-index 0s 0.12s;
+}
+.stackCover[data-at="0"] {
+  z-index: 3;
+}
+.stack[data-n="3"] .stackCover[data-at="1"] {
+  z-index: 1;
+  transform: translateX(calc(-50% - var(--cv) * 0.56)) rotate(-6deg) scale(0.88);
+}
+.stack[data-n="3"] .stackCover[data-at="2"] {
+  z-index: 2;
+  transform: translateX(calc(-50% + var(--cv) * 0.56)) rotate(6deg) scale(0.88);
+}
+.stack[data-n="2"] .stackCover[data-at="0"] {
+  transform: translateX(calc(-50% + var(--cv) * 0.24));
+}
+.stack[data-n="2"] .stackCover[data-at="1"] {
+  z-index: 1;
+  transform: translateX(calc(-50% - var(--cv) * 0.3)) rotate(-6deg) scale(0.9);
+}
+/* pointing at a record brings it to the front of the stack as it lifts. It doesn't snap there (the founder,
+   2026-11-06: "a smidge clippy"): a cover at the back straightens and grows to full size as it eases a
+   little outward, and crosses over the front cover a beat after it starts to move, while the front one
+   gives way a touch, so the two trade places rather than one cutting over the other */
+.stack[data-n] .stackCover[data-at]:is(:hover, :focus-visible) {
+  z-index: 4;
+  transition:
+    transform 0.5s var(--touch),
+    translate 0.35s var(--spring),
+    z-index 0s 0.06s;
+}
+.stack[data-n="3"] .stackCover[data-at="1"]:is(:hover, :focus-visible) {
+  transform: translateX(calc(-50% - var(--cv) * 0.62)) rotate(-2deg) scale(0.98);
+}
+.stack[data-n="3"] .stackCover[data-at="2"]:is(:hover, :focus-visible) {
+  transform: translateX(calc(-50% + var(--cv) * 0.62)) rotate(2deg) scale(0.98);
+}
+.stack[data-n="2"] .stackCover[data-at="1"]:is(:hover, :focus-visible) {
+  transform: translateX(calc(-50% - var(--cv) * 0.36)) rotate(-2deg) scale(0.98);
+}
+.stack[data-n="3"]:has(.stackCover:not([data-at="0"]):is(:hover, :focus-visible)) .stackCover[data-at="0"] {
+  transform: translateX(-50%) scale(0.95);
+}
+.stack[data-n="2"]:has(.stackCover[data-at="1"]:is(:hover, :focus-visible)) .stackCover[data-at="0"] {
+  transform: translateX(calc(-50% + var(--cv) * 0.24)) scale(0.95);
+}
+/* the record pointed at, named: its title in the caption type, its year in the meta type */
+.stackCap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+  min-height: 22px;
+  margin: 0;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s var(--fade);
+}
+.stackCap[data-on] {
+  opacity: 1;
+}
+.stackTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-e);
+}
+.stackYear {
+  flex: none;
+  color: var(--ink-3);
+}
+/* a touch screen has no pointing: a tap opens the record, so no line is kept for a name */
+@media (hover: none) {
+  .stackCap {
+    display: none;
+  }
+}
+
+/* the facts, with the photo as a small circle when there is one */
+.factsRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 24px;
+}
+.photo {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+.photoClip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--sleeve);
+}
+.photoClip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* the gallery's trigger fills the circle; its own count badge is not ours. Ours is a small dark chip
+   tucked inside the circle's lower edge, shown only while the photo is pointed at or focused (always on
+   a touch screen, which cannot point) */
+.photo > button {
+  border-radius: 50%;
+}
+.photo > div[aria-hidden="true"] {
+  display: none !important;
+}
+.photoCount {
+  position: absolute;
+  z-index: 6;
+  bottom: 8px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: rgba(14, 10, 8, 0.62);
+  backdrop-filter: blur(6px);
+  font: var(--t-meta);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-e);
+  translate: -50% 0;
+  opacity: 0;
+  transition: opacity 0.2s var(--fade);
+  pointer-events: none;
+}
+.photo:hover .photoCount,
+.photo:focus-within .photoCount {
+  opacity: 1;
+}
+@media (hover: none) {
+  .photoCount {
+    opacity: 1;
+  }
+}
+
+/* the name: fitted by useFitName (--ns); until then an estimate from its length and the column */
+.name {
+  --cap: 80px;
+  --floor: 40px;
+  margin: 14px 0 0;
+  font: 800 var(--ns, min(var(--cap), calc(var(--colw) / (var(--L, 8) * 0.47)))) / 0.86 var(--f-display);
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-e);
+}
+.factsRow + .name {
+  margin-top: 16px;
+}
+.nameLine {
+  display: block;
+}
+.measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+  font: 800 100px / 1 var(--f-display);
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+
+/* the first sentence or two of their Wikipedia article, credited under it with the shared byline (a
+   "W" for its mark, the way out) the way a press quote is */
+.lead {
+  max-width: 58ch;
+  margin: 16px 0 0;
+  font: var(--t-body);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.leadBy {
+  margin-top: 12px;
+}
+
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 24px;
+}
+/* a claimed artist's own links, under the buttons: the label type, the way-out arrow */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+/* two classes, so the link's own colours outweigh the paper's `.root a` (BUG-633) */
+.linkOut.linkOut {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.linkOut.linkOut:hover {
+  color: var(--ink);
+}
+.linkOut:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--r-small);
+}
+/* the photo's credit and the claim line stack at the page's foot */
+.foot > div > .credit + .credit {
+  margin-top: 4px;
+}
+
+/* Preview names the band on one line; a long name is cut short rather than pushing Follow off */
+.acts .listen {
+  max-width: min(100%, 420px);
+}
+
+/* ═════════════════════════════ 2. the records ═════════════════════════════ */
+.records {
+  padding: var(--sec) 0;
+}
+/* the head and its view options (the sliders key right after it) are the shared SectionHead and Menu */
+
+.recBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  margin-top: 6px;
+}
+.list {
+  min-width: 0;
+  overflow-anchor: none; /* the page keeps the tapped row in place itself (Records.tsx) */
+}
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* the shared pointing hand marks the open record, out at the row's left edge, centred on the row. A row
+   keeps the room the hand's glyph gives it (its title's size and a little more), so the list's rhythm
+   does not depend on the hand */
+.rowBtn {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  align-items: baseline;
+  column-gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 0 10px 38px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink-3);
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.rowBtn:hover {
+  color: var(--ink-2);
+}
+.row[data-open] .rowBtn {
+  color: var(--ink-e);
+}
+.rowTitle {
+  min-width: 0;
+  font: 700 24px/0.95 var(--f-display);
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+/* what each row is, when the view mixes kinds: one column, every row's word starting at one line,
+   as wide as the longest word in the view (--kn letters of the mono label) */
+.list[data-kinds] .rowBtn {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.rowKind {
+  min-width: calc(var(--kn, 5) * (1ch + 0.16em));
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+.rowYear {
+  min-width: calc(4 * (1ch + 0.08em)); /* four figures and their tracking, so a row with no year keeps the column */
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--ink-3);
+  transition: color 0.2s;
+}
+/* the kind and the year sit on the row's line, not their type roles' own: a rule of their own, so the production
+   minifier can't merge it ahead of their font shorthand (it did for the year, 2026-10-21) */
+.rowBtn .rowKind,
+.rowBtn .rowYear {
+  line-height: 1;
+}
+.row[data-open] .rowYear {
+  color: var(--ink-e);
+}
+
+/* a long discography opens on its best-known records (Records.tsx): the next few fade away under them on a
+   soft gradient, a glimpse and not a way in, and one plain line opens the rest */
+.tail {
+  pointer-events: none;
+  mask-image: linear-gradient(rgba(0, 0, 0, 0.55), transparent);
+}
+.more.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0 38px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+/* a prolific artist's page holds only their most central releases: one quiet line says how many there are in all */
+.selection {
+  margin: 14px 0 0 38px;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  color: var(--ink-2);
+}
+.more.more:hover {
+  color: var(--ink-e);
+}
+.more.more:focus-visible {
+  outline: var(--ring-line);
+  outline-offset: 4px;
+}
+/* opening it: each record not shown yet grows open where it belongs, top to bottom, pushing the ones already
+   there apart rather than jumping them; then the view options come in beside the head */
+.row[data-in] {
+  overflow: hidden;
+  animation: rowIn 0.5s var(--ease) backwards;
+  animation-delay: calc(var(--in, 0) * 24ms);
+}
+@keyframes rowIn {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 120px;
+    opacity: 1;
+  }
+}
+.viewIn {
+  display: inline-block;
+}
+.viewIn[data-in] {
+  animation: viewIn 0.45s var(--ease) 0.25s backwards;
+}
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    translate: -6px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row[data-in],
+  .viewIn[data-in] {
+    animation: none;
+  }
+}
+
+/* the open record under its row, on a phone: cover with its size and Hear it beside it, then the line */
+.inline {
+  display: none;
+}
+.inline:not([hidden]) {
+  display: grid;
+  gap: 16px;
+  padding: 4px 0 22px 38px;
+}
+.inlineTop {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: end;
+  gap: 14px;
+}
+.inlineCover {
+  display: block;
+  width: 104px;
+}
+/* the record beside the list (wide only): every view in one grid cell, so the panel never jumps,
+   and the controls sit at the same height for every record (the line comes last) */
+.panel {
+  display: none;
+}
+.view {
+  grid-area: 1 / 1;
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s var(--fade),
+    visibility 0s 0.3s;
+}
+.view[data-on] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.3s var(--fade),
+    visibility 0s;
+}
+.viewCover {
+  display: block;
+  width: min(320px, 100%);
+}
+.viewMeta {
+  margin: 0;
+  min-height: 1.5em;
+  font: var(--t-meta);
+  line-height: 1.5;
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.view .viewMeta {
+  margin-top: 18px;
+}
+/* Preview album and the way into its reviews: two buttons side by side while they fit, and when they
+   don't, each the row's full width, so a wrapped pair still reads as a pair */
+.viewActs {
+  position: relative; /* Buy's menu hangs from the start of this row (the shared Menu's "row") */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+  max-width: 440px;
+}
+/* the way into the record's reviews, a plain arrow line under its quote (the founder, 2026-11-06: Buy took
+   the button's place) */
+.readMore.readMore {
+  justify-self: start;
+  margin-top: 16px;
+}
+.view .viewActs {
+  margin-top: 14px;
+}
+.act {
+  flex: 1 1 auto;
+}
+.act:only-child {
+  flex-grow: 0;
+}
+.view .line {
+  margin-top: 24px;
+}
+
+/* ═════════════════════════════ 3 to 5. our sections, on the flat stock ═════════════════════════════ */
+.ownRun {
+  padding: 0 0 var(--sec);
+}
+.ownSec {
+  padding-top: var(--sec);
+}
+/* the "If you like X for their ___" menu word: its look is the kit's (menu.module.css .word). All this does is let
+   a long side shrink and wrap inside the head's row on a phone, and display: contents keeps the head row's layout */
+.likeWord {
+  display: contents;
+}
+.likeWord > div {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 3. best-known songs: the kit's SongList (_taste/songs.module.css) */
+
+/* 4. known for: the trait, its category, its records, and the shared measured bar for its weight */
+.known {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.known > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px 16px;
+  padding: 12px 0 2px;
+}
+.trait {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font: 600 22px/1 var(--f-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.trait small {
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  color: var(--ink-3);
+}
+.exemplars {
+  display: inline-flex;
+  gap: 6px;
+}
+.exemplars a {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-cover);
+  background: var(--sleeve);
+  transition: translate 0.35s var(--spring);
+}
+.exemplars a:hover,
+.exemplars a:focus-visible {
+  translate: 0 var(--cover-lift);
+}
+.weight {
+  grid-column: 1 / -1;
+}
+
+/* 5. artists like them: the kit's ArtistRows (_taste/artists.module.css) */
+
+/* 6. the foot: the photo's credit, when the header shows a photo that owes one */
+.foot {
+  padding: 28px 0 8px;
+}
+.credit {
+  max-width: 72ch;
+  margin: 0;
+  font: var(--t-label);
+  line-height: 1.75;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ═════════════════════════════ phone ═════════════════════════════ */
+@container taste (width < 760px) {
+  /* Listen fills the row; Follow beside it is its glyph alone */
+  .listen {
+    flex: 1;
+  }
+  .follow:not([data-alone]) {
+    width: 48px;
+    padding: 0;
+    gap: 0;
+  }
+  .follow:not([data-alone]) .followWord {
+    display: none;
+  }
+}
+
+/* ═════════════════════════════ wide ═════════════════════════════ */
+@container taste (width >= 760px) {
+  .intro {
+    padding-top: clamp(12px, 1.6cqi, 24px);
+  }
+  /* the text left, the covers right */
+  .introGrid {
+    --igap: clamp(32px, 4.5cqi, 72px);
+    --cv: clamp(188px, 19cqi, 272px);
+    --colw: calc(min(100cqi - 64px, 1200px) - var(--cv) * 2.12 - var(--igap));
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--igap);
+  }
+  .intro:not([data-art]) .introGrid {
+    --colw: min(100cqi - 64px, 1200px);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stackBox {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .stack {
+    --glow-room: initial; /* wide: the stack meets the wrap's edge, so the page's margin is the room */
+    --glow-up: 40%; /* a short stack: its light may rise as far as the page's room above allows */
+  }
+  .introText {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .photo {
+    width: 72px;
+    height: 72px;
+  }
+  .name {
+    --cap: 112px;
+    --floor: 64px;
+  }
+  .lead {
+    font-size: 18px;
+  }
+  .acts {
+    margin-top: 24px;
+  }
+
+  .recBody {
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+    gap: clamp(32px, 5cqi, 80px);
+    margin-top: 10px;
+  }
+  .rowBtn {
+    column-gap: 12px;
+    min-height: calc(2 * clamp(9px, 1cqi, 14px) + 1.13 * clamp(24px, 2.6cqi, 38px));
+    padding: clamp(9px, 1cqi, 14px) 0 clamp(9px, 1cqi, 14px) 40px;
+  }
+  .rowTitle {
+    font-size: clamp(24px, 2.6cqi, 38px);
+  }
+  /* more than ten records: a size down, so the list still reads at a glance */
+  .list[data-long] .rowBtn {
+    min-height: calc(2 * clamp(7px, 0.8cqi, 11px) + 1.13 * clamp(22px, 2.1cqi, 30px));
+    padding-top: clamp(7px, 0.8cqi, 11px);
+    padding-bottom: clamp(7px, 0.8cqi, 11px);
+  }
+  .list[data-long] .rowTitle {
+    font-size: clamp(22px, 2.1cqi, 30px);
+  }
+  .inline:not([hidden]) {
+    display: none;
+  }
+  .panel {
+    position: sticky;
+    top: var(--stick);
+    display: grid;
+    isolation: isolate;
+    padding-top: 6px;
+  }
+
+  .known {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: repeat(var(--rows, 4), auto);
+    grid-auto-flow: column;
+    column-gap: clamp(32px, 5cqi, 80px);
+  }
+}
+@container taste (width >= 1100px) {
+  .name {
+    --cap: 132px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exemplars a,
+  .stack .stackCover {
+    transition: none;
+  }
+}

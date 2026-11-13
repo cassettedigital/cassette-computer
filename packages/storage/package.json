@@ -1,0 +1,31 @@
+{
+  "name": "@discovery/storage",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm run build:js && pnpm run build:types",
+    "build:js": "tsup src/index.ts --format esm --clean",
+    "build:types": "tsc --emitDeclarationOnly --declaration --declarationMap --outDir dist --rootDir src --composite false"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1009.0",
+    "@aws-sdk/s3-request-presigner": "3.1009.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ]
+}

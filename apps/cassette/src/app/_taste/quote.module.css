@@ -1,0 +1,367 @@
+/*
+ * A writer's words and their credit (P6, P7): the quote in its three sizes, the one byline, the outlet's
+ * mark and the grade chip. The homepage's press room sets the feature size on its dark paper; the artist
+ * page the inline size beside or under its records; the album page the card.
+ */
+
+/* ═══ feature: the homepage's press room, one line set large beside the cover, sized to the viewport ═══ */
+.feature {
+  margin: 0;
+}
+.feature blockquote {
+  margin: 0;
+  font: 400 clamp(24px, 2.3vw, 38px) / 1.2 var(--f-serif);
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+.feature blockquote[data-length="s"] {
+  font-size: clamp(28px, 2.9vw, 46px);
+  line-height: 1.12;
+}
+.feature blockquote[data-length="l"] {
+  font-size: clamp(20px, 1.9vw, 30px);
+  line-height: 1.28;
+}
+.feature figcaption {
+  margin-top: 18px;
+}
+
+/* ═══ inline: the artist page's records, curly quotes in the text, sized to the page's container ═══ */
+.inline {
+  margin: 0;
+}
+.inline blockquote {
+  margin: 0;
+  font: 400 clamp(19px, 2cqi, 25px) / 1.26 var(--f-serif);
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+.inline blockquote[data-length="s"] {
+  font-size: clamp(21px, 2.3cqi, 28px);
+  line-height: 1.2;
+}
+.inline blockquote[data-length="l"] {
+  font-size: clamp(18px, 1.7cqi, 21px);
+  line-height: 1.32;
+}
+.inline figcaption {
+  margin-top: 14px;
+}
+
+/* ═══ the one byline: mark, the outlet in the label type over its meta, the grade ═══ */
+.by {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.byText {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.byName {
+  min-width: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-e);
+}
+.by .byLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: gap 0.25s var(--spring);
+}
+.by .byLink:hover {
+  gap: 10px;
+}
+.byLink > svg {
+  flex: none;
+}
+.byLink:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.byMeta {
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ═══ the outlet's mark: its favicon on a light chip, or its first letter. Three sizes, one corner ═══ */
+.mark,
+.mono {
+  flex: none;
+  display: block;
+  box-sizing: border-box;
+  border-radius: var(--r-small);
+}
+/* the chip stays light on either paper: many outlets' marks are black (Pitchfork's), and a chip in the
+   ink would hide them on the light one */
+.mark {
+  background: #efe7da;
+  object-fit: contain;
+}
+.mono {
+  display: grid;
+  place-items: center;
+  background: var(--track);
+  font-family: var(--f-display);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink-2);
+}
+/* the letter is drawn here and is not in the page's text (BUG-832): a text-only reader would run it into
+   the outlet's name and the source count */
+.mono::before {
+  content: attr(data-letter);
+}
+.mark[data-size="20"],
+.mono[data-size="20"] {
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  font-size: 12px; /* floor: art, the outlet's monogram inside its 20px mark */
+}
+.mark[data-size="24"],
+.mono[data-size="24"] {
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  font-size: 14px;
+}
+.mark[data-size="32"],
+.mono[data-size="32"] {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  font-size: 18px;
+}
+.mono[data-size] {
+  padding: 0;
+}
+
+/* ═══ the grade, as printed: plain mono type in full ink beside the outlet. No box, no line, no fill
+      (the founder, 2026-10-21: "these blue lines around the ratings are hideous") ═══ */
+.chip {
+  display: inline-block;
+  flex: none;
+  font: 500 13px/1 var(--f-mono);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-e);
+  white-space: nowrap;
+}
+
+/* ═══ the press card (the album page): the September card's character on the dark paper. The mark in
+      the record's colour (big on the lead), a headline in display caps when the card has one (the
+      highlighter behind it for the strongest verdict only), the words sized by their length so a grid
+      of cards has a rhythm, the one byline at the foot. No lines; 5px corners; nothing under 11px. ═══ */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 26px 30px;
+  border-radius: var(--r-card);
+  background: var(--wash);
+}
+/* a speaker's own words: a faint lift of the record's colour */
+.card[data-voice] {
+  background-image: linear-gradient(color-mix(in srgb, var(--accent-c) 8%, transparent), color-mix(in srgb, var(--accent-c) 8%, transparent));
+}
+/* the mark: the record's colour at full strength, the same place and size on every card of a size */
+.cardMark {
+  display: block;
+  height: 26px;
+  font: 400 64px/0.62 var(--f-serif);
+  color: var(--accent-c);
+  user-select: none;
+  transition: color 0.2s;
+}
+.cardMark + .cardHead {
+  margin-top: -4px;
+}
+.cardMark + .cardQuote {
+  margin-top: -10px;
+}
+.cardHead {
+  margin: 0;
+  font: 700 28px/1.04 var(--f-display);
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--ink-e);
+  text-wrap: balance;
+}
+/* the highlighter: the record's colour laid behind the headline's words, line by line, the paper's ink
+   on it. The strongest verdict only (the editor's stroke on a rave) */
+.stroke {
+  padding: 0 0.22em 0.1em;
+  border-radius: 2px; /* corner: art (a highlighter mark) */
+  background: var(--accent-c);
+  color: var(--bg);
+  box-decoration-break: clone;
+  transition: background-color 0.2s;
+}
+.accent {
+  font-style: normal;
+  color: var(--accent-ink, var(--accent-c));
+  transition: color 0.2s;
+}
+.cardQuote {
+  margin: 0;
+}
+.cardQuote p {
+  margin: 0;
+  font: 400 24px/1.36 var(--f-serif);
+  letter-spacing: -0.005em;
+  color: var(--ink-e);
+  text-wrap: pretty;
+}
+/* the words by their length: short lines big, long ones smaller */
+.card[data-length="s"] .cardQuote p {
+  font-size: 30px;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+}
+.card[data-length="l"] .cardQuote p {
+  font-size: 19.5px;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.card[data-voice] .cardQuote p {
+  font-style: italic;
+}
+.card[data-solo] .cardQuote p {
+  max-width: 34em;
+}
+
+/* the lead: clearly a size up from the rest, its mark big */
+.card[data-emphasis="lead"] {
+  padding: 36px 44px 34px;
+  gap: 18px;
+}
+.card[data-emphasis="lead"] .cardMark {
+  height: 30px;
+  font-size: 120px;
+  line-height: 0.8;
+}
+.card[data-emphasis="lead"] .cardMark + .cardHead {
+  margin-top: 0;
+}
+.card[data-emphasis="lead"] .cardMark + .cardQuote {
+  margin-top: -6px;
+}
+.card[data-emphasis="lead"] .cardHead {
+  font-size: 46px;
+  line-height: 1;
+}
+.card[data-emphasis="lead"] .cardQuote p {
+  max-width: 30em;
+  font-size: 34px;
+  line-height: 1.26;
+  letter-spacing: -0.012em;
+}
+.card[data-emphasis="lead"][data-length="s"] .cardQuote p {
+  max-width: 24em;
+  font-size: 44px;
+  line-height: 1.14;
+}
+.card[data-emphasis="lead"][data-length="l"] .cardQuote p {
+  max-width: 36em;
+  font-size: 27px;
+  line-height: 1.38;
+  letter-spacing: -0.006em;
+}
+
+/* behind Read all: a size down, the same rhythm */
+.card[data-emphasis="more"] {
+  padding: 22px 24px;
+  gap: 12px;
+}
+.card[data-emphasis="more"] .cardMark {
+  height: 20px;
+  font-size: 50px;
+}
+.card[data-emphasis="more"] .cardMark + .cardQuote {
+  margin-top: -8px;
+}
+.card[data-emphasis="more"] .cardHead {
+  font-size: 21px;
+}
+.card[data-emphasis="more"] .cardQuote p {
+  font-size: 20px;
+  line-height: 1.42;
+}
+.card[data-emphasis="more"][data-length="s"] .cardQuote p {
+  font-size: 24px;
+  line-height: 1.3;
+}
+.card[data-emphasis="more"][data-length="l"] .cardQuote p {
+  font-size: 17px;
+  line-height: 1.5;
+}
+/* the card's byline sits at its foot */
+.cardBy {
+  margin-top: auto;
+  padding-top: 14px;
+  min-width: 0;
+}
+
+/* ═══ phone (below 760) ═══ */
+@container taste (width < 760px) {
+  .card {
+    padding: 22px 20px;
+  }
+  .card[data-emphasis="lead"] {
+    padding: 26px 22px 24px;
+  }
+  .card[data-emphasis="more"] {
+    padding: 20px;
+  }
+  .card[data-emphasis="lead"] .cardMark {
+    height: 24px;
+    font-size: 88px;
+  }
+  .cardHead {
+    font-size: 24px;
+  }
+  .card[data-emphasis="lead"] .cardHead {
+    font-size: 32px;
+  }
+  .card[data-emphasis="more"] .cardHead {
+    font-size: 19px;
+  }
+  .cardQuote p {
+    font-size: 21px;
+  }
+  .card[data-length="s"] .cardQuote p {
+    font-size: 25px;
+  }
+  .card[data-length="l"] .cardQuote p {
+    font-size: 18px;
+  }
+  .card[data-emphasis="lead"] .cardQuote p {
+    font-size: 26px;
+  }
+  .card[data-emphasis="lead"][data-length="s"] .cardQuote p {
+    font-size: 32px;
+  }
+  .card[data-emphasis="lead"][data-length="l"] .cardQuote p {
+    font-size: 22px;
+  }
+  .card[data-emphasis="more"] .cardQuote p {
+    font-size: 18px;
+  }
+  .card[data-emphasis="more"][data-length="s"] .cardQuote p {
+    font-size: 21px;
+  }
+  .card[data-emphasis="more"][data-length="l"] .cardQuote p {
+    font-size: 17px;
+  }
+}

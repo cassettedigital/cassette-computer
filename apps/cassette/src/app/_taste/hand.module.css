@@ -1,0 +1,27 @@
+/*
+ * The old printer's pointing hand (P9): out at the left edge of its row (the row is positioned and keeps
+ * room at its left), centred on the row, in the record's colour as text.
+ */
+.hand {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  pointer-events: none;
+}
+.hand::before {
+  content: "\261E";
+  display: block;
+  font: 400 24px/1 "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", serif;
+  font-variant-emoji: text;
+  color: var(--accent-ink, var(--accent-c));
+  opacity: 0;
+  translate: -8px -52%;
+  transition:
+    opacity 0.2s,
+    translate 0.35s var(--spring),
+    color 0.2s;
+}
+.hand[data-on]::before {
+  opacity: 1;
+  translate: 0 -52%;
+}

@@ -1,0 +1,13 @@
+{
+  "name": "cassette-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev:app": "CASSETTE_UI_URL=${CASSETTE_UI_URL:-http://localhost:3100} '/Applications/Cassette Dev.app/Contents/MacOS/cassette-desktop'"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

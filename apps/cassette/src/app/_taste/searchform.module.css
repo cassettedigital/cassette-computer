@@ -1,0 +1,27 @@
+/*
+ * The search form (SearchForm.tsx): one field and its button, both capsules at the one control height.
+ * It fills the box it sits in.
+ */
+.find {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+.field {
+  flex: 1;
+  min-width: 0;
+  height: var(--control-h);
+  padding: 0 22px;
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-e);
+  font: var(--t-body);
+}
+.field::placeholder {
+  color: var(--ink-3);
+}
+.field:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}

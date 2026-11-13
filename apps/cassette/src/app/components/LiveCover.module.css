@@ -1,0 +1,24 @@
+/* LiveCover: the still fills the box the way a cover does anywhere else; the live canvas
+   lies over it and fades in once its first frame is drawn, which is the frame the still
+   was taken at, so the hand-off doesn't show. Clicks pass through to whatever the cover
+   sits in (a card link, the header's cover picker). */
+.box {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.live {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.live[data-on] {
+  opacity: 1;
+}

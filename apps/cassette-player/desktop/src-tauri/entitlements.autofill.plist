@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Stage 1 hardened-runtime exceptions. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.network.client</key>
+  <true/>
+
+  <!-- Stage 2 — password AutoFill. RESTRICTED: only valid when the app also
+       embeds a Developer ID provisioning profile whose App ID has the
+       Associated Domains capability (else AMFI refuses to launch). bundle-macos.sh
+       uses THIS entitlements file only when src-tauri/embedded.provisionprofile
+       is present. -->
+  <!-- www is the canonical host (apex cassette.digital 307-redirects to it, and
+       Apple does NOT follow redirects when verifying the AASA), so www must be
+       listed. apex is kept too — harmless if it can't verify, and covers a
+       credential saved under the bare domain. -->
+  <key>com.apple.developer.associated-domains</key>
+  <array>
+    <string>webcredentials:www.cassette.digital</string>
+    <string>webcredentials:cassette.digital</string>
+  </array>
+</dict>
+</plist>

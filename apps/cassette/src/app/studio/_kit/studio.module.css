@@ -1,0 +1,479 @@
+/*
+ * Studio's window and the parts its pages share, drawn as the player draws its own (desk/desk.module.css,
+ * admin/_shell/admin.module.css): the rail on the rail's surface, the page beside it scrolling on its own, no
+ * rule where they meet. Every control is the player kit's (packages/cassette-kit Pages.tsx): one key size, 34,
+ * the kit's capsule fields, its tables, its notes. What is here is only what the kit has no part for: the
+ * window and rail layout, a page's head and sections, the switch between an artist's pages (links, so the
+ * address says where you are), a paragraph box, and a list of rows without lines. The paper follows the
+ * reader's device through the kit's follow scope (StudioWindow). On a phone the rail is a bar along the top.
+ */
+
+/* ── the window: rail | page ── */
+.app.app {
+  --side: clamp(220px, 17vw, 248px);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--side) minmax(0, 1fr);
+  overflow: hidden;
+  color: var(--pk-text-primary);
+}
+
+/* ── one colour family (the founder, 2026-11-08: the greys didn't agree) ──
+   The window takes the website's paper (taste .follows) and the player kit's parts (kit .follow), and the kit's
+   own greys were tuned apart from the paper: in dark its panel sat at an olive hue 81 against the paper's
+   brown 61, and its quiet inks read greenish. In Studio every grey comes from the paper instead: the page is
+   the paper; both rails and every raised part are the paper's own hue, a step darker in light and lighter in
+   dark (computed in OKLCH: light L 91.5 / 96.6 / 88.5 at hue 81, dark L 21.6 / 24.6 / 28 at hue 61); the inks
+   are the paper's ink at three strengths, mixed in OKLab (in OKLCH the dark paper's hue counts as none and the
+   mix came out faintly pink). Three classes so it outweighs kit .follow in any load order. */
+.app.app.app {
+  --studio-panel: light-dark(#ebe2d2, #1e1914);
+  --pk-surface-base: var(--studio-panel);
+  --pk-surface-raised: light-dark(#f9f3e8, #251f1b);
+  --pk-surface-elevated: light-dark(#e2d8c7, #2e2722);
+  --pk-text-primary: var(--ink-e);
+  --pk-text-secondary: color-mix(in oklab, var(--ink-e) 72%, var(--bg));
+  --pk-text-tertiary: color-mix(in oklab, var(--ink-e) 56%, var(--bg));
+  --pk-hairline: color-mix(in oklab, var(--ink-e) 16%, var(--bg));
+}
+
+/* ── the rail ── */
+.side {
+  grid-column: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px 10px 12px;
+  overflow: hidden;
+  background: var(--pk-surface-base);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: var(--pk-r-control);
+  font: 800 17px/1 var(--pk-f-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pk-text-primary);
+  text-decoration: none;
+}
+.brand:focus-visible,
+.avatarKey:focus-visible,
+.switch a:focus-visible,
+.rowLink:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.brandMark {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin: -5px 0;
+  color: var(--pk-accent-text);
+}
+.nav {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pk-hairline) transparent;
+}
+/* an artist's place in the rail: their initials on a disc, the glyph's size */
+.disc {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--pk-text-primary) 12%, transparent);
+  font: 700 11px/1 var(--pk-f-display);
+  letter-spacing: 0.02em;
+  color: var(--pk-text-primary);
+}
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+.avatarKey {
+  display: grid;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 0.15s;
+}
+.avatarKey:hover {
+  box-shadow: 0 0 0 2px var(--pk-hairline);
+}
+
+/* the side lent to an open piece (side.tsx): the piece draws its own column in it */
+.lentSide.lentSide {
+  gap: 14px;
+}
+/* focus: the side goes; the page has the window (not offered on a phone, where the side is the top bar) */
+@media (min-width: 761px) {
+  .app.app[data-focus] {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+  .app[data-focus] > .side {
+    display: none;
+  }
+}
+
+/* ── the page ── */
+/* --pane-top/--pane-bottom: its padding, for a page that runs edge to edge (the writing screen) */
+.pane {
+  --pane-top: 40px;
+  --pane-bottom: 64px;
+  grid-column: 2;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--pane-top) 0 var(--pane-bottom);
+  scrollbar-width: thin;
+  scrollbar-color: var(--pk-hairline) transparent;
+}
+
+/* A click answers at once (BUG-995): while the next page is on its way (data-pending, set by the window from
+   QuietLink), this one steps back, after a beat so a quick landing doesn't flicker. */
+.pane[data-pending] {
+  cursor: progress;
+}
+.pane[data-pending] > * {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.18s ease 0.06s;
+}
+/* the desk's library pages' measure; `read` holds a page of words and fields to a reading width */
+.page {
+  width: calc(100% - 64px);
+  max-width: 1200px;
+  margin-inline: auto;
+  display: grid;
+  align-content: start;
+  gap: 36px;
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-primary);
+}
+.page[data-measure="read"] {
+  max-width: 820px;
+}
+.head {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+.headRow {
+  justify-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+.headRow > h1,
+.sectionHead > h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+.line {
+  margin: 0;
+  max-width: 72ch;
+  font: var(--pk-t-caption);
+  line-height: 1.5;
+  color: var(--pk-text-secondary);
+}
+.section {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+}
+
+/* ── an artist's pages: the kit's switch, as links ── */
+.switch {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 3px;
+  overflow-x: auto;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-raised);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 6%, transparent);
+  scrollbar-width: none;
+}
+.switch a {
+  display: grid;
+  place-items: center;
+  height: 28px;
+  padding: 0 13px;
+  border-radius: var(--pk-r-pill);
+  color: var(--pk-text-secondary);
+  font: 700 13px/1 var(--pk-f-display);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+.switch a:hover {
+  color: var(--pk-text-primary);
+}
+.switch a[aria-current="page"] {
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ── laying out ── */
+/* a row of keys and tags */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.rowEnd {
+  justify-content: flex-end;
+}
+/* a row of fields and their key, lined up along their foot */
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.stack {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+/* two sections side by side, one above the other when there's no room */
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 36px 28px;
+}
+
+/* ── words ── */
+/* a person's own words as a fan reads them: the serif, at reading size */
+.words {
+  margin: 0;
+  max-width: 62ch;
+  font: 400 17px/1.6 var(--pk-f-answer);
+  color: var(--pk-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.words[data-size="lead"] {
+  font: italic 400 22px/1.35 var(--pk-f-answer);
+}
+.words[data-quiet] {
+  color: var(--pk-text-tertiary);
+}
+/* a paragraph you type into: the kit's field, as a box with room for lines */
+.area {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 132px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--pk-r-large);
+  background: var(--pk-surface-raised);
+  box-shadow: inset 0 0 0 1px var(--pk-hairline);
+  color: var(--pk-text-primary);
+  font: 400 16px/1.55 var(--pk-f-answer);
+  resize: vertical;
+}
+.area:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px var(--pk-text-primary);
+}
+.area::placeholder {
+  color: var(--pk-text-tertiary);
+}
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── rows: a list held apart by space, a wash under the pointer ── */
+.rows {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rowItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 10px;
+  border-radius: var(--pk-r-control);
+  transition: background-color 0.15s;
+}
+.rowItem:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 5%, transparent);
+}
+.rowItem[data-dim] {
+  opacity: 0.6;
+}
+.rowLink {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border-radius: var(--pk-r-small);
+  color: inherit;
+  text-decoration: none;
+}
+.rowTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font: var(--pk-t-row-title);
+  letter-spacing: var(--pk-k-row-title);
+  text-transform: uppercase;
+}
+.rowMeta {
+  font: var(--pk-t-caption);
+  color: var(--pk-text-tertiary);
+}
+/* a cover or a photo in a row or a grid: the kit's corner, an empty sleeve when there's no picture */
+.thumb {
+  display: block;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: var(--pk-r-artwork-row);
+  background: color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+  object-fit: cover;
+}
+.thumb[data-size="large"] {
+  width: 132px;
+  height: 132px;
+}
+.thumb[data-round] {
+  border-radius: 50%;
+}
+.thumb > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumbInitials {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font: 800 40px/1 var(--pk-f-display);
+  color: var(--pk-text-tertiary);
+}
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 14px;
+}
+.thumbs > * {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.thumbs .thumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+/* ── the phone: the rail is a bar along the top, its places a row you can scroll ── */
+@media (max-width: 760px) {
+  .app.app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .side {
+    grid-column: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 8px max(10px, env(safe-area-inset-left, 0px)) 8px 10px;
+  }
+  .brand > span {
+    display: none;
+  }
+  .nav {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .nav p {
+    display: none;
+  }
+  .nav ul {
+    display: flex;
+    gap: 2px;
+  }
+  /* two classes deep, so it outweighs the kit's own row (.places .place) */
+  .side .nav > *,
+  .side .nav li {
+    flex: none;
+  }
+  .side .nav li > a {
+    grid-template-columns: 22px auto;
+    white-space: nowrap;
+  }
+  /* places with no page yet stay off the bar: there's no room to show what isn't there */
+  .side .nav li:has(> [aria-disabled]) {
+    display: none;
+  }
+  .pane {
+    --pane-top: 24px;
+    --pane-bottom: 48px;
+    --pane-chrome: 52px;
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .page {
+    width: calc(100% - 32px);
+    gap: 28px;
+  }
+  .rowItem {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .rowItem > :last-child:not(:nth-child(2)) {
+    grid-column: 2;
+  }
+}

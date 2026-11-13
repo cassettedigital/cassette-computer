@@ -1,0 +1,160 @@
+/*
+ * Shared skeleton styles — the ONE place the loading-pulse vocabulary lives.
+ *
+ * Every skeleton (album grid, dashboard shell, sidebar, device card) composes
+ * from <SkeletonBlock>, which wears `.block`. Keeping the animation + reduced-
+ * motion fallback here means there are no more ad-hoc inline `animation:` strings
+ * scattered across loading.tsx files (the old library/loading.tsx pattern).
+ *
+ * Tokens only — fill is var(--cs-bg2), base pulse is the globals.css keyframe
+ * `cs-loadPulse`, and a gentle highlight sweep (`cs-loadSheen`, below) rides on
+ * top. Do not invent colors here.
+ */
+
+.block {
+  background: var(--cs-bg2);
+  animation: cs-loadPulse 1.4s ease-in-out infinite;
+  /* Skeletons are decorative; never let one capture a pointer/selection. */
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Card sheen ────────────────────────────────────────────────────────────
+   The gentle highlight sweeps across a whole CARD (cover + caption, or a device
+   tile), not each atom inside it — so a card reads as one surface catching light,
+   instead of its pieces flickering independently. Wrap a card container in this
+   class; its block children keep only the base pulse. Built on transform so it
+   stays on the compositor even with a grid of cards; one even, continuous,
+   linear pass (no accel, no end-pause) reads as a calm drift. */
+.cardSheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.cardSheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 75%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--cs-ink) 5%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-110%);
+  animation: cs-loadSheen 3.6s linear infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Same sweep as .cardSheen at ~half ink — for dense rails where 5% reads loud. */
+.cardSheenSoft {
+  position: relative;
+  overflow: hidden;
+}
+
+.cardSheenSoft::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 75%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--cs-ink) 2.5%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-110%);
+  animation: cs-loadSheen 3.6s linear infinite;
+  pointer-events: none;
+  will-change: transform;
+}
+
+@keyframes cs-loadSheen {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(240%);
+  }
+}
+
+/* ── First-load header: a labeled, indeterminate progress line above the grid.
+   Shown only on the genuinely-slow first fetch (empty IndexedDB cache). The bar
+   is INDETERMINATE on purpose: covers lazy-load, so a real percentage would
+   stall. Neutral ink, never amber (amber is reserved for live playback). */
+.loadingHeader {
+  margin-bottom: var(--cs-space-6);
+}
+.loadingLabel {
+  font-family: var(--cs-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+  margin-bottom: 10px;
+}
+.progressTrack {
+  position: relative;
+  height: 3px;
+  width: 100%;
+  max-width: 300px;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg2);
+  overflow: hidden;
+}
+.progressBar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 38%;
+  border-radius: inherit;
+  background: var(--cs-ink3);
+  animation: cs-indeterminate 1.25s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes cs-indeterminate {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/* Respect prefers-reduced-motion: the pulse becomes a static, dimmed block and
+   the card sheen is removed entirely. */
+@media (prefers-reduced-motion: reduce) {
+  .block {
+    animation: none;
+    opacity: 0.45;
+  }
+  .cardSheen::after {
+    display: none;
+  }
+  .progressBar {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
+
+/* Visually-hidden status text — mirrors the pattern in library/loading.tsx so a
+   screen reader hears "Loading…" while the blocks convey it visually. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

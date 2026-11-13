@@ -1,0 +1,124 @@
+/*
+ * Songs as rows (SongList.tsx), moved here from the artist page's best-known songs unchanged: no
+ * hairlines, the cover small, the title in the serif, the meta in the meta type, the length or the bars
+ * at the end. Two columns from 760, filled down then across (--rows, written by the list).
+ */
+.songs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.song {
+  display: grid;
+  grid-template-columns: 28px 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* the number is where a counted row plays from: pointed at, the kit's play triangle takes its place */
+.songN {
+  position: relative;
+  transition: color 0.18s;
+}
+.song[data-over]:is(:hover, :focus-visible) .songN {
+  color: transparent;
+}
+.song:disabled {
+  cursor: default;
+}
+.songN,
+.songTime {
+  font: var(--t-meta);
+  line-height: 1;
+  letter-spacing: var(--t-meta-track);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+.songArt {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-cover);
+  background: var(--sleeve);
+}
+.songText {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.songTitle {
+  overflow: hidden;
+  font: 400 18px/1.2 var(--f-serif);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+.song:hover .songTitle {
+  color: var(--ink-2);
+}
+.song[aria-pressed="true"] .songTitle {
+  color: inherit;
+}
+.songMeta {
+  overflow: hidden;
+  font: var(--t-meta);
+  line-height: 1.2;
+  letter-spacing: var(--t-meta-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-3);
+}
+.songTime {
+  min-width: 34px;
+  text-align: right;
+}
+.songBars {
+  justify-self: end;
+}
+
+/* a row with the page's own keys at its end */
+.withEnd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* a narrow column (a phone, which points at nothing) gives a row that carries its own keys the room its
+   number took: the title before the count */
+@container taste (width < 760px) {
+  .withEnd .song {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+  }
+  .withEnd .songN {
+    display: none;
+  }
+}
+
+@container taste (width >= 760px) {
+  .songs {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: repeat(var(--rows, 5), auto);
+    grid-auto-flow: column;
+    column-gap: 48px;
+  }
+}

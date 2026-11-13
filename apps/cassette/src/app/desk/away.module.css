@@ -1,0 +1,102 @@
+/*
+ * The account's home on the website (Away.tsx), on the taste paper under the kit's page head: the app panel
+ * first (the one toned block: the second paper in the same mode, so it reads as the thing to do), then each
+ * section a section's gap apart under the kit's section head. No lines; space and the one tone hold it apart.
+ */
+.body {
+  display: grid;
+  gap: var(--sec);
+  padding-bottom: var(--sec);
+}
+
+/* ── getting the app ── */
+.app {
+  display: grid;
+  justify-items: start;
+  gap: 20px;
+  padding: clamp(24px, 4cqi, 48px);
+  border-radius: var(--r-card);
+  background: light-dark(var(--own), var(--raised));
+}
+.app > h2 {
+  margin-bottom: 0;
+}
+.say {
+  margin: 0;
+  max-width: 34em;
+  font: var(--t-body);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.needs {
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.note {
+  margin: 0;
+  max-width: 38em;
+  font: var(--t-caption);
+  color: var(--ink-3);
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+}
+
+/* ── a section and its one line: the line tucks under the kit's section head, as Radio's blurbs do ── */
+.section {
+  display: grid;
+  min-width: 0;
+}
+.line {
+  margin: calc(-1 * clamp(4px, 0.8cqi, 10px)) 0 clamp(18px, 2.2cqi, 28px);
+  max-width: 38em;
+  font: var(--t-caption);
+  color: var(--ink-3);
+}
+
+/* ── the account: who they are beside where they can go ── */
+.account {
+  display: grid;
+  gap: 28px;
+  min-width: 0;
+}
+@container taste (width >= 760px) {
+  .account {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    column-gap: clamp(32px, 5cqi, 72px);
+    align-items: start;
+  }
+}
+.who {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+}
+.whoText {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.name {
+  margin: 0;
+  font: var(--t-head-small);
+  letter-spacing: var(--t-head-small-track, -0.01em);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.email {
+  margin: 0;
+  font: var(--t-caption);
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}

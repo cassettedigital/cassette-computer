@@ -1,0 +1,184 @@
+/* Unified track row (graduated from KitTrackRow + WorkbenchTrackRow).
+   Kit-framed: --cs-* tokens, Barlow Condensed title / DM Mono meta (phone
+   parity). Hover reveals the number→play swap, the action cluster, and the
+   drag grip. The album tracklist adds a dedicated preview button, a standout
+   badge, and ownership dimming. */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 12px;
+  border-radius: var(--cs-radius-sm);
+  transition: background var(--cs-hover-dur) var(--cs-ease), opacity 0.15s var(--cs-ease);
+}
+.row:hover,
+.row:focus-within { background: var(--cs-bg3); }
+.row[data-clickable="true"] { cursor: pointer; }
+
+/* Static display mode: no interactive affordances. */
+.static { cursor: default; }
+.static:hover { background: transparent; }
+
+/* Ownership dim (album library context): not-in-library rows fade back. */
+.row[data-owned="false"] { opacity: 0.45; }
+.row[data-owned="false"]:hover { opacity: 0.7; }
+
+.grip {
+  color: var(--cs-ink3);
+  opacity: 0;
+  cursor: grab;
+  display: inline-flex;
+  flex: none;
+}
+.row:hover .grip { opacity: 1; }
+.grip:active { cursor: grabbing; }
+
+/* Optional per-row cover thumbnail (cross-album playlists). */
+.leading {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--cs-radius-sm);
+  overflow: hidden;
+  background: var(--cs-vinyl);
+}
+/* A reserved-but-empty slot (a playlist row we carry no cover for) keeps its
+   width for alignment but drops the placeholder fill, so it reads as blank space
+   rather than missing art. Rows with a cover keep the fill as a load placeholder. */
+.leading:not(:has(img)) {
+  background: transparent;
+}
+.leading img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.num {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  width: 18px;
+  text-align: center;
+  flex: none;
+  position: relative;
+}
+.num .play { display: none; color: var(--cs-ink); }
+.row[data-clickable="true"]:hover .num .digit { visibility: hidden; }
+.row[data-clickable="true"]:hover .num .play,
+.num[data-now-playing="paused"] .play {
+  display: inline-flex;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+}
+.num[data-now-playing="paused"] .digit { visibility: hidden; }
+.num[data-now-playing="paused"] .play { color: var(--cs-orange); }
+
+/* Album preview play/pause button (own column, always visible). */
+.previewBtn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--cs-radius-sm);
+  color: var(--cs-ink3);
+  cursor: pointer;
+  transition: color 0.15s var(--cs-ease);
+}
+.previewBtn:hover:not(:disabled) { color: var(--cs-orange); }
+.previewBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.body { flex: 1; min-width: 0; }
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.titleText {
+  font-family: var(--cs-font-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--cs-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.subtitle {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+  margin-top: 2px;
+}
+
+.badge {
+  flex: none;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cs-orange);
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--cs-orange) 35%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--cs-orange) 6%, transparent);
+  opacity: 0;
+  transition: opacity 0.15s var(--cs-ease);
+}
+.row:hover .badge,
+.row:focus-within .badge { opacity: 1; }
+
+.acts {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  opacity: 0;
+  color: var(--cs-ink3);
+  flex: none;
+}
+.row:hover .acts,
+.row:focus-within .acts { opacity: 1; }
+.acts button { background: none; border: none; color: inherit; display: inline-flex; cursor: pointer; padding: 0; }
+.acts button:hover { color: var(--cs-ink); }
+.acts .add:hover { color: var(--cs-orange); }
+/* Saved state: the "+" becomes a "✓" in the accent, and stays visible off-hover. */
+.acts .fav.on { color: var(--cs-orange); opacity: 1; }
+
+/* Album tracklist: the trailing actions (save +/✓, add +) only surface on row
+   hover or focus. A saved row's ✓ still renders — you just see it on hover. */
+.trailingReveal {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s var(--cs-ease);
+}
+.row:hover .trailingReveal,
+.row:focus-within .trailingReveal,
+.trailingReveal[data-pinned="true"] {
+  opacity: 1;
+}
+/* Keep the row lit while a per-row menu (save/playlist dropdown) is open. */
+.row[data-pinned="true"] {
+  background: var(--cs-bg3);
+}
+
+.dur {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  width: 38px;
+  text-align: right;
+  flex: none;
+}

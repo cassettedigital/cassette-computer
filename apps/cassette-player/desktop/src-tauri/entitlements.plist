@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Developer ID (not App Store, not sandboxed): the shell spawns a local
+       Node UI server and the WKWebView loads it over loopback. These are
+       self-granted hardened-runtime exceptions — no provisioning profile
+       required, so the app notarizes AND launches. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.network.client</key>
+  <true/>
+
+  <!-- STAGE 2 (password AutoFill) re-adds this — but it is a RESTRICTED
+       entitlement: it needs an App ID with the Associated Domains capability +
+       an embedded Developer ID provisioning profile, or AMFI refuses to launch
+       the app ("restricted entitlements … no matching profile found"). Left out
+       here so Stage 1 (signed + notarized distribution) launches cleanly.
+    <key>com.apple.developer.associated-domains</key>
+    <array><string>webcredentials:cassette.digital</string></array>
+  -->
+</dict>
+</plist>

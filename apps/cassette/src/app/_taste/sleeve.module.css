@@ -1,0 +1,34 @@
+/* a record with no cover: the same dark box with its title typeset, wherever a cover would sit
+   (records, songs, other releases). Never an empty slot. */
+.sleeve {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  width: 100%;
+  overflow: hidden;
+  background: var(--sleeve);
+  container-type: inline-size; /* the typeset title sizes to the box */
+}
+.img {
+  display: block;
+  object-fit: cover;
+}
+.type {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 9%;
+  font: 800 clamp(11px, 14cqi, 34px) / 0.92 var(--f-display); /* floor: art, the title typeset on a drawn sleeve, scaled with it */
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.sleeve[data-small] .type {
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 15px;
+  color: var(--ink-3);
+}

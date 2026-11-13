@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;">
+    <!-- Solid cassette mark: filled body with reel windows and tape line knocked out to true transparency, in the app icon's orange gradient. -->
+    <mask id="cassette-cut">
+        <rect x="0" y="0" width="32" height="32" fill="#fff"/>
+        <circle cx="11.5" cy="16" r="3.2" fill="#000"/>
+        <circle cx="20.5" cy="16" r="3.2" fill="#000"/>
+        <path d="M11.798,13.012L20.213,13.012" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"/>
+    </mask>
+    <linearGradient id="mark" gradientUnits="userSpaceOnUse" x1="16" y1="8" x2="16" y2="24">
+        <stop offset="0" stop-color="#f97408"/>
+        <stop offset="1" stop-color="#fb4f29"/>
+    </linearGradient>
+    <path fill="url(#mark)" mask="url(#cassette-cut)" d="M6.5,6.9H25.5A4.6,4.6 0 0 1 30.1,11.5V20.5A4.6,4.6 0 0 1 25.5,25.1H6.5A4.6,4.6 0 0 1 1.9,20.5V11.5A4.6,4.6 0 0 1 6.5,6.9Z"/>
+</svg>

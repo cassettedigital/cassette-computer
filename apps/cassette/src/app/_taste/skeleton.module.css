@@ -1,0 +1,87 @@
+/*
+ * A page still on its way (Skeleton.tsx): bones in the paper's own inks, so one skeleton sits right on
+ * the light paper and the dark, and in the desk's window. The page's own classes lay the bones out; this
+ * sheet draws them, and the default rows for a page that has no row class to lend.
+ */
+
+/* the set: nothing for a quick load, then the bones come up, then one slow breath for the whole set (one
+   surface, never each bone on its own). Nothing in it answers a pointer, so a row lent by the page shows
+   no hand */
+.page {
+  pointer-events: none;
+  animation:
+    arrive 0.24s var(--fade, ease-in-out) 0.12s both,
+    breathe 1.6s var(--fade, ease-in-out) 0.36s infinite alternate;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes breathe {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}
+
+/* "Loading", for a screen reader only */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* one bone, in the track's ink on any stock; never a pointer's or a selection's. A cover or a face is the
+   same ink laid solid on the paper, so the fanned covers on an artist's page overlap as covers do */
+.bone {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--r-small);
+  background: var(--track);
+  pointer-events: none;
+  user-select: none;
+}
+.bone[data-shape="pill"] {
+  height: var(--control-h);
+  border-radius: var(--r-pill);
+}
+.bone[data-shape="cover"] {
+  aspect-ratio: 1;
+  border-radius: var(--r-cover);
+  background: color-mix(in srgb, var(--ink-e) 12%, var(--bg));
+}
+.bone[data-shape="circle"] {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink-e) 12%, var(--bg));
+}
+
+/* the default rows: a table's (the desk's song table), the number, the title, the length at the far end */
+.rows {
+  display: grid;
+}
+.row {
+  display: grid;
+  grid-template-columns: 2.75em minmax(0, 1fr) 4em;
+  align-items: center;
+  column-gap: 16px;
+  min-height: 52px;
+  padding: 0 12px;
+}
+.end {
+  justify-self: end;
+}

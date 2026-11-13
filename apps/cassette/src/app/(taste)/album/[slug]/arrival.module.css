@@ -1,0 +1,198 @@
+/*
+ * A shared song's arrival (Arrival.tsx): the top of the album page belongs to the song a friend sent.
+ * On a phone, in reading order: who it's from, their note, the song's stage (16:9, the full width), what
+ * the song is. From 900px of the page's width: the stage on the left at about three fifths, the words on
+ * the right, centred on it. The stage is where the top dock lays its video (dock.module.css, staged), so
+ * nothing over it may catch the pointer once it plays.
+ */
+
+/* the shared song sits on the page's second paper, so it reads as its own thing above the album without a
+   line under it (no lines on the site, the founder 2026-11-07) */
+.arrival {
+  position: relative;
+  padding: clamp(20px, 3cqi, 44px) 0 clamp(28px, 4cqi, 56px);
+  background: light-dark(var(--own), var(--raised));
+}
+
+.wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "from" "note" "stage" "song";
+  gap: 14px;
+  width: calc(100% - 2 * var(--gutter));
+  max-width: var(--wrap-max);
+  margin-inline: auto;
+}
+
+.from {
+  grid-area: from;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--accent-ink, var(--ink-e));
+}
+.face {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--wash);
+  color: var(--ink-e);
+  font-size: 12px; /* floor: not in app, the album body draws no arrival there */
+}
+.face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* the sender's words, as they wrote them: their line breaks kept, any length */
+.note {
+  grid-area: note;
+  margin: 0;
+  max-width: 62ch;
+  font: 400 clamp(18px, 2.2cqi, 22px) / 1.45 var(--f-serif);
+  color: var(--ink-e);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.stage {
+  grid-area: stage;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  background: #000;
+}
+.still {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.play.play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  padding: 0 0 0 4px; /* the play glyph's weight sits left of its box */
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent-c, var(--ink-e));
+  color: #000;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+  transition: transform 0.2s var(--touch, ease);
+}
+.play.play:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+}
+.play.play:focus-visible {
+  outline: 2px solid var(--accent-ink, var(--ink-e));
+  outline-offset: 4px;
+}
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.none {
+  position: absolute;
+  inset: auto 0 0;
+  margin: 0;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--ink-e);
+  font: var(--t-meta);
+}
+
+.song {
+  grid-area: song;
+  display: grid;
+  gap: 4px;
+}
+.title {
+  margin: 0;
+  font: 800 clamp(34px, 6cqi, 64px) / 0.9 var(--f-display);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--ink-e);
+}
+.meta,
+.start {
+  margin: 0;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  color: var(--ink-2);
+}
+.meta em {
+  font-style: normal;
+  color: var(--ink-e);
+}
+.start {
+  color: var(--accent-ink, var(--ink-2));
+}
+
+@container taste (width >= 900px) {
+  .wrap {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    grid-template-areas:
+      "stage from"
+      "stage note"
+      "stage song";
+    grid-template-rows: auto auto 1fr;
+    column-gap: clamp(28px, 3.5cqi, 56px);
+    row-gap: 16px;
+    align-content: center;
+  }
+  .from {
+    align-self: end;
+  }
+  .song {
+    align-self: start;
+    margin-top: 8px;
+  }
+}
+
+/* wide enough for the player's rail (PlayerDock's 1100): a song with a video arrives in the rail, so the
+   block at the top of the page stands aside, from the first paint */
+@media (min-width: 1100px) {
+  .arrival[data-rail] {
+    display: none;
+  }
+}
+
+/* in the rail's top (the player's Cue lead): the sender's words at the rail's reading size, their line
+   breaks kept; a long note scrolls in itself past a third of the window, so the video never leaves the rail */
+.railNote {
+  margin: 0;
+  max-height: 33vh;
+  overflow-y: auto;
+  font: 400 17px / 1.45 var(--f-serif);
+  color: var(--ink-e);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
+.railStart {
+  margin: 0;
+}
+/* the sender's line out of the page's grid: in the rail it starts at the left like everything there */
+.railFrom {
+  grid-area: auto;
+  justify-self: start;
+}

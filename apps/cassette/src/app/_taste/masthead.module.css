@@ -1,0 +1,267 @@
+/*
+ * The masthead (P12): one pill, fixed at the top of the window on every page, in the homepage's spacing
+ * and ink (the dark stock's, on the pill's own near-black). It slips up out of the window while the page
+ * scrolls down and comes back on any scroll up. A search takes the whole pill over. Its one action is the
+ * masthead's own pill button, in the orange: the one exception to the set's Button. On the product
+ * pages its end is the person's account: Library and the round account key, or Sign in and the empty
+ * face, one width either way (Masthead.tsx says why).
+ */
+.mast {
+  position: fixed;
+  top: calc(14px + var(--top-dock-h, 0px)); /* below the player pinned along the top, when it is */
+  left: calc(50% - var(--rail-w, 0px) / 2); /* over the page, not the player's panel beside it */
+  z-index: 70;
+  display: block;
+  /* left: 50% would cap a fixed box at half the screen and wrap the links; size it to its contents */
+  width: max-content;
+  max-width: calc(100vw - 24px - var(--rail-w, 0px));
+  padding: 6px;
+  border-radius: var(--r-pill);
+  background: var(--pill);
+  color: var(--ink-e);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(12px);
+  transform: translateX(-50%);
+  transition:
+    width 0.42s var(--ease),
+    translate 0.3s var(--ease),
+    left 0.45s var(--ease);
+}
+/* only a search clips the pill (its field grows from the pill's own width); otherwise nothing does, so
+   the account menu can hang below it */
+.mast[data-search] {
+  overflow: hidden;
+}
+/* away while the page scrolls down, unless something in it has the focus */
+.mast[data-away]:not(:focus-within) {
+  translate: 0 calc(-100% - 20px);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 10px;
+}
+.find {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 38px;
+  padding-left: 12px;
+  color: var(--ink-3);
+}
+.bar[hidden],
+.find[hidden] {
+  display: none;
+}
+/* two classes, so a link's colour here outweighs the paper's plain `a` rule */
+.mast .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-right: 12px;
+  font: 800 17px/1 var(--f-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-e);
+}
+.glyph {
+  width: 26px;
+  height: 26px;
+  margin: -5px 0;
+  color: var(--cs-orange);
+}
+.mast .link {
+  padding: 12px 13px;
+  border-radius: var(--r-pill);
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.mast .link:hover {
+  background: var(--track);
+  color: var(--ink-e);
+}
+/* the round keys: search, and closing it */
+.key {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.key:hover {
+  background: var(--track);
+  color: var(--ink-e);
+}
+.mast .key:focus-visible,
+.mast .link:focus-visible,
+.mast .brand:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.bar .key svg,
+.find > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.find .key svg {
+  width: 16px;
+  height: 16px;
+}
+.mast .find input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--ink-e);
+  font: 500 15px/1 var(--f-mono);
+  letter-spacing: 0.02em;
+  appearance: none;
+}
+.find input::placeholder {
+  color: var(--ink-3);
+}
+.find input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/* the page's one action: the masthead's pill, in the orange. It lifts on a spring when pointed at and
+   gives a little when pressed. */
+.mast .cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  margin-left: 4px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  background: var(--cs-orange);
+  color: #15110e; /* the light stock's ink on the orange, 6.4:1 (BUG-629); fixed, since the masthead pill is dark on either paper */
+  font: 700 13px/1 var(--f-display);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    transform 0.25s var(--spring),
+    background-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mast .cta:hover {
+  transform: translateY(-2px);
+}
+.mast .cta:active {
+  transform: scale(0.97);
+}
+.mast .cta:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* ── the account end (the product pages) ── */
+/* signed out: "Sign in" in the link's own box, and the empty face in the account key's place */
+.mast .signin {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--r-pill);
+  color: var(--ink-2);
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.mast a.signin:hover {
+  background: var(--track);
+  color: var(--ink-e);
+}
+.mast a.signin:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+/* while the session loads: the same room, nothing in it to see */
+.signin[data-reserve] {
+  visibility: hidden;
+}
+.word {
+  padding: 12px 13px;
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.empty {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+}
+/* signed in: the person's photo or initial, round, inside the account key (the shared Menu's) */
+.face {
+  display: block;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.initial {
+  display: grid;
+  place-items: center;
+  background: var(--track);
+  color: var(--ink-e);
+  font: 500 14px/1 var(--f-mono);
+}
+/* the account menu hangs a little clear of the pill */
+.mast [role="menu"] {
+  top: calc(100% + 16px);
+}
+
+@media (max-width: 640px) {
+  .mast .link,
+  .mast .word {
+    display: none;
+  }
+  .bar {
+    padding-left: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mast {
+    transition: width 0.42s var(--ease);
+  }
+}
+
+/* inside the iPhone app (lib/app-surface.ts) the app's own screen is the frame, with its back button */
+:global(html[data-surface="app"]) .mast {
+  display: none;
+}
+
+/* what the search found, for a screen reader only */
+.said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

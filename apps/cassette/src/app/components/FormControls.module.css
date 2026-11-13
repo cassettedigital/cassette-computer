@@ -1,0 +1,560 @@
+/* FormControls — graduated form-control skins (TextArea, Select, ComboBox,
+   Checkbox, Radio, Switch, Slider, NumberField). Lifted verbatim from the
+   styleguide-next kit so production and the sandbox share one source. RA ships
+   unstyled; state is read off data-* attributes. `--led` defaults to amber. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+.fieldLabel {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+  margin-bottom: 7px;
+  display: block;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.desc {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  color: var(--cs-ink3);
+  margin-top: 6px;
+}
+
+/* ── TextArea ── */
+.textarea { display: flex; flex-direction: column; width: 100%; }
+.textareaInput {
+  font-family: var(--cs-font-serif);
+  font-size: var(--cs-text-body);
+  line-height: 1.5;
+  color: var(--cs-ink);
+  background: var(--cs-well);
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: var(--cs-radius-area);
+  box-shadow: var(--cs-recess);
+  padding: 11px 13px;
+  min-height: 92px;
+  resize: vertical;
+  outline: none;
+  width: 100%;
+  transition: box-shadow var(--cs-hover-dur) var(--cs-ease), border-color var(--cs-hover-dur) var(--cs-ease);
+}
+.textareaInput::placeholder { color: var(--cs-ink3); }
+.textareaInput[data-hovered] { border-color: var(--cs-border); }
+.textareaInput[data-focused] {
+  border-color: var(--cs-orange-active);
+  box-shadow: var(--cs-recess), var(--cs-focus-ring);
+}
+
+/* Soft well — blends into the surface (a translucent darken, no hard border or
+   recess) for calm editing panes. Mirrors Field's `.input.soft`. */
+.textareaInput.soft {
+  background: var(--cs-input-soft-bg, rgba(0, 0, 0, 0.14));
+  border-color: transparent;
+  border-radius: var(--cs-radius-area);
+  box-shadow: none;
+}
+.textareaInput.soft[data-hovered] {
+  background: var(--cs-input-soft-bg-strong, rgba(0, 0, 0, 0.2));
+  border-color: transparent;
+}
+.textareaInput.soft[data-focused] {
+  background: var(--cs-input-soft-bg-strong, rgba(0, 0, 0, 0.2));
+  border-color: var(--cs-orange);
+  box-shadow: var(--cs-focus-ring);
+}
+
+/* ── Select ── */
+.select { display: flex; flex-direction: column; width: 100%; }
+.selectTrigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0 0 0 14px;
+  height: 44px;
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink);
+  background: linear-gradient(180deg, var(--cs-bg3), var(--cs-bg2));
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: var(--cs-radius-pill);
+  box-shadow: var(--cs-raise);
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.1s var(--cs-ease), border-color var(--cs-hover-dur) var(--cs-ease);
+}
+.selectTrigger[data-hovered] { border-color: var(--cs-border); }
+.selectTrigger[data-pressed] { box-shadow: var(--cs-recess); }
+.selectTrigger[data-focus-visible] { box-shadow: var(--cs-raise), var(--cs-focus-ring); }
+.selectValue { flex: 1; text-align: left; }
+.selectValue[data-placeholder] { color: var(--cs-ink3); font-weight: 500; }
+.selectChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  align-self: stretch;
+  color: var(--cs-led-amber);
+  background: var(--cs-well);
+  box-shadow: var(--cs-recess);
+  border-left: 1px solid var(--cs-border-subtle);
+  border-radius: 0 var(--cs-radius-pill) var(--cs-radius-pill) 0;
+}
+.selectChevron svg { width: 16px; height: 16px; }
+
+/* ── Shared overlay surfaces (Select / ComboBox) ── */
+.popover {
+  outline: none;
+  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.5));
+}
+.popover[data-entering] { animation: formPopIn 0.12s var(--cs-ease); }
+.popover[data-exiting] { animation: formPopIn 0.1s var(--cs-ease) reverse; }
+@keyframes formPopIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.listbox {
+  min-width: var(--trigger-width, 240px);
+  max-height: 280px;
+  overflow: auto;
+  padding: 6px;
+  background: linear-gradient(180deg, var(--cs-bg3), var(--cs-bg2));
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: var(--cs-radius-md);
+  box-shadow: var(--cs-raise);
+  outline: none;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--cs-radius-sm);
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink2);
+  cursor: pointer;
+  outline: none;
+}
+.option[data-focused] { background: var(--cs-bg4); color: var(--cs-ink); }
+.option[data-selected] { color: var(--cs-led-amber); }
+.optionTick {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  color: var(--cs-led-amber);
+  filter: drop-shadow(0 0 var(--cs-led-amber-bloom) var(--cs-led-amber-glow));
+}
+.optionTick svg { width: 14px; height: 14px; }
+.option[data-selected] .optionTick { opacity: 1; }
+.optionDesc {
+  display: block;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.01em;
+  color: var(--cs-ink3);
+  margin-top: 2px;
+}
+
+/* ── ComboBox ── */
+.combo { display: flex; flex-direction: column; width: 100%; }
+.comboGroup {
+  display: flex;
+  align-items: center;
+  background: var(--cs-well);
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: var(--cs-radius-pill);
+  box-shadow: var(--cs-recess);
+  transition: border-color var(--cs-hover-dur) var(--cs-ease), box-shadow var(--cs-hover-dur) var(--cs-ease);
+}
+.comboGroup[data-focus-within] {
+  border-color: var(--cs-orange-active);
+  box-shadow: var(--cs-recess), var(--cs-focus-ring);
+}
+.comboInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  padding: 11px 12px;
+  font-family: var(--cs-font-display);
+  font-weight: 500;
+  font-size: var(--cs-text-body);
+  color: var(--cs-ink);
+}
+.comboInput::placeholder { color: var(--cs-ink3); }
+.comboBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  align-self: stretch;
+  border: none;
+  border-left: 1px solid var(--cs-border-subtle);
+  background: var(--cs-bg3);
+  color: var(--cs-led-amber);
+  cursor: pointer;
+  outline: none;
+}
+.comboBtn svg { width: 15px; height: 15px; }
+
+/* ── Checkbox ── */
+.checkGroup { display: flex; flex-direction: column; gap: 12px; }
+.check {
+  --led: var(--cs-led-amber);
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--cs-ink2);
+  cursor: pointer;
+  outline: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.checkBox {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-well);
+  border: 1px solid var(--cs-border);
+  box-shadow: var(--cs-recess);
+  color: color-mix(in srgb, var(--cs-led-amber-rim), black 45%);
+  transition: background 0.15s var(--cs-ease), border-color 0.15s var(--cs-ease), box-shadow 0.15s var(--cs-ease);
+}
+.checkBox svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition: opacity 0.12s var(--cs-ease), transform 0.12s var(--cs-ease);
+}
+.checkBox .indeterminate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--cs-led-amber-rim), black 45%);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+.check[data-hovered] { color: var(--cs-ink); }
+.check[data-selected] .checkBox,
+.check[data-indeterminate] .checkBox {
+  background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--led), white 34%), var(--led) 70%);
+  border-color: color-mix(in srgb, var(--led), black 30%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 0 3px 0 color-mix(in srgb, var(--led) 70%, transparent),
+    0 0 10px 1px color-mix(in srgb, var(--led) 45%, transparent);
+}
+.check[data-selected] .checkBox svg { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.check[data-focus-visible] .checkBox { box-shadow: var(--cs-recess), var(--cs-focus-ring); }
+.check[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+.check[data-indeterminate] .checkBox .indeterminate { opacity: 1; }
+.check[data-indeterminate] .checkBox svg { display: none; }
+
+/* ── Radio ── */
+.radioGroup { --led: var(--cs-led-amber); display: flex; flex-direction: column; gap: 12px; }
+.radioGroupRow { flex-direction: row; flex-wrap: wrap; gap: 18px; }
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--cs-ink2);
+  cursor: pointer;
+  outline: none;
+}
+.radioWell {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--cs-well);
+  border: 1px solid var(--cs-border);
+  box-shadow: var(--cs-recess);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s var(--cs-ease);
+}
+.radioLamp {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cs-bg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+  transition: background 0.2s var(--cs-ease), box-shadow 0.2s var(--cs-ease);
+}
+.radio[data-hovered] { color: var(--cs-ink); }
+.radio[data-selected] .radioLamp {
+  background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--led), white 40%), var(--led) 68%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 3px 0 color-mix(in srgb, var(--led) 70%, transparent),
+    0 0 10px 1px color-mix(in srgb, var(--led) 45%, transparent);
+}
+.radio[data-selected] .radioWell { border-color: color-mix(in srgb, var(--led), black 30%); }
+/* LED fill only — keep the well rim at the idle border (no lit outline). */
+.radioFillOnly .radio[data-selected] .radioWell { border-color: var(--cs-border); }
+.radio[data-focus-visible] .radioWell { box-shadow: var(--cs-recess), var(--cs-focus-ring); }
+.radio[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Switch ── */
+.switch {
+  --led: var(--cs-led-amber);
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  cursor: pointer;
+  font-family: var(--cs-font-display);
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--cs-ink2);
+  outline: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.switchWell {
+  position: relative;
+  flex: none;
+  width: 62px;
+  height: 30px;
+  border-radius: var(--cs-radius-pill);
+  background: var(--cs-well);
+  border: 1px solid var(--cs-border);
+  box-shadow: var(--cs-recess);
+  padding: 3px;
+}
+.switchTube {
+  position: absolute;
+  inset: 4px;
+  border-radius: var(--cs-radius-pill);
+  background: linear-gradient(180deg, #14110c, #0c0a07);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+  transition: background 0.22s var(--cs-ease), box-shadow 0.22s var(--cs-ease);
+}
+.switch[data-selected] .switchTube {
+  background: radial-gradient(
+    ellipse 78% 130% at 42% 46%,
+    color-mix(in srgb, var(--led), white 45%) 0%,
+    var(--led) 58%,
+    color-mix(in srgb, var(--led), var(--cs-orange) 22%) 100%
+  );
+  box-shadow:
+    inset 0 0 8px 1px color-mix(in srgb, white 22%, transparent),
+    0 0 6px 0 color-mix(in srgb, var(--led) 75%, transparent),
+    0 0 18px 2px color-mix(in srgb, var(--led) 45%, transparent);
+}
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--cs-bg4), #1c1813);
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  box-shadow: var(--cs-raise), 0 2px 4px rgba(0, 0, 0, 0.45);
+  transition: left 0.22s var(--cs-ease), filter 0.15s var(--cs-ease);
+}
+.switchKnob::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 7px,
+    rgba(0, 0, 0, 0.4) 7px 8px,
+    rgba(255, 255, 255, 0.05) 8px 9px,
+    transparent 9px 11px
+  );
+}
+.switch[data-selected] .switchKnob {
+  left: 35px;
+  filter: brightness(1.12);
+}
+.switch[data-pressed] .switchKnob { filter: brightness(1.2); }
+.switch[data-focus-visible] .switchWell { box-shadow: var(--cs-recess), var(--cs-focus-ring); }
+.switch[data-disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Slider ── */
+.slider { --led: var(--cs-led-amber); display: flex; flex-direction: column; gap: 9px; width: 100%; }
+.sliderHead { display: flex; align-items: baseline; justify-content: space-between; }
+.sliderLabel {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+}
+.sliderOut {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-label);
+  color: var(--cs-led-amber);
+  text-shadow: 0 0 6px var(--cs-led-amber-glow);
+}
+.sliderTrack {
+  position: relative;
+  height: 34px;
+  width: 100%;
+  cursor: pointer;
+}
+.sliderTrack::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 6px; bottom: 6px;
+  background: repeating-linear-gradient(90deg, var(--cs-seam) 0 1px, transparent 1px 23px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+/* Real labeled stops — hide the decorative hash marks. */
+.sliderTrackMarked::before { display: none; }
+.sliderMarkTick {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--cs-seam);
+  opacity: 0.55;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.sliderMarks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -2px;
+  padding: 0 2px;
+}
+.sliderMarkLabel {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-meta);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cs-ink3);
+  line-height: 1;
+}
+.sliderRail {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  border-radius: var(--cs-radius-pill);
+  background: var(--cs-bg);
+  box-shadow: var(--cs-recess);
+}
+.sliderFill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  border-radius: var(--cs-radius-pill);
+  background: radial-gradient(ellipse 60% 180% at 50% 45%, color-mix(in srgb, var(--led), white 32%), var(--led) 80%);
+  box-shadow:
+    0 0 4px 0 color-mix(in srgb, var(--led) 70%, transparent),
+    0 0 11px 1px color-mix(in srgb, var(--led) 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+}
+.sliderThumb {
+  top: 50%;
+  width: 20px;
+  height: 30px;
+  border-radius: var(--cs-radius-pill);
+  background: linear-gradient(180deg, #4a4234 0%, #211d16 100%);
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  box-shadow: var(--cs-raise), 0 2px 5px rgba(0, 0, 0, 0.45);
+  outline: none;
+  transition: filter 0.12s var(--cs-ease);
+}
+.sliderThumb::after {
+  content: "";
+  position: absolute;
+  left: 4px; right: 4px;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(255, 255, 255, 0.08));
+}
+.sliderThumb[data-dragging] { filter: brightness(1.18); }
+.sliderThumb[data-focus-visible] { box-shadow: var(--cs-raise), var(--cs-focus-ring); }
+
+/* ── NumberField ── */
+.number { display: flex; flex-direction: column; width: 168px; }
+.numberGroup {
+  display: flex;
+  align-items: stretch;
+  height: 44px;
+  background: var(--cs-well);
+  border: 1px solid var(--cs-border-subtle);
+  border-radius: var(--cs-radius-pill);
+  box-shadow: var(--cs-recess);
+  overflow: hidden;
+}
+.numberGroup[data-focus-within] {
+  border-color: var(--cs-orange-active);
+  box-shadow: var(--cs-recess), var(--cs-focus-ring);
+}
+.numberInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  text-align: center;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-body);
+  color: var(--cs-led-amber);
+  text-shadow: 0 0 6px var(--cs-led-amber-glow);
+}
+.numberStep {
+  width: 40px;
+  border: none;
+  background: linear-gradient(180deg, var(--cs-bg3), var(--cs-bg2));
+  color: var(--cs-ink);
+  font-size: 20px;
+  font-family: var(--cs-font-display);
+  cursor: pointer;
+  outline: none;
+  transition: background var(--cs-hover-dur) var(--cs-ease), box-shadow 0.08s var(--cs-ease);
+}
+.numberStep:first-child { border-right: 1px solid var(--cs-border-subtle); }
+.numberStep:last-child { border-left: 1px solid var(--cs-border-subtle); }
+.numberStep[data-hovered] { background: var(--cs-bg4); }
+.numberStep[data-pressed] { box-shadow: var(--cs-press-shadow); }

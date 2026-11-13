@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.next-*/
+dist/
+target/
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+# the music server is its own repository, cloned here to build (apps/cassette-player/BUILDING.md)
+apps/cassette-player/navidrome/
+apps/cassette-player/data/
+apps/cassette-player/music/
