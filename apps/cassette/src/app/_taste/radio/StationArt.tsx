@@ -4,9 +4,14 @@
  * A station's square: its picture (the show's, the song's cover, or the station's own art), or with none,
  * or one that fails to load, the station's tile: its colour blended half into the raised stock with its
  * initials in the ink (the phone's RadioTile). Never the browser's broken-image mark.
+ *
+ * The picture comes through the image ladder at the size of its frame (docs/reference/CASSETTE_IMAGES.md):
+ * the stations' own hosts are on the ladder's list, and anything not on it falls back to the stored address.
  */
 
 import { useState } from "react";
+import { Picture } from "@discovery/cassette-kit/picture";
+import { picture } from "@/lib/images/picture";
 
 export function initials(s: string): string {
   const parts = s.trim().split(/\s+/).filter(Boolean);
@@ -15,9 +20,9 @@ export function initials(s: string): string {
 
 export function StationArt({ src, name, size, className }: { src: string | null; name: string; size: number; className: string }) {
   const [gone, setGone] = useState(false);
-  if (src && !gone) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img className={className} src={src} alt="" width={size} height={size} loading="lazy" onError={() => setGone(true)} />;
+  const pic = src && !gone ? picture(src, "station") : null;
+  if (pic && (pic.image || pic.original)) {
+    return <Picture {...pic} frame={size} className={className} width={size} height={size} alt="" onError={() => setGone(true)} />;
   }
   return (
     <span className={className} data-tile="" aria-hidden="true">

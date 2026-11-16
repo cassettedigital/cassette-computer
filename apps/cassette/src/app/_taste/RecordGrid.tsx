@@ -7,6 +7,8 @@
  * door to its album page. Two columns on a phone, three from 560, four from 760, six from 1100. With
  * `wholeRows` (a curated row) it never ends on a short row: at each count it shows the most that fill
  * whole rows; `rows` caps it at that many rows (a shelf of one or two). Results (search) show every record.
+ * A record can carry a figure (`stat`, a station's plays of it this month), shown over its cover only while
+ * it is pointed at: the number large over a dimmed cover, its word under it (the founder, 2026-11-16).
  */
 
 import Link from "next/link";
@@ -24,6 +26,9 @@ export type RecordTile = {
   meta?: string;
   /** a short sentence under the caption: why this record is here */
   note?: string;
+  /** a figure shown over the cover while it's pointed at (a station's plays of it this month): the number
+      large, its word small under it. Said aloud after the caption. */
+  stat?: { value: string; word: string };
 };
 
 export function RecordGrid({
@@ -50,8 +55,15 @@ export function RecordGrid({
           <Link className={r.tile} href={albumHref(rec.slug)}>
             <CoverArt>
               <Sleeve src={rec.cover} title={rec.title} sizes="(max-width: 560px) 45vw, 200px" loading={i < priority ? "eager" : "lazy"} />
+              {rec.stat ? (
+                <span className={r.stat} aria-hidden="true">
+                  <span className={r.statValue}>{rec.stat.value}</span>
+                  <span className={r.statWord}>{rec.stat.word}</span>
+                </span>
+              ) : null}
             </CoverArt>
             <CoverCaption title={rec.title} meta={rec.meta} />
+            {rec.stat ? <span className={r.say}>, {`${rec.stat.value} ${rec.stat.word}`}</span> : null}
             {rec.note ? <span className={r.note}>{rec.note}</span> : null}
           </Link>
         </li>

@@ -1,0 +1,87 @@
+/*
+ * The radio's column down the website's right (RadioRail.tsx): the Mac app's side view (desk.module.css .aside,
+ * .asideHead, .asideBody, .topKey), in the player kit's tokens, held to the right of the window as the preview
+ * player's rail is (dock.module.css), the page stepping aside by the rail's width (.root[data-rail]). What's in
+ * it is the shared station view (components/radio/station-side.module.css).
+ */
+.aside {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 330; /* the preview player's rail's place (dock.module.css), over the corner dock */
+  width: var(--rail-w);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--pk-surface-base);
+  color: var(--pk-text-primary);
+  box-shadow: -18px 0 40px light-dark(rgba(52, 34, 16, 0.14), rgba(0, 0, 0, 0.45));
+  /* first open only: changing songs does not run it again */
+  animation: railIn 0.45s var(--ease, ease) backwards;
+}
+@keyframes railIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aside {
+    animation: none;
+  }
+}
+/* the head: the kit's switch, then "…" and Close */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 6px clamp(16px, 1.8vw, 24px);
+}
+.keys {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.key {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pk-text-secondary);
+  cursor: pointer;
+}
+.key:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+  color: var(--pk-text-primary);
+}
+.key:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+/* one column the rail's own width, scrolling in itself */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 16px;
+  padding: 10px clamp(16px, 1.8vw, 24px) 28px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pk-hairline) transparent;
+}
+.note {
+  margin: 0;
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-secondary);
+}

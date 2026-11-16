@@ -20,6 +20,7 @@ import { useRadioNow, type RadioStatus } from "./RadioProvider";
 import { StationArt } from "@/app/_taste/radio/StationArt";
 import styles from "./RadioDock.module.css";
 import { inPanelFrame } from "@/lib/app-surface";
+import { useRadioInRail } from "./rail-claim";
 
 /** "7:00 PM" in the listener's own time zone. */
 function clock(iso?: string | null): string | null {
@@ -32,7 +33,10 @@ function clock(iso?: string | null): string | null {
 export function RadioDock() {
   // only shows what's on, so it never asks for the station list itself (it rides on every page)
   const radio = useRadioNow();
+  const inRail = useRadioInRail();
   const { station, status, nowPlaying } = radio;
+  // on a wide window in the taste frame the page's right rail shows it instead (_taste/radio/RadioRail)
+  if (inRail) return null;
   // in the account window's side panel the window's own dock shows it (the panel's radio is the window's)
   if (!station || status === "idle" || inPanelFrame()) return null;
   return <RadioDockView station={station} status={status} nowPlaying={nowPlaying} onStop={radio.stop} onRetry={() => radio.play(station.slug)} />;

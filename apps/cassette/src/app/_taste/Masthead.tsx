@@ -1,46 +1,50 @@
 "use client";
 
 /**
- * The masthead (P12), one on every page: a pill fixed at the top of the window that slips away while you
- * scroll down the page and comes back the moment you scroll up (and stays while anything in it has the
- * focus or a search is open). The mark goes home, in the accent. A page may add its own links and its one
- * action at the pill's end (the homepage's How it works and Get in line). The search key, "/" from
- * anywhere that isn't a text field, or Cmd/Ctrl-K turns the whole pill into a search field. As you type,
- * the catalog's fast name matches (artists, albums, songs: /api/search on Typesense, through the shared
- * useTypeahead, the old nav's own source) drop in a panel under the pill (SearchPanel, on the page's own
- * paper), and a pick goes straight to its page; Enter on "Search everything" (or with nothing picked)
- * opens the full /search, the home of the deep, interpreted results. Escape, or a click anywhere else,
- * closes the matches and keeps what was typed in the field (a click in it, a letter or an arrow brings
- * them back); a second Escape clears it and puts the search away, as the close key does. A screen reader
- * hears what was found once the matches settle. The product pages leave the pill's room at the top of
- * their body, so it never covers the opener at rest.
+ * The masthead (P12), one on every page (the founder, 2026-11-14, masthead-sketches Study E): two pills
+ * fixed at the top of the window that slip away while you scroll down the page and come back the moment
+ * you scroll up (and stay while anything in them has the focus or a search is open).
  *
- * `account` (the artist and album pages; the founder, 2026-10-21: "it IS missing necessary functions -
- * like account/dashboard stuff, mostly") ends the pill with the live site's account functions, the same
- * ones as its nav (src/app/sections/NavAuthIsland.tsx), read from next-auth's session on the client:
- *   signed in: "Account" (/account, the website's account window: the founder 2026-11-08, it is no longer
- *     the library, whose music plays only in the app) and the round account key, the person's photo or their
- *     initial, which opens the shared Menu: their name over Account, Apps (the downloads), Studio for anyone
- *     the Studio door lets in (StudioEntry below) and Admin for an admin (the website is the only way into
- *     either), Settings (/settings) and Sign out;
- *   signed out: one quiet link to /sign-in, "Sign in" and the empty face in the key's place;
- *   loading: the signed-out shape, invisible, so nothing flashes and nothing moves when it lands.
- * The two shapes are one width ("Account" and "Sign in" are seven letters each in the mono, and the key
- * and the empty face are one size), so the pill never changes size when the session lands, either way.
- * On a phone the word goes in both, leaving the mark, search and the key or the empty face.
+ *   the middle pill: the mark and the name, going home, then the places as icon keys: Discover, Radio,
+ *     and the search key. The page you're on is the key that lifts out of the pill (the lens), and a key
+ *     you press sinks it a touch and sends it over to that key before the page changes. Pointing at a key
+ *     names it under the pill.
+ *   the corner pill: the page's one action (the homepage's Save a seat), only for people not yet in, then
+ *     the menu key: the menu's lines and the person's face (or the empty face for no one). Its menu says
+ *     every place in words with the icon it wears in the pill (Discover, Radio, Search, Journal, Guides),
+ *     the page's own links (the homepage's How it works) and Help, then the account: signed in, their name
+ *     over Account (/account, the website's account window: the founder 2026-11-08, it is no longer the
+ *     library, whose music plays only in the app), Apps (the downloads), Studio for anyone the Studio door
+ *     lets in (StudioEntry below), Admin for an admin (the website is the only way into either), Settings
+ *     and Sign out; signed out, Sign in. While the session loads the menu holds the places alone and the
+ *     key the empty face, so nothing in the pill moves when it lands.
+ *
+ * Narrow windows (masthead.module.css): the pills join into one bar, then the name's word goes, then Save
+ * a seat moves to the top of the menu. Nothing ever overlaps.
+ *
+ * The search key, "/" from anywhere that isn't a text field, or Cmd/Ctrl-K turns the middle pill (the whole
+ * bar, when joined) into a search field. As you type, the catalog's fast name matches (artists, albums,
+ * songs: /api/search on Typesense, through the shared useTypeahead, the old nav's own source) drop in a
+ * panel under the pill (SearchPanel, on the page's own paper), and a pick goes straight to its page; Enter
+ * on "Search everything" (or with nothing picked) opens the full /search, the home of the deep, interpreted
+ * results. Escape, or a click anywhere else, closes the matches and keeps what was typed in the field (a
+ * click in it, a letter or an arrow brings them back); a second Escape clears it and puts the search away,
+ * as the close key does. A screen reader hears what was found once the matches settle. The product pages
+ * leave the masthead's room at the top of their body, so it never covers the opener at rest.
  */
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type TransitionEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type TransitionEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { resolveAvatar } from "@/lib/avatar";
 import { Picture } from "@discovery/cassette-kit/picture";
 import { picture } from "@/lib/images/picture";
+import { APPS_HREF } from "@/lib/account/setup";
 import { signOut } from "@/lib/sign-out";
 import { useTypeahead } from "@/lib/search/use-typeahead";
 import { LogoMark } from "./Brand";
-import { Icon } from "./Icon";
-import { Menu, MenuGroup, MenuItem } from "./Menu";
+import { Icon, type IconName } from "./Icon";
+import { Menu, MenuItem, MenuLine, MenuPerson } from "./Menu";
 import { SearchPanel, toHits, useSearchPreview } from "./SearchPanel";
 import t from "./taste.module.css";
 import s from "./masthead.module.css";
@@ -57,39 +61,6 @@ function Face({ image, name, email }: { image?: string | null; name?: string | n
     <span className={`${s.face} ${s.initial}`} aria-hidden="true">
       {initial}
     </span>
-  );
-}
-
-/** "Sign in" and the empty face: the signed-out end of the pill, and (invisible) its reserve while the session loads. */
-function SignIn({ reserve }: { reserve?: boolean }) {
-  const body = (
-    <>
-      <span className={s.word}>Sign in</span>
-      <span className={s.empty}>
-        <Icon name="person" size={22} />
-      </span>
-    </>
-  );
-  return reserve ? (
-    <span className={s.signin} data-reserve="" aria-hidden="true">
-      {body}
-    </span>
-  ) : (
-    <a href="/sign-in" className={s.signin} aria-label="Sign in">
-      {body}
-    </a>
-  );
-}
-
-/** The page's one action. With the account end beside it, it is for people not yet in, so it steps aside for
- *  someone signed in (the homepage's Get in line). */
-function Cta({ cta, account }: { cta: { href: string; label: string }; account: boolean }) {
-  const { status } = useSession();
-  if (account && status === "authenticated") return null;
-  return (
-    <a href={cta.href} className={s.cta}>
-      {cta.label}
-    </a>
   );
 }
 
@@ -126,33 +97,131 @@ function useStudioEntry(userId: string | undefined): boolean {
   return show;
 }
 
-/** The pill's account end: Account and the account key signed in, Sign in signed out, its room held while it loads. */
-function Account() {
+/** The places in the middle pill, in order; the lens moves 44px (a key and the gap) per place. */
+const KEYS = [
+  { id: "discover", href: "/discover", label: "Discover", icon: "compass" },
+  { id: "radio", href: "/radio", label: "Radio", icon: "radio" },
+] as const satisfies ReadonlyArray<{ id: string; href: string; label: string; icon: IconName }>;
+const SEARCH_AT = KEYS.length;
+
+/** Which place the page is: a key's, or one only the menu names. */
+function placeOf(path: string): "discover" | "radio" | "search" | "journal" | "guides" | "apps" | null {
+  const under = (p: string) => path === p || path.startsWith(`${p}/`);
+  if (under("/discover")) return "discover";
+  if (under("/radio")) return "radio";
+  if (under("/search")) return "search";
+  if (under("/journal")) return "journal";
+  if (under("/guides")) return "guides";
+  if (under("/apps")) return "apps";
+  return null;
+}
+
+type Link = { href: string; label: string; icon?: IconName };
+
+/**
+ * The corner pill's menu (the founder, 2026-11-16), in order of how much a person wants each thing, with no
+ * group heads, only lines between kinds. First you: signed in, your face and name (your account), Apps (the public
+ * /apps page, its downloads for you), and Studio and Admin when you may; signed out, Sign in and Apps
+ * (and, on a narrow phone, Save a seat). Then the places: Discover, Radio, Search, Journal, Guides (one page for
+ * how Cassette works, help and the guides) and the page's own links. Last, signed in, the rarely wanted:
+ * Settings and Sign out. While the session loads, the places alone. Nothing for an account shows to someone
+ * signed out, and Studio and Admin only to those their own doors let in (the pages check again).
+ */
+function MainMenu({
+  links,
+  account,
+  cta,
+  here,
+  onSearch,
+}: {
+  links: Link[];
+  account: boolean;
+  cta?: { href: string; label: string };
+  here: ReturnType<typeof placeOf>;
+  onSearch: () => void;
+}) {
   const { data: session, status } = useSession();
   // the session carries the id and isAdmin (lib/auth.ts session callback); the browser's session type doesn't declare them
   const user = session?.user as (NonNullable<typeof session>["user"] & { id?: string; isAdmin?: boolean }) | undefined;
-  const studio = useStudioEntry(status === "authenticated" ? user?.id : undefined);
-  if (status === "loading") return <SignIn reserve />;
-  if (!user) return <SignIn />;
-  const who = user.name?.trim() || user.email?.split("@")[0] || "Your account";
-  const isAdmin = user.isAdmin === true;
+  const signedIn = account && status === "authenticated" && !!user;
+  const signedOut = account && !signedIn && status !== "loading";
+  const studio = useStudioEntry(signedIn ? user?.id : undefined);
+  const who = user?.name?.trim() || user?.email?.split("@")[0] || "Your account";
+  const face = signedIn ? (
+    <Face image={user?.image} name={user?.name} email={user?.email} />
+  ) : account ? (
+    <span className={s.empty}>
+      <Icon name="person" size={24} />
+    </span>
+  ) : null;
   return (
-    <>
-      <a href="/account" className={s.link}>
-        Account
-      </a>
-      <Menu trigger="avatar" align="end" label="Your account" buttonLabel={`Account menu for ${who}`} face={<Face image={user.image} name={user.name} email={user.email} />}>
-        <MenuGroup label={who}>
-          <MenuItem href="/account">Account</MenuItem>
+    <Menu trigger="menu" align="end" label="Cassette" buttonLabel={signedIn ? `Menu and account for ${who}` : "Menu"} face={face}>
+      {signedIn && (
+        <>
+          <MenuPerson href="/account" face={<Face image={user?.image} name={user?.name} email={user?.email} />} name={who} sub="Your account" />
           {/* the downloads for every app this account may have (the founder, 2026-11-07: "easy to reach through my online account") */}
-          <MenuItem href="/account/setup">Apps</MenuItem>
-          {studio && <MenuItem href="/studio">Studio</MenuItem>}
-          {isAdmin && <MenuItem href="/admin/pipeline">Admin</MenuItem>}
-          <MenuItem href="/settings">Settings</MenuItem>
-          <MenuItem onPick={signOut}>Sign out</MenuItem>
-        </MenuGroup>
-      </Menu>
-    </>
+          <MenuItem href={APPS_HREF} icon="devices" current={here === "apps"}>
+            Apps
+          </MenuItem>
+          {studio && (
+            <MenuItem href="/studio" icon="idea">
+              Studio
+            </MenuItem>
+          )}
+          {user?.isAdmin === true && (
+            <MenuItem href="/admin/pipeline" icon="sliders">
+              Admin
+            </MenuItem>
+          )}
+        </>
+      )}
+      {signedOut && (
+        <>
+          <MenuItem href="/sign-in" icon="person">
+            Sign in
+          </MenuItem>
+          <MenuItem href={APPS_HREF} icon="devices" current={here === "apps"}>
+            Apps
+          </MenuItem>
+        </>
+      )}
+      {cta && !signedIn && (
+        <MenuItem href={cta.href} icon="arrow" className={s.seat}>
+          {cta.label}
+        </MenuItem>
+      )}
+      {(signedIn || signedOut) && <MenuLine />}
+      {KEYS.map((k) => (
+        <MenuItem key={k.id} href={k.href} icon={k.icon} current={here === k.id}>
+          {k.label}
+        </MenuItem>
+      ))}
+      <MenuItem icon="search" onPick={onSearch}>
+        Search
+      </MenuItem>
+      <MenuItem href="/journal" icon="book" current={here === "journal"}>
+        Journal
+      </MenuItem>
+      <MenuItem href="/guides" icon="signpost" current={here === "guides"}>
+        Guides
+      </MenuItem>
+      {links.map((l) => (
+        <MenuItem key={l.href} href={l.href} icon={l.icon ?? "arrow"}>
+          {l.label}
+        </MenuItem>
+      ))}
+      {signedIn && (
+        <>
+          <MenuLine />
+          <MenuItem href="/settings" icon="gear">
+            Settings
+          </MenuItem>
+          <MenuItem onPick={signOut} icon="leave">
+            Sign out
+          </MenuItem>
+        </>
+      )}
+    </Menu>
   );
 }
 
@@ -168,13 +237,14 @@ export function Masthead({
 }: {
   home: string;
   search?: string;
-  /** The page's own links, between the mark and the search key. */
-  links?: Array<{ href: string; label: string }>;
-  /** The page's one action, at the pill's end. */
+  /** The page's own links, in the menu after the places. */
+  links?: Link[];
+  /** The page's one action, at the corner pill's start, for people not yet in. */
   cta?: { href: string; label: string };
-  /** End the pill with the person's account (Account and their key, or Sign in): the product pages. */
+  /** Hold the person's account in the menu (their face on the key, or Sign in). */
   account?: boolean;
 }) {
+  const row = useRef<HTMLDivElement>(null);
   const nav = useRef<HTMLElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -188,6 +258,15 @@ export function Masthead({
   const findId = `${useId()}-find`;
   const listId = `${findId}-list`;
   const router = useRouter();
+  const here = placeOf(usePathname() ?? "");
+  const { status } = useSession();
+  // the action is for people not yet in, so it steps aside for someone signed in
+  const showCta = !!cta && !(account && status === "authenticated");
+  // the lifted key: the page's own, or the one just pressed while the page changes
+  const homeAt = here === "search" ? SEARCH_AT : KEYS.findIndex((k) => k.id === here);
+  const [goingTo, setGoingTo] = useState<number | null>(null);
+  const [pressing, setPressing] = useState(false);
+  const at = goingTo ?? (homeAt >= 0 ? homeAt : null);
   const [value, setValue] = useState("");
   const ta = useTypeahead(searching ? value : "", PER_GROUP);
   const { artists, albums, songs, order: groups } = ta;
@@ -257,13 +336,16 @@ export function Masthead({
 
   // The pill is sized by its contents, which a width can't animate from, so pin
   // the width it has now and let it grow to the search field's from there.
+  // Joined into one bar, the field takes the whole bar; apart, the middle pill grows to 720 at most.
   const open = useCallback(() => {
     const el = nav.current;
-    if (!el) return;
+    const bar = row.current;
+    if (!el || !bar) return;
+    const joined = getComputedStyle(el).position === "static";
     closedWidth.current = el.offsetWidth;
     el.style.width = `${closedWidth.current}px`;
     void el.offsetWidth;
-    el.style.width = `${Math.min(720, window.innerWidth - 24)}px`;
+    el.style.width = `${joined ? bar.clientWidth - 12 : Math.min(720, bar.clientWidth)}px`;
     setShut(false);
     setSearching(true);
   }, []);
@@ -411,60 +493,97 @@ export function Masthead({
 
   return (
     <>
-      <nav
-        ref={nav}
+      <header
         className={`${t.dark} ${s.mast}`}
-        data-account={account || undefined}
-        aria-label="Primary"
+        data-cta={showCta || undefined}
         data-search={searching || undefined}
         data-away={(away && !searching) || undefined}
-        onTransitionEnd={onTransitionEnd}
       >
-        <div className={s.bar} hidden={searching}>
-          <a href={home} className={s.brand}>
-            <LogoMark className={s.glyph} />
-            Cassette
-          </a>
-          {links.map((l) => (
-            <a key={l.href} href={l.href} className={s.link}>
-              {l.label}
-            </a>
-          ))}
-          <button ref={opener} type="button" className={s.key} onClick={open} aria-label="Search" aria-expanded={searching} aria-controls={findId}>
-            <Icon name="search" />
-          </button>
-          {cta && <Cta cta={cta} account={!!account} />}
-          {account && <Account />}
+        <div ref={row} className={s.row}>
+          <nav ref={nav} className={`${s.pill} ${s.places}`} aria-label="Primary" onTransitionEnd={onTransitionEnd}>
+            <div className={s.bar} hidden={searching}>
+              <a href={home} className={s.brand} aria-label="Cassette, home">
+                <LogoMark className={s.glyph} />
+                <span className={s.word}>Cassette</span>
+              </a>
+              <span className={s.keys}>
+                <span
+                  className={s.lens}
+                  hidden={at === null}
+                  data-press={pressing || undefined}
+                  style={{ "--at": at ?? 0 } as CSSProperties}
+                  aria-hidden="true"
+                />
+                {KEYS.map((k, i) => (
+                  <a
+                    key={k.id}
+                    href={k.href}
+                    className={s.key}
+                    aria-label={k.label}
+                    data-tip={k.label}
+                    aria-current={here === k.id ? "page" : undefined}
+                    onPointerDown={() => setPressing(true)}
+                    onPointerUp={() => setPressing(false)}
+                    onPointerLeave={() => setPressing(false)}
+                    onClick={() => setGoingTo(i)}
+                  >
+                    <Icon name={k.icon} />
+                  </a>
+                ))}
+                <button
+                  ref={opener}
+                  type="button"
+                  className={s.key}
+                  onClick={open}
+                  aria-label="Search"
+                  data-tip="Search /"
+                  aria-current={here === "search" ? "page" : undefined}
+                  aria-expanded={searching}
+                  aria-controls={findId}
+                >
+                  <Icon name="search" />
+                </button>
+              </span>
+            </div>
+            <form id={findId} className={s.find} action={search} method="get" role="search" hidden={!searching}>
+              <Icon name="search" />
+              <input
+                ref={field}
+                name="q"
+                type="search"
+                required
+                placeholder="Artists, albums or a vibe"
+                aria-label="Search"
+                autoComplete="off"
+                enterKeyHint="search"
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  setShut(false);
+                }}
+                onClick={() => setShut(false)}
+                onKeyDown={onFieldKey}
+                role="combobox"
+                aria-expanded={showResults}
+                aria-controls={listId}
+                aria-autocomplete="list"
+                aria-activedescendant={showResults ? `${listId}-${lit}` : undefined}
+              />
+              <button type="button" className={s.key} onClick={() => close()} aria-label="Close search">
+                <Icon name="close" />
+              </button>
+            </form>
+          </nav>
+          <div className={`${s.pill} ${s.you}`}>
+            {showCta && cta && (
+              <a href={cta.href} className={s.cta}>
+                {cta.label}
+              </a>
+            )}
+            <MainMenu links={links} account={!!account} cta={cta} here={here} onSearch={open} />
+          </div>
         </div>
-        <form id={findId} className={s.find} action={search} method="get" role="search" hidden={!searching}>
-          <Icon name="search" />
-          <input
-            ref={field}
-            name="q"
-            type="search"
-            required
-            placeholder="Search artists, albums, or a vibe"
-            aria-label="Search"
-            autoComplete="off"
-            enterKeyHint="search"
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              setShut(false);
-            }}
-            onClick={() => setShut(false)}
-            onKeyDown={onFieldKey}
-            role="combobox"
-            aria-expanded={showResults}
-            aria-controls={listId}
-            aria-autocomplete="list"
-            aria-activedescendant={showResults ? `${listId}-${lit}` : undefined}
-          />
-          <button type="button" className={s.key} onClick={() => close()} aria-label="Close search">
-            <Icon name="close" />
-          </button>
-        </form>
-      </nav>
+      </header>
       {/* the matches hang under the pill, not inside it: while it searches, the pill clips what it holds */}
       {showResults && (
         <SearchPanel

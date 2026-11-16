@@ -88,6 +88,8 @@ function stationList(): Promise<ReadonlyMap<string, RadioStation>> {
 }
 
 const POLL_MS = 20_000;
+/** How long a tune-in may sit at Connecting before it is a failed one (a live stream starts in a second or two). */
+const CONNECT_MS = 12_000;
 
 export function RadioProvider({ children }: { children: ReactNode }) {
   const [station, setStation] = useState<RadioStation | null>(null);
@@ -203,12 +205,16 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   );
   const stationRef = useRef<RadioStation | null>(null);
   stationRef.current = station;
+  const connectTimer = useRef<number | undefined>(undefined);
 
   const ensureAudio = useCallback((): HTMLAudioElement => {
     if (audioRef.current) return audioRef.current;
     const a = new Audio();
     a.preload = "none";
-    a.addEventListener("playing", () => setStatus("playing"));
+    a.addEventListener("playing", () => {
+      window.clearTimeout(connectTimer.current);
+      setStatus("playing");
+    });
     a.addEventListener("waiting", () => setStatus((s) => (s === "idle" ? s : "connecting")));
     a.addEventListener("stalled", () => setStatus((s) => (s === "idle" ? s : "connecting")));
     a.addEventListener("error", () => setStatus((s) => (s === "idle" ? s : "error")));
@@ -224,6 +230,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
       setNowPlaying(null);
       return;
     }
+    window.clearTimeout(connectTimer.current);
     const a = audioRef.current;
     if (a) {
       a.pause();
@@ -256,6 +263,16 @@ export function RadioProvider({ children }: { children: ReactNode }) {
       a.src = next.streamUrl;
       a.load();
       a.play().catch(() => setStatus("error"));
+      // A stream server that takes the connection and then never sends a byte leaves the browser waiting with no
+      // error at all (SomaFM's, 2026-11-16): past CONNECT_MS still not playing, it is a failed tune-in, said as one.
+      window.clearTimeout(connectTimer.current);
+      connectTimer.current = window.setTimeout(() => {
+        if (stationRef.current?.slug !== next.slug || !a.paused || a.readyState >= 3) return;
+        a.pause();
+        a.removeAttribute("src");
+        a.load();
+        setStatus("error");
+      }, CONNECT_MS);
     },
     [ensureAudio, toWindow],
   );

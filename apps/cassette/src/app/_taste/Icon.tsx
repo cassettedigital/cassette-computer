@@ -6,7 +6,9 @@
  * folder, code, idea, circleCheck (kept), heart, bag, and expand and collapse (the desktop app coming out
  * of the computer and going back; the dock's video enlarging and coming back); and person, the empty
  * face in the masthead's account key when no one is signed in; and share, an arrow out of a tray, for
- * sending a song.
+ * sending a song. The masthead's places and its menu: compass (Discover), radio (Radio), menu (the two
+ * lines on the menu key), book (Journal), signpost (Guides), how (How it works, play in a ring), help,
+ * devices (Apps), gear (Settings) and leave (Sign out, an arrow out of a door).
  * Illustrations (the PSA's wireframes, No catch's device drawings, the computer and the desktop app) are
  * pictures, not glyphs, and keep their own drawing.
  */
@@ -36,7 +38,17 @@ export type IconName =
   | "expand"
   | "collapse"
   | "person"
-  | "share";
+  | "share"
+  | "compass"
+  | "radio"
+  | "menu"
+  | "book"
+  | "signpost"
+  | "how"
+  | "help"
+  | "devices"
+  | "gear"
+  | "leave";
 
 const line = {
   fill: "none",
@@ -166,6 +178,73 @@ export function Icon({ name, size = 16, className }: { name: IconName; size?: nu
           <path d="M6.4 18.6c1.4-2.1 3.3-3.2 5.6-3.2s4.2 1.1 5.6 3.2" />
         </g>
       );
+      break;
+    case "compass":
+      body = (
+        <g {...line}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="m15.8 8.2-2.2 5.4-5.4 2.2 2.2-5.4Z" />
+        </g>
+      );
+      break;
+    case "radio":
+      body = (
+        <g {...line}>
+          <rect x="2.5" y="8" width="19" height="13" rx="3" />
+          <circle cx="15.5" cy="14.5" r="2.6" />
+          <path d="M6.5 13h3.5M6.5 16h3.5M6.5 8l10-5" />
+        </g>
+      );
+      break;
+    case "menu":
+      body = <path d="M4.5 9h15M4.5 15h15" {...line} />;
+      break;
+    case "book":
+      body = (
+        <g {...line}>
+          <path d="M12 6.5C10 5 7 4.5 3 5v13.5c4-.5 7 0 9 1.5 2-1.5 5-2 9-1.5V5c-4-.5-7 0-9 1.5Z" />
+          <path d="M12 6.5V20" />
+        </g>
+      );
+      break;
+    case "signpost":
+      body = <path d="M12 2.5v19M5 5h11l3 3-3 3H5zM19 13H8l-3 3 3 3h11z" {...line} />;
+      break;
+    case "how":
+      body = (
+        <g {...line}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="m10 8.5 5.5 3.5-5.5 3.5Z" />
+        </g>
+      );
+      break;
+    case "help":
+      body = (
+        <g {...line}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.4 9.3a2.7 2.7 0 1 1 3.7 2.5c-.7.3-1.1.9-1.1 1.6v.4M12 17.3v.1" />
+        </g>
+      );
+      break;
+    case "devices":
+      body = (
+        <g {...line}>
+          <rect x="2" y="5" width="13.5" height="10" rx="1.5" />
+          <path d="M1.5 18.5h15" />
+          <rect x="17.5" y="9" width="5" height="11" rx="1.2" />
+        </g>
+      );
+      break;
+    case "gear":
+      body = (
+        <g {...line}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" />
+        </g>
+      );
+      break;
+    case "leave":
+      body = <path d="M14 3.5h4.5a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H14M9.5 16.5 14 12 9.5 7.5M14 12H3.5" {...line} />;
       break;
   }
   return (

@@ -210,8 +210,7 @@ function Account({ account, paired }: { account: DeskAccount | null; paired: boo
 const AROUND: Door[] = [
   { href: "/discover", name: "Discover", line: "Records worth owning, new and older, picked by how they sound." },
   { href: "/radio", name: "Radio", line: "Real stations from all over, live, by mood, decade or city." },
-  { href: "/guides/build-a-music-collection", name: "Guides", line: "Building a collection, where to buy, and the players worth having." },
-  { href: "/help", name: "Help", line: "Answers about the apps, your library and your account." },
+  { href: "/guides", name: "Guides", line: "How Cassette works, help with it, and owning your music." },
   { href: "/manifesto", name: "What I believe", line: "Paying artists, finding music, and AI." },
   { href: "/for-artists", name: "For artists", line: "Claim your page, and sell your music direct." },
 ];

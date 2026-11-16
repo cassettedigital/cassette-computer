@@ -68,6 +68,11 @@ export type AccountResponse = {
    */
   image: string | null;
   /**
+   * The same photo on the image ladder (docs/reference/CASSETTE_IMAGES.md), for the phones to draw at
+   * their frame's size; null when the ladder cannot serve it. `image` keeps its exact value.
+   */
+  imageRef?: ImageRefJson | null;
+  /**
    * Default disc when image is null: "silhouette" | "initials" | color id.
    * camelCase. Default "silhouette" (the phones' existing person glyph).
    */

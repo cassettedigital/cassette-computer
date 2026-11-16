@@ -41,7 +41,7 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "macos",
     label: "macOS",
     status: "available",
-    version: "0.5.46", // the release whose disk image /api/desktop/download serves; bump with each published DMG
+    version: "0.5.47", // the release whose disk image /api/desktop/download serves; bump with each published DMG
     sizeLabel: null, // filled from the published disk image
     // Apple silicon only (only darwin-aarch64 is built); 13.5 is the bundled Node 24's floor.
     requirement: "Apple silicon · macOS 13.5 or later",

@@ -24,7 +24,6 @@ export function Footer({ wrap = t.wrap }: { wrap?: string }) {
           <a href="/journal">Journal</a>
           <a href="/discover">Discover</a>
           <a href="/guides">Guides</a>
-          <a href="/help">Help</a>
           <a href="/legal/privacy">Privacy</a>
           <a href="/legal/terms">Terms</a>
         </nav>

@@ -5,7 +5,7 @@ export const IMAGE_HOST = "https://media.cassette.digital";
 export const IMAGE_PATH = "/i/{rung}/{bucket}/{key}";
 export const IMAGE_FORMAT = "webp";
 export const ASSUMED_ASPECT = { cover: 1, photo: 1.5 } as const;
-export const IMAGE_EXTERNAL_HOSTS: readonly string[] = ["coverartarchive.org"];
+export const IMAGE_EXTERNAL_HOSTS: readonly string[] = ["coverartarchive.org","www.radiofrance.fr","cdn.radiofrance.fr","media.wnyc.org","assets.jazzgroove.org","www.wwoz.org","www.dr.dk","sohoradiolondon.com","plaza.one","nightride.fm","kxlu.com","kioskradio.com","kalx.berkeley.edu","ambientsleepingpill.com","static-cdn.sr.se","media.ntslive.co.uk","media2.ntslive.co.uk","media3.ntslive.co.uk","www.kexp.org","img.radioparadise.com","api.somafm.com","image.rinse.fm","www.cassette.digital"];
 export const PICK_EXAMPLES: ReadonlyArray<{ w: number; h: number; scale: number; aspect: number; fit: "cover" | "contain"; natural?: number; rung: number; why: string }> = [
   {"w":16,"h":16,"scale":2,"aspect":1,"fit":"cover","rung":120,"why":"a badge"},
   {"w":40,"h":40,"scale":3,"aspect":1,"fit":"cover","rung":120,"why":"exactly 120 pixels"},

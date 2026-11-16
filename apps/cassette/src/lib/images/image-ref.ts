@@ -23,6 +23,10 @@ import { R2_DEV_UPLOADS } from "../media-bucket";
 
 const MEDIA_HOST = "https://media.cassette.digital/";
 
+/** The site, whose public/radio-art/ station marks the edge may fetch (and nothing else of the site). */
+const SITE_HOST = "www.cassette.digital";
+const SITE_ORIGIN = `https://${SITE_HOST}`;
+
 /**
  * The routes whose pictures end up in a person's own files. They keep handing out originals, exactly as
  * before the ladder; image-ref.test.ts ("never reaches the saving path") fails if one of them starts using this module.
@@ -64,7 +68,9 @@ const LADDER = /^https:\/\/media\.cassette\.digital\/i\/\d+\/([mux])\/([^?#]+)/;
 /** Where a stored picture lives, in the edge's terms; null when the edge cannot serve it. */
 export function imageSource(stored: string | null | undefined): { bucket: ImageBucket; key: string; version?: string } | null {
   if (!stored || !stored.trim()) return null;
-  const address = mediaUrl(stored.trim());
+  // a station's mark kept in public/radio-art/ (config/radio.ts) is on the ladder by its full address
+  const trimmed = stored.trim().startsWith("/radio-art/") ? `${SITE_ORIGIN}${stored.trim()}` : stored.trim();
+  const address = mediaUrl(trimmed);
   let url: URL;
   try {
     url = new URL(address);
@@ -85,6 +91,7 @@ export function imageSource(stored: string | null | undefined): { bucket: ImageB
   if (!key) return null;
   if (address.startsWith(MEDIA_HOST)) return { bucket: "m", key, version: version(address) };
   if (address.startsWith(R2_DEV_UPLOADS)) return { bucket: "u", key, version: version(address) };
+  if (url.hostname === SITE_HOST && !url.pathname.startsWith("/radio-art/")) return null; // the site itself: its station marks only
   if (IMAGE_EXTERNAL_HOSTS.includes(url.hostname)) return { bucket: "x", key: base64url(address) };
   return null;
 }

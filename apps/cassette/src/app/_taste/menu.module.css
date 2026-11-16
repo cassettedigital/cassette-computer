@@ -1,7 +1,7 @@
 /*
- * The one dropdown menu (P4): one panel on the stock's raised surface, 5px corners, one ring; group heads
- * in the label type at ink-3; items in the display face, mixed case, as the Mac app's lists; the current choice a lit row in a wash of the
- * record's colour. The trigger is the arrow link's label (View) or the outlined Button (Buy: the word
+ * The one dropdown menu (P4): one panel made of the masthead's pill (its glass, concentric corners, the
+ * lift for the current choice; the panel section says how); group heads in the label type at ink-3; items in
+ * the masthead's typewriter caps. The trigger is the arrow link's label (View) or the outlined Button (Buy: the word
  * and the chevron, the same height as the play button beside it, on a phone too), each with the one
  * chevron; or the small text after a head (the records' sort); or the masthead's round account key.
  *
@@ -79,6 +79,123 @@
   outline: none;
   box-shadow: var(--ring);
 }
+/* the menu key: the masthead's corner key, the menu's two lines and the person's face (or the empty face),
+   one pill. Pointed at, a flat wash; open, it lifts out of the pill (the masthead's lift, --lift-*) */
+.menuKey {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 4px 0 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.25s,
+    color 0.2s,
+    scale 0.14s;
+  -webkit-tap-highlight-color: transparent;
+}
+.menuKey:hover {
+  background: var(--wash);
+  color: var(--ink-e);
+}
+.menuKey:active {
+  scale: 0.96;
+}
+.menuKey[data-open] {
+  background: var(--lift-bg, var(--track));
+  box-shadow: var(--lift-shadow, none);
+  color: var(--ink-e);
+}
+.menuKey:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+/* the split button (Buy): one outlined pill in the set's Button look, split in two. The main half goes
+   straight to your store; the chevron half opens every store. Each half takes its own wash when pointed at;
+   the chevron turns while the menu is open */
+.split {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  height: var(--control-h);
+  border: var(--control-line) solid color-mix(in srgb, var(--ink-e) var(--control-line-alpha), transparent);
+  border-radius: var(--r-pill);
+  color: var(--ink-e);
+  transition: border-color 0.2s;
+}
+.split:hover,
+.split[data-open] {
+  border-color: color-mix(in srgb, var(--ink-e) calc(var(--control-line-alpha) * 2), transparent);
+}
+.wrap .splitMain {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 16px 0 22px;
+  border-radius: var(--r-pill) 0 0 var(--r-pill);
+  color: var(--ink-e);
+  font: var(--t-button);
+  letter-spacing: var(--t-button-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.splitMain > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.splitMain > svg {
+  flex: none;
+}
+.splitPrice {
+  flex: none;
+  font: 500 13px/1 var(--f-mono);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  color: var(--ink-2);
+}
+.splitMore {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 46px;
+  padding: 0;
+  border: 0;
+  border-left: var(--control-line) solid color-mix(in srgb, var(--ink-e) var(--control-line-alpha), transparent);
+  border-radius: 0 var(--r-pill) var(--r-pill) 0;
+  background: none;
+  color: var(--ink-e);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap .splitMain:hover,
+.splitMore:hover,
+.split[data-open] .splitMore {
+  background: var(--wash);
+}
+.wrap .splitMain:focus-visible,
+.splitMore:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.splitMore > svg {
+  transition: rotate 0.2s var(--ease);
+}
+.split[data-open] .splitMore > svg {
+  rotate: 180deg;
+}
 /* the word: the last word of a section head's sentence (the head's row sets `inline`, so it sits a word space
    after the text and takes the head's size). It is the player kit's answer face, italic 500 (the "you haven't
    played in a while" of the Mac app's shelves), sized up so it holds its own next to the caps, in the record's
@@ -129,22 +246,54 @@
   rotate: 180deg;
 }
 
-/* ── the panel ── */
+/* ── the panel (the founder, 2026-11-16, dropdown-sketches): made of the masthead's pill. One material on
+      both papers, the near-black glass with a faint lit top edge, so a menu always reads as part of the
+      pill family; it carries the dark stock's ink (Menu.tsx gives it the dark stock). Concentric corners: a
+      row's corner is the panel's less the panel's padding, so the curves run parallel at any row height.
+      It grows out of its trigger's corner with a small spring when it opens. ── */
 .panel {
+  --menu-r: 20px;
+  --menu-pad: 6px;
+  --row-r: calc(var(--menu-r) - var(--menu-pad));
+  /* and inside a row, the same rule again: a key in a row (a store's Buy or Open) less its 6px inset, a chip in
+     Buy's 3px track less the track's */
+  --key-r: calc(var(--row-r) - 6px);
+  --chip-r: calc(var(--row-r) - 3px);
+  /* the lift: the current choice, the page you're on, your store (the masthead's own) */
+  --lift-bg: linear-gradient(180deg, rgba(239, 231, 218, 0.15), rgba(239, 231, 218, 0.07));
+  --lift-shadow:
+    inset 0 1px 0 rgba(255, 248, 236, 0.11), 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 14px -5px rgba(0, 0, 0, 0.65),
+    0 0 18px rgba(239, 231, 218, 0.07);
   position: absolute;
   z-index: 40;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   display: grid;
   gap: 2px;
   width: max-content;
-  min-width: max(100%, 220px);
+  min-width: max(100%, 240px);
   max-width: calc(100cqi - 2 * var(--gutter, 20px));
-  padding: 6px;
-  border-radius: var(--r-card);
-  background: var(--raised);
+  padding: var(--menu-pad);
+  border-radius: var(--menu-r);
+  background: rgba(21, 17, 14, 0.94);
+  color: var(--ink-e);
   box-shadow:
-    0 0 0 1px var(--track),
-    0 24px 60px rgba(0, 0, 0, 0.55);
+    inset 0 1px 0 rgba(255, 248, 236, 0.08),
+    0 0 0 1px rgba(239, 231, 218, 0.07),
+    0 22px 44px -14px rgba(0, 0, 0, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(16px);
+  transform-origin: top left;
+  transition:
+    opacity 0.16s ease,
+    scale 0.24s cubic-bezier(0.3, 1.35, 0.5, 1),
+    translate 0.24s cubic-bezier(0.3, 1.35, 0.5, 1);
+}
+@starting-style {
+  .panel {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 -6px;
+  }
 }
 .panel[hidden] {
   display: none;
@@ -162,6 +311,7 @@
 }
 .wrap[data-align="end"] .panel {
   right: 0;
+  transform-origin: top right;
 }
 .group {
   display: grid;
@@ -171,92 +321,173 @@
   padding-top: 4px;
 }
 .head {
-  padding: 10px 12px 6px;
+  padding: 12px 14px 6px;
   font: var(--t-label);
   letter-spacing: var(--t-label-track);
   text-transform: uppercase;
   color: var(--ink-3);
 }
+/* a line between kinds of rows, the width of the rows' text */
+.line {
+  height: 1px;
+  margin: 5px 14px;
+  background: var(--track);
+}
 
-/* ── the items ── */
+/* ── the items: keys inside the pill. The masthead's typewriter caps, a flat wash when pointed at, the
+      one focus ring, and the lift for the current choice. No ticks, no dots, no colour wash. ── */
 .panel .item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 10px 12px;
+  min-height: 42px;
+  padding: 0 14px;
   border: 0;
-  border-radius: var(--r-small);
+  border-radius: var(--row-r);
   background: none;
   color: var(--ink-e);
-  font: 700 20px/1.15 var(--f-display);
-  letter-spacing: 0.005em;
+  font: 500 13px/1.2 var(--f-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   text-align: left;
   cursor: pointer;
   transition:
-    background-color 0.2s,
-    color 0.2s;
+    background-color 0.15s,
+    box-shadow 0.2s;
 }
-.panel .item:hover,
-.panel .item:focus-visible {
+.panel .item:hover {
   background: var(--wash);
 }
 .panel .item:focus-visible {
   outline: none;
+  background: var(--wash);
   box-shadow: var(--ring);
 }
-/* the current choice: a lit row */
+.panel .item[hidden],
+.panel .line[hidden] {
+  display: none;
+}
+/* the current choice, the page you're on, your store: the lift */
 .panel .item[aria-checked="true"],
 .panel .item[data-lit] {
-  background: color-mix(in srgb, var(--accent-c) 16%, transparent);
+  background: var(--lift-bg);
+  box-shadow: var(--lift-shadow);
 }
-
-/* a store: its name and tag, what you get under it, the price and the way out at the far end */
-.panel .store {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 14px;
-  grid-template-areas:
-    "name price out"
-    "what price out";
-  align-items: center;
-  column-gap: 14px;
-  row-gap: 4px;
-  min-width: 320px;
+.panel .item[aria-checked="true"]:focus-visible,
+.panel .item[data-lit]:focus-visible {
+  box-shadow: var(--lift-shadow), var(--ring);
 }
-.name {
-  grid-area: name;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+.panel .item > span {
+  min-width: 0;
 }
-.tag {
-  font: var(--t-label);
-  letter-spacing: var(--t-label-track);
-  text-transform: uppercase;
-  color: var(--accent-ink, var(--accent-c));
-}
-.what {
-  grid-area: what;
-  font: var(--t-label);
-  letter-spacing: var(--t-label-track);
-  text-transform: uppercase;
+/* a row led by a glyph (the masthead's menu) or by the person's face */
+.panel .withIcon > svg {
+  flex: none;
   color: var(--ink-3);
 }
+.panel .withIcon[data-lit] > svg,
+.panel .withIcon:hover > svg {
+  color: var(--ink-e);
+}
+.lead {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+.lead > * {
+  width: 28px !important;
+  height: 28px !important;
+}
+/* a person's own row: their name in the serif, mixed case, over a small line */
+.panel .person {
+  min-height: 52px;
+}
+.personName {
+  display: block;
+  font: 500 17px/1.2 var(--f-serif);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.personSub {
+  display: block;
+  margin-top: 2px;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  color: var(--ink-3);
+}
+
+/* a store (Buy): its name, and at the right the price when the store gave us one. Pointing at it (or
+   reaching it with the keys) swaps the price for its way out: Buy for our own checkout, Open for a store
+   that leaves the site. */
+.panel .store {
+  min-height: 46px;
+}
+.storeName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.storeEnd {
+  display: grid;
+  flex: none;
+  align-items: center;
+  justify-items: end;
+  min-width: 76px;
+}
+.storeEnd > * {
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.15s,
+    translate 0.15s;
+}
 .price {
-  grid-area: price;
-  font: var(--t-meta);
-  letter-spacing: var(--t-meta-track);
+  font: 500 13px/1 var(--f-mono);
+  letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
   color: var(--ink-e);
 }
-.store:not([data-priced]) .price {
-  font: var(--t-label);
-  letter-spacing: var(--t-label-track);
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.out {
-  grid-area: out;
+.go {
   display: inline-flex;
-  color: var(--ink-3);
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--key-r);
+  background: var(--lift-bg);
+  box-shadow: var(--lift-shadow);
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  color: var(--ink-e);
+  opacity: 0;
+  translate: 4px 0;
+}
+.go[data-ours] {
+  background: var(--cs-orange);
+  color: #15110e; /* the light stock's ink on the orange (BUG-629) */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.store:hover .go,
+.store:focus-visible .go {
+  opacity: 1;
+  translate: 0 0;
+}
+.store:hover .price,
+.store:focus-visible .price {
+  opacity: 0;
+}
+@media (hover: none) {
+  /* nothing to point with: the price stays, and a tap goes straight to the store */
+  .go {
+    display: none;
+  }
+  .store:hover .price {
+    opacity: 1;
+  }
 }
 
 @container taste (width < 760px) {
@@ -270,12 +501,10 @@
     width: auto;
     max-width: none;
   }
-  .panel .store {
-    min-width: 0;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .chev {
+  .chev,
+  .panel {
     transition: none;
   }
 }

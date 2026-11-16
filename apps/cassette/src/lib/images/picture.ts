@@ -16,7 +16,7 @@
  * No database imports: pages, client components and tests all use it.
  */
 
-import { IMAGE_EXTERNAL_HOSTS, imageUrl, type ImageKind, type ImageRef, type ImageRung } from "@discovery/cassette-kit/images";
+import { imageUrl, type ImageKind, type ImageRef, type ImageRung } from "@discovery/cassette-kit/images";
 import { mediaUrl } from "../image-url";
 import { imageRef } from "./image-ref";
 
@@ -40,13 +40,14 @@ export function picture(stored: string | null | undefined, kind: ImageKind, size
 // Hosts a browser must never be sent to for a picture (CLAUDE.md: no Deezer, no Last.fm, ever).
 const BANNED_HOST = /(?:^|\.)(?:dzcdn|deezer|lastfm|audioscrobbler)(?:\.|$)|(?:^|\.)last\.fm$/i;
 // Cover Art Archive and the archive.org storage it hands out: through our picture server only.
-const ARCHIVE_HOST = /(?:^|\.)archive\.org$/i;
+const ARCHIVE_HOST = /(?:^|\.)(?:coverart)?archive\.org$/i;
 
 /**
  * The address to fall back to when the ladder can't answer: ours only. A picture whose original lives at
  * Cover Art Archive is served through our picture server or not at all (2026-11-08, the image lock-in: the
  * fallback sent browsers straight to archive.org for about half the catalog whenever a size was slow), and
- * a banned host is never asked. Other outside hosts are left as they were (artist photos not yet stored).
+ * a banned host is never asked. Other outside hosts keep their original as the fallback, the stations'
+ * hosts on the ladder's list included (artist photos not yet stored, a station's art when its size fails).
  */
 function fallbackOriginal(address: string): string | null {
   const url = mediaUrl(address);
@@ -56,7 +57,7 @@ function fallbackOriginal(address: string): string | null {
   } catch {
     return url;
   }
-  if (BANNED_HOST.test(host) || ARCHIVE_HOST.test(host) || IMAGE_EXTERNAL_HOSTS.includes(host)) return null;
+  if (BANNED_HOST.test(host) || ARCHIVE_HOST.test(host)) return null;
   return url;
 }
 

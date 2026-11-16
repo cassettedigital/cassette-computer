@@ -1,4 +1,4 @@
-# Cassette for your computer 0.5.46, exported from Cassette's own repository at d2e2a03f83e1cf3d3bc34934fd5ff237fb140d7b.
+# Cassette for your computer 0.5.47, exported from Cassette's own repository at b3a875d8acd5d66fc69a6c09f6601ff4e0d4ffd5.
 # One line per file: where it came from, then its path.
 #   engine: the computer app's own folder; desk: a player screen or what it imports, as the website runs it;
 #   stand-in / public copy: the public copy's own file in place of the website's; package, config, asset, made.
@@ -194,6 +194,7 @@ engine	apps/cassette-player/sidecar/count_mbids.go
 engine	apps/cassette-player/sidecar/cover-art_test.go
 engine	apps/cassette-player/sidecar/cover-art-fetch.go
 engine	apps/cassette-player/sidecar/cover-art.go
+engine	apps/cassette-player/sidecar/cover-fingerprint_test.go
 engine	apps/cassette-player/sidecar/cover-fingerprint.go
 engine	apps/cassette-player/sidecar/cover-remediate.go
 engine	apps/cassette-player/sidecar/cover-serve_test.go
@@ -495,6 +496,8 @@ desk	apps/cassette/src/app/_taste/PlayerDock.tsx
 desk	apps/cassette/src/app/_taste/PointingHand.tsx
 desk	apps/cassette/src/app/_taste/quote.module.css
 desk	apps/cassette/src/app/_taste/Quote.tsx
+desk	apps/cassette/src/app/_taste/radio/RadioRail.tsx
+desk	apps/cassette/src/app/_taste/radio/rail.module.css
 desk	apps/cassette/src/app/_taste/radio/SaveStation.tsx
 desk	apps/cassette/src/app/_taste/radio/station.module.css
 desk	apps/cassette/src/app/_taste/radio/StationArt.tsx
@@ -537,6 +540,7 @@ desk	apps/cassette/src/app/(taste)/album/[slug]/album.module.css
 desk	apps/cassette/src/app/(taste)/album/[slug]/AlbumBody.tsx
 desk	apps/cassette/src/app/(taste)/album/[slug]/arrival.module.css
 desk	apps/cassette/src/app/(taste)/album/[slug]/Arrival.tsx
+desk	apps/cassette/src/app/(taste)/album/[slug]/buy.module.css
 desk	apps/cassette/src/app/(taste)/album/[slug]/BuyMenu.tsx
 desk	apps/cassette/src/app/(taste)/album/[slug]/Further.tsx
 desk	apps/cassette/src/app/(taste)/album/[slug]/listeners.module.css
@@ -597,6 +601,9 @@ desk	apps/cassette/src/app/components/radio/RadioDial.tsx
 desk	apps/cassette/src/app/components/radio/RadioDock.module.css
 desk	apps/cassette/src/app/components/radio/RadioDock.tsx
 desk	apps/cassette/src/app/components/radio/RadioProvider.tsx
+desk	apps/cassette/src/app/components/radio/rail-claim.ts
+desk	apps/cassette/src/app/components/radio/station-side.module.css
+desk	apps/cassette/src/app/components/radio/StationSide.tsx
 desk	apps/cassette/src/app/components/RailAccountMenu.module.css
 desk	apps/cassette/src/app/components/RailAccountMenu.tsx
 desk	apps/cassette/src/app/components/ReportProblem.module.css
@@ -748,6 +755,9 @@ desk	apps/cassette/src/data/playlist-cover-presets.ts
 desk	apps/cassette/src/instrumentation-client.ts
 desk	apps/cassette/src/lib/account-delete.ts
 stand-in	apps/cassette/src/lib/account-player-data.ts
+desk	apps/cassette/src/lib/account/get-the-app.ts
+desk	apps/cassette/src/lib/account/places.ts
+desk	apps/cassette/src/lib/account/setup.ts
 desk	apps/cassette/src/lib/app-surface.ts
 desk	apps/cassette/src/lib/appearance.ts
 desk	apps/cassette/src/lib/artist-own-links-rules.ts

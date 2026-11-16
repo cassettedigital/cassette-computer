@@ -169,6 +169,27 @@ func coverFilesForAlbum(dirs []string) []string {
 	return out
 }
 
+// coverServeRule names how this computer turns an album's files into the picture a
+// phone is handed. What the cloud hears is the folder cover's fingerprint UNDER this
+// rule, so changing the rule moves every album's reported value exactly once and every
+// phone pulls its covers again (the iPhone's local_cover_version pull: it downloads the
+// new picture, then swaps it in, a few albums per poll; a picked cover is never touched,
+// the cloud sends no version for those). The stored observations keep the plain
+// fingerprint, so a rule change never reads as an edit to the person's files and never
+// forces a rescan.
+//
+// "1" (2026-11-16): a song answers with its album's cover, never the art inside its own
+// file (Navidrome's EnableMediaFileCoverArt is off in our fork). Store downloads often
+// carry each single's own art in its tracks: Eve 6's Dream Fist showed a single's
+// picture on the phone while this computer showed the folder cover.
+const coverServeRule = "1"
+
+// reportedCoverFingerprint is the value sent to the cloud for an album's folder cover.
+func reportedCoverFingerprint(fingerprint string) string {
+	sum := sha256.Sum256([]byte("serve-rule:" + coverServeRule + "\x00" + fingerprint))
+	return hex.EncodeToString(sum[:])[:16]
+}
+
 // albumFoldKey is the album identity shared with the cloud: folded artist + album,
 // taken from the SAME Navidrome strings the cloud buckets on, so the two agree.
 func albumFoldKey(artist, album string) string {
@@ -342,7 +363,7 @@ func attachCoverFingerprints(
 		if !ok {
 			continue
 		}
-		value := fingerprint
+		value := reportedCoverFingerprint(fingerprint)
 		tracks[i].CoverFingerprint = &value
 		stamped++
 	}

@@ -43,7 +43,8 @@ export const SCORE_MIN = 1;
 export const SCORE_MAX = 10;
 
 /** A picture a writer uploaded. `src` is the stored address in our uploads bucket; pages show it through
- * imageRef() (docs/reference/CASSETTE_IMAGES.md), never as is. Every picture carries a credit line. */
+ * imageRef() (docs/reference/CASSETTE_IMAGES.md), never as is. `credit` is empty when there is none to give: the
+ * writer's own photo needs no "Me" under it (the founder, 2026-11-13). */
 export interface PictureAttrs {
   src: string;
   alt: string;
@@ -56,9 +57,10 @@ export interface PictureAttrs {
   height?: number;
 }
 
-/** What stands for a piece on a shelf (the journal's front page, a writer's page): one of the records the
- * piece attaches, or a picture the writer chose. Absent: the lead picture, else the record it is about. */
-export type Preview = { type: "record"; ref: RecordRef } | { type: "picture"; attrs: PictureAttrs };
+/** What stands for a piece on a shelf (the journal's front page, a writer's page) and in a link to it: one of the
+ * records the piece attaches, a picture the writer chose, or `none`, the writer's "no picture" (the founder,
+ * 2026-11-13). Absent: the lead picture, else the record it is about, else the first picture in the body. */
+export type Preview = { type: "record"; ref: RecordRef } | { type: "picture"; attrs: PictureAttrs } | { type: "none" };
 
 export interface Post {
   kind: PostKind;
@@ -260,7 +262,7 @@ function checkPicture(attrs: unknown, at: string, problems: Problem[]) {
   const a = (attrs ?? {}) as Partial<PictureAttrs>;
   if (typeof a.src !== "string" || !a.src.trim()) problems.push({ at, message: "A picture needs its upload." });
   if (typeof a.alt !== "string") problems.push({ at, message: "A picture needs a description for people who can't see it." });
-  if (typeof a.credit !== "string" || !a.credit.trim()) problems.push({ at, message: "Every picture needs a credit line." });
+  if (a.credit !== undefined && typeof a.credit !== "string") problems.push({ at, message: "This picture's credit line is in the wrong shape." });
   const size = (v: unknown) => Number.isInteger(v) && (v as number) > 0;
   if (!size(a.width) || !size(a.height)) problems.push({ at, message: "This picture is missing its size. Upload it again." });
 }
@@ -353,11 +355,13 @@ export function validatePost(post: Post): Problem[] {
 
   if (post.preview) {
     const pv = post.preview as Partial<Preview> & { ref?: unknown; attrs?: unknown };
-    if (pv.type === "picture") checkPicture(pv.attrs, "preview", problems);
+    if (pv.type === "none") {
+      // the writer's "no picture": nothing to check
+    } else if (pv.type === "picture") checkPicture(pv.attrs, "preview", problems);
     else if (pv.type === "record" && isRef(pv.ref)) {
       if (post.body?.type === "doc" && !deriveAttachments(post).some((a) => sameRef(a.ref, pv.ref as RecordRef)))
         problems.push({ at: "preview", message: "The preview record has to be one this piece is about, lists or mentions." });
-    } else problems.push({ at: "preview", message: "The preview needs a record or a picture." });
+    } else problems.push({ at: "preview", message: "The preview needs a record, a picture, or no picture." });
   }
 
   if (!post.body || post.body.type !== "doc") problems.push({ at: "body", message: "Body in the wrong shape." });

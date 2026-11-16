@@ -31,7 +31,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
 import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
-import { Glyph, Pills, PlayPill, Rows, SavePill, Segmented, ShufflePill, TrackRow, useContextMenu, WordArt, type MenuItem } from "@discovery/cassette-kit";
+import { Glyph, Pills, PlayPill, Rows, SavePill, Segmented, ShufflePill, TrackRow, useContextMenu, type MenuItem } from "@discovery/cassette-kit";
 import { useRadio } from "@/app/components/radio/RadioProvider";
 import { usePlayer } from "@/app/(taste)/_kit/player";
 import { Art, PlaylistArt, albumCovers, trackCovers } from "./Art";
@@ -47,7 +47,7 @@ import { ArtistView, useArtistMenu } from "./Artist";
 import { MixArt, mixFacts, useMixMenu } from "./MadeForYou";
 import { deskMix, useMix } from "./mixes";
 import { deskAlbum, deskArtistOf, deskPlaylist, DESK, type DeskAlbum, type OwnedTrack } from "./types";
-import type { RadioStationPage } from "@/lib/radio/types";
+import { StationSide, useStationPage } from "@/app/components/radio/StationSide";
 import { songLineOnRecord } from "@/lib/desk/song-credit";
 import { offlineWords } from "./network";
 import d from "./desk.module.css";
@@ -309,52 +309,11 @@ function MixLook({ id }: { id: string }) {
 
 /* ── a station ── */
 
-/** How often a station looked into reads its page again: about a song's length, so the log moves
-    with the station whether or not it's playing (the founder, 2026-10-28: paused, it "keeps going back
-    to" the song that was on when it was opened). */
-const STATION_PAGE_MS = 30_000;
-
-/** A station's page as the site's and the phones' station pages have it (GET /api/radio/station/<slug>,
-    lib/radio/station-page): what's on, its about and where that came from, where it's from and what it
-    plays, its latest songs, each matched to its record on Cassette, the stations like it. Read when
-    it's looked into and again every half minute while it stays there, and as soon as the radio hears
-    the song change (`song`); the last answer stays up meanwhile. Null until the first answers. */
-function useStationPage(slug: string, song: string | null) {
-  const [got, setGot] = useState<{ slug: string; page: RadioStationPage | null } | null>(null);
-  useEffect(() => {
-    let gone = false;
-    const read = () =>
-      fetch(`/api/radio/station/${encodeURIComponent(slug)}`)
-        .then((r) => (r.ok ? (r.json() as Promise<RadioStationPage>) : null))
-        .then(
-          (page) => !gone && setGot((was) => (page || was?.slug !== slug ? { slug, page } : was)),
-          () => {},
-        );
-    void read();
-    const id = window.setInterval(read, STATION_PAGE_MS);
-    return () => {
-      gone = true;
-      window.clearInterval(id);
-    };
-  }, [slug, song]);
-  return got?.slug === slug ? got.page : null;
-}
-
-const clock = (iso: string | null | undefined) => {
-  if (!iso) return null;
-  const t = new Date(iso);
-  return Number.isNaN(t.getTime()) ? null : t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-};
-
 /**
- * A station looked into (the founder, 2026-10-27: the about text was "word vomit"; the recent songs
- * needed "a little more life"). Tune in and Save side by side, the phone's way (the founder,
- * 2026-10-29: "you can save stations with the button on the right... THAT is the better experience").
- * Under the head, a few quiet chips (what kind of station, what it plays); then what's on the air as
- * a log down a thread: the show on now with its picture, the song on now, the songs before it at their
- * times with their covers, the shows coming up; then the stations like it. No about text (the founder,
- * 2026-10-29: people don't come to read about a station); its website and where to support it are in
- * the station's menu (station-menu.ts), as on the phone.
+ * A station looked into: the shared station view (components/radio/StationSide), the website's right rail
+ * draws the same. The desk's own here: its pictures (Art, hub-aware), Tune in through the desk's disc (it
+ * knows when the Mac is offline), Save through the desk's own list, a song's click and right click the
+ * desk's (its record in the middle column, or a search), a station like it shown here in the side view.
  */
 function StationLook({ slug }: { slug: string }) {
   const { stations } = useDesk();
@@ -370,127 +329,34 @@ function StationLook({ slug }: { slug: string }) {
   const s = stations.find((x) => x.slug === slug);
   const tint = useTint(s?.image ?? null);
   if (!s) return <p className={d.quiet}>That station isn't on the dial any more.</p>;
-  // tuned in, the radio's own line (it keeps itself fresh); else, or until it has one, the page's
-  const np = (on ? radio.nowPlaying : null) ?? page?.live ?? null;
   const tune = disc(s);
-  const st = page?.station ?? null;
-  // the line under the name already says where it's from, so the chips say only what it plays
-  const chips = st ? [st.kind === "station" ? "Live shows" : "One sound, all day", ...st.genres.slice(0, 3)] : [];
-  const show = np?.show ?? null;
-  // the song on now wears its record's cover, else the station's own mark (never an empty bead)
-  const nowCover = np?.match?.coverUrl ?? np?.track?.coverUrl ?? s.image ?? null;
-  const later = (page?.live?.next ?? []).slice(0, 2);
-  // the radio can hear a new song before the page catches up: never the song on now twice
-  const isNow = (p: { artist: string; title: string }) =>
-    !!np?.track && p.artist.trim().toLowerCase() === np.track.artist.trim().toLowerCase() && p.title.trim().toLowerCase() === np.track.title.trim().toLowerCase();
-  const recent = (page?.recent ?? []).filter((p) => !isNow(p)).slice(0, 6);
-  // each song in the log is a way onto Cassette: a click to its record, a right click for the rest
-  const row = (x: RadioSong) => (
-    <button type="button" className={d.stHit} onClick={() => song.open(x)} onContextMenu={(e) => cm.open(e, song.menu(x))} aria-label={song.hint(x)} title={song.hint(x)} />
-  );
+  // the stations like it as the desk has them: their marks and lines from its own list
+  const similar = (page?.similar ?? []).map((x) => {
+    const mine = stations.find((y) => y.slug === x.slug);
+    return { slug: x.slug, name: x.name, image: mine?.image ?? null, accent: x.accent, line: mine?.kicker ?? x.sourceLabel };
+  });
   return (
-    <div className={d.look} style={tint}>
-      <LookHead
-        art={s.image ? <Art src={s.image} sizes="380px" priority /> : <WordArt name={s.name} accent={s.accent} />}
-        app
-        title={s.name}
-        by={s.kicker}
-        pills={
+    <>
+      <StationSide
+        style={tint}
+        classNames={{ look: d.look, art: d.lookArt, text: d.lookText, title: d.lookTitle }}
+        station={{ slug: s.slug, name: s.name, image: s.image ?? null, accent: s.accent, kicker: s.kicker }}
+        page={page}
+        // tuned in, the radio's own line (it keeps itself fresh); else, or until it has one, the page's
+        live={(on ? radio.nowPlaying : null) ?? page?.live ?? null}
+        keys={
           <Pills>
             <PlayPill state={on ? "stop" : "play"} word={on ? "Stop" : "Tune in"} onClick={tune.onClick} />
             <SavePill saved={save.isSaved(s.slug)} onClick={() => save.toggle(s.slug)} />
           </Pills>
         }
+        picture={(src, px, opts) => <Art src={src} sizes={`${px}px`} size={px < 100 ? px : undefined} priority={opts?.priority} />}
+        songHit={(x) => ({ onClick: () => song.open(x), onContextMenu: (e) => cm.open(e, song.menu(x)), label: song.hint(x) })}
+        similar={similar}
+        stationHit={(x) => ({ onClick: () => aside.select({ kind: "station", slug: x.slug }), label: `Look into ${x.name}` })}
       />
-      {chips.length > 0 && (
-        <ul className={d.stChips} aria-label="About the station">
-          {chips.map((c) => (
-            <li key={c}>{c}</li>
-          ))}
-        </ul>
-      )}
-
-      {(show || np?.track || recent.length > 0) && (
-        <section className={d.stSection} aria-label="On the air">
-          <h3 className={d.stHead}>On the air</h3>
-          {show && (
-            <div className={d.stShow}>
-              <span className={d.stShowArt}>{show.image ? <Art src={show.image} sizes="48px" size={48} /> : <WordArt name={show.name} accent={s.accent} />}</span>
-              <span className={d.stShowText}>
-                <span className={d.stShowName}>{show.name}</span>
-                <span className={d.stShowLine}>{[show.host ? `with ${show.host}` : null, clock(show.until) ? `until ${clock(show.until)}` : null].filter(Boolean).join(" · ")}</span>
-              </span>
-            </div>
-          )}
-          {(np?.track || recent.length > 0) && (
-            <ol className={d.stLog}>
-              {np?.track && (
-                <li data-now>
-                  <span className={d.stWhen}>
-                    <i className={d.liveDot} aria-hidden="true" />
-                    Now
-                  </span>
-                  <span className={d.stBead}>{nowCover ? <Art src={nowCover} sizes="44px" size={44} /> : <i aria-hidden="true" />}</span>
-                  <span className={d.stSong}>
-                    <span className={d.stSongTitle}>{np.track.title}</span>
-                    <span className={d.stSongArtist}>{np.track.artist}</span>
-                  </span>
-                  {row({ title: np.track.title, artist: np.track.artist, match: np.match })}
-                </li>
-              )}
-              {recent.map((p, i) => (
-                <li key={`${p.artist}-${p.title}-${i}`}>
-                  <span className={d.stWhen}>{clock(p.playedAt) ?? ""}</span>
-                  <span className={d.stBead}>{(p.coverUrl ?? p.match?.coverUrl) ? <Art src={(p.coverUrl ?? p.match?.coverUrl)!} sizes="40px" size={40} /> : <i aria-hidden="true" />}</span>
-                  <span className={d.stSong}>
-                    <span className={d.stSongTitle}>{p.title}</span>
-                    <span className={d.stSongArtist}>{p.artist}</span>
-                  </span>
-                  {row(p)}
-                </li>
-              ))}
-            </ol>
-          )}
-          {later.length > 0 && <h3 className={`${d.stHead} ${d.stHeadLater}`}>Coming up</h3>}
-          {later.length > 0 && (
-            <ol className={d.stLater} aria-label="Coming up">
-              {later.map((x, i) => (
-                <li key={`${x.name}-${x.starts}-${i}`}>
-                  <span className={d.stWhen}>{clock(x.starts) ?? ""}</span>
-                  <span className={d.stLaterName}>
-                    {x.name}
-                    {x.host ? <span className={d.stSongArtist}> with {x.host}</span> : null}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
-          {cm.menu}
-        </section>
-      )}
-
-      {page && page.similar.length > 0 && (
-        <section className={d.stSection} aria-label="Stations like it">
-          <h3 className={d.stHead}>Stations like it</h3>
-          <ul className={d.stLike}>
-            {page.similar.slice(0, 4).map((x) => {
-              const mine = stations.find((y) => y.slug === x.slug);
-              return (
-                <li key={x.slug}>
-                  <button type="button" onClick={() => aside.select({ kind: "station", slug: x.slug })}>
-                    <span className={d.stLikeArt}>{mine?.image ? <Art src={mine.image} sizes="40px" size={40} /> : <WordArt name={x.name} accent={x.accent} />}</span>
-                    <span className={d.stLikeText}>
-                      <span className={d.stLikeName}>{x.name}</span>
-                      <span className={d.stLikeLine}>{mine?.kicker ?? x.sourceLabel}</span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-    </div>
+      {cm.menu}
+    </>
   );
 }
 

@@ -139,6 +139,17 @@ export interface RadioStationPage {
   recent: RadioPlay[];
   /** The stations in `station.similar`, resolved, in that order. */
   similar: RadioCatalogStation[];
+  /** The records on Cassette the station played most this month (lib/radio/station-log), most played first. */
+  records: RadioStationRecord[];
+}
+
+/** A record a station played, as its page shows it: the record, and how many times it went out this month. */
+export interface RadioStationRecord {
+  albumSlug: string;
+  title: string;
+  artistName: string;
+  coverUrl: string | null;
+  plays: number;
 }
 
 /** One station on the dial as the Radio page draws it (lib/radio/dial; the desk's `stations`). */

@@ -1,52 +1,223 @@
 /*
- * The masthead (P12): one pill, fixed at the top of the window on every page, in the homepage's spacing
- * and ink (the dark stock's, on the pill's own near-black). It slips up out of the window while the page
- * scrolls down and comes back on any scroll up. A search takes the whole pill over. Its one action is the
- * masthead's own pill button, in the orange: the one exception to the set's Button. On the product
- * pages its end is the person's account: Library and the round account key, or Sign in and the empty
- * face, one width either way (Masthead.tsx says why).
+ * The masthead (P12): fixed at the top of the window on every page, in the homepage's spacing and ink (the
+ * dark stock's, on the pill's own near-black). Two pills (the founder, 2026-11-14): in the middle, the name
+ * and the places as icon keys (Discover, Radio, Search); in the corner, the page's one action (Save a seat,
+ * for anyone not yet in) and the menu key, whose menu says every place in words with the same icons, and
+ * holds the account. The two pills sit apart only while there is clear room between them; narrower, they
+ * join into one bar (places left, menu right); narrower still the word Cassette goes, then the action moves
+ * into the menu. The switch points are the parts' own measured widths (Masthead.tsx says them), read
+ * against the room the header really has, so the player's side panel narrowing the page joins it too.
+ *
+ * Where you are is a key that lifts out of the pill (the founder: "like the button lifts from the surface"):
+ * a lighter face, a lit top edge, a short soft shadow and the faintest glow. Pointing at a key is a flat
+ * wash; pressing one sinks the lift a touch, and it travels to the key you picked with a small spring. The
+ * open menu key wears the same lift. The whole masthead slips up out of the window while the page scrolls
+ * down and comes back on any scroll up. A search takes the middle pill over (the whole bar when joined).
  */
 .mast {
+  container: mast / inline-size;
   position: fixed;
   top: calc(14px + var(--top-dock-h, 0px)); /* below the player pinned along the top, when it is */
-  left: calc(50% - var(--rail-w, 0px) / 2); /* over the page, not the player's panel beside it */
+  left: 12px;
+  right: calc(12px + var(--rail-w, 0px)); /* over the page, not the player's panel beside it */
   z-index: 70;
-  display: block;
-  /* left: 50% would cap a fixed box at half the screen and wrap the links; size it to its contents */
-  width: max-content;
-  max-width: calc(100vw - 24px - var(--rail-w, 0px));
+  height: 50px;
+  pointer-events: none; /* the gap between the pills is the page's */
+
+  /* the lift: where you are, and the open menu key */
+  --lift-bg: linear-gradient(180deg, rgba(239, 231, 218, 0.15), rgba(239, 231, 218, 0.07));
+  --lift-shadow:
+    inset 0 1px 0 rgba(255, 248, 236, 0.11), 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 14px -5px rgba(0, 0, 0, 0.65),
+    0 0 18px rgba(239, 231, 218, 0.07);
+  --press-shadow: inset 0 1px 0 rgba(255, 248, 236, 0.06), 0 1px 1px rgba(0, 0, 0, 0.4);
+  --spring: cubic-bezier(0.3, 1.35, 0.5, 1);
+
+  transition:
+    translate 0.3s var(--ease),
+    right 0.45s var(--ease);
+}
+/* away while the page scrolls down, unless something in it has the focus */
+.mast[data-away]:not(:focus-within) {
+  translate: 0 calc(-100% - 20px);
+}
+
+/* the two pills: the places in the middle, you in the corner */
+.row {
+  position: relative;
+  height: 100%;
+}
+.pill {
+  height: 50px;
   padding: 6px;
   border-radius: var(--r-pill);
   background: var(--pill);
   color: var(--ink-e);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(12px);
-  transform: translateX(-50%);
-  transition:
-    width 0.42s var(--ease),
-    translate 0.3s var(--ease),
-    left 0.45s var(--ease);
+  pointer-events: auto;
 }
-/* only a search clips the pill (its field grows from the pill's own width); otherwise nothing does, so
-   the account menu can hang below it */
-.mast[data-search] {
+.places {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: max-content;
+  max-width: 100%;
+  transition: width 0.42s var(--ease);
+}
+.you {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+/* only a search clips the middle pill (its field grows from the pill's own width); while it searches the
+   corner pill steps away */
+.mast[data-search] .places {
   overflow: hidden;
 }
-/* away while the page scrolls down, unless something in it has the focus */
-.mast[data-away]:not(:focus-within) {
-  translate: 0 calc(-100% - 20px);
+.mast[data-search] .you {
+  display: none;
 }
+
+/* joined: one bar, the places at its start and the menu at its end. With Save a seat in the corner they
+   join when the header's room is less than the middle pill and twice (the corner pill + 16px): 701, measured
+   (middle 283, corner 193); without it (corner 84), 483. */
+@container mast (width < 702px) {
+  .mast[data-cta] .row {
+    display: flex;
+    align-items: center;
+    padding: 6px;
+    border-radius: var(--r-pill);
+    background: var(--pill);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(12px);
+    pointer-events: auto;
+  }
+  .mast[data-cta] .pill {
+    position: static;
+    translate: none;
+    height: 38px;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .mast[data-cta] .you {
+    margin-left: auto;
+  }
+}
+/* joined, the menu takes the bar's own width and hangs just under it, as the bar opening */
+@container mast (width < 702px) {
+  .mast[data-cta] .you [data-align] {
+    position: static;
+  }
+  .mast[data-cta] .you [role="menu"] {
+    left: 0;
+    right: 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    top: calc(100% + 8px);
+  }
+}
+@container mast (width < 484px) {
+  .mast:not([data-cta]) .you [data-align] {
+    position: static;
+  }
+  .mast:not([data-cta]) .you [role="menu"] {
+    left: 0;
+    right: 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    top: calc(100% + 8px);
+  }
+}
+@container mast (width < 484px) {
+  .mast:not([data-cta]) .row {
+    display: flex;
+    align-items: center;
+    padding: 6px;
+    border-radius: var(--r-pill);
+    background: var(--pill);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(12px);
+    pointer-events: auto;
+  }
+  .mast:not([data-cta]) .pill {
+    position: static;
+    translate: none;
+    height: 38px;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .mast:not([data-cta]) .you {
+    margin-left: auto;
+  }
+}
+/* narrower: the word Cassette goes (the mark still goes home) once the joined bar can't hold it with 12px to
+   spare (488 with Save a seat, 379 without); then, for someone not yet in, the menu key drops the empty face
+   so Save a seat stays on a phone; only under that (333 with both) does Save a seat move into the menu */
+@container mast (width < 500px) {
+  .mast[data-cta] .word {
+    display: none;
+  }
+  .mast[data-cta] .brand {
+    margin-right: 2px;
+  }
+  .mast[data-cta] .bar {
+    padding-left: 2px;
+  }
+}
+@container mast (width < 392px) {
+  .mast .word {
+    display: none;
+  }
+  /* three classes: these outweigh the brand's and the action's own rules further down */
+  .mast .bar .brand {
+    margin-right: 2px;
+  }
+  .mast .bar {
+    padding-left: 2px;
+  }
+  .mast[data-cta] .you .empty {
+    display: none;
+  }
+  .mast[data-cta] .you button[aria-haspopup] {
+    padding: 0 10px;
+  }
+}
+@container mast (width < 340px) {
+  .mast .you .cta {
+    display: none;
+  }
+}
+.seat {
+  display: none !important;
+}
+@container mast (width < 340px) {
+  .seat {
+    display: flex !important;
+  }
+}
+
 .bar {
   display: flex;
   align-items: center;
   gap: 4px;
+  height: 100%;
   padding-left: 10px;
 }
 .find {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 38px;
+  height: 100%;
   padding-left: 12px;
   color: var(--ink-3);
 }
@@ -71,50 +242,74 @@
   margin: -5px 0;
   color: var(--cs-orange);
 }
-.mast .link {
-  padding: 12px 13px;
+
+/* the places: icon keys, one of them lifted (the lens, which travels) */
+.keys {
+  position: relative;
+  display: inline-flex;
+  gap: 4px;
+}
+.lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 38px;
   border-radius: var(--r-pill);
-  font: var(--t-label);
-  line-height: 1;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-2);
+  background: var(--lift-bg);
+  box-shadow: var(--lift-shadow);
+  transform: translateX(calc(var(--at, 0) * 44px));
   transition:
-    background-color 0.2s,
-    color 0.2s;
+    transform 0.5s var(--spring),
+    scale 0.14s ease,
+    box-shadow 0.25s ease;
+  pointer-events: none;
 }
-.mast .link:hover {
-  background: var(--track);
-  color: var(--ink-e);
+.lens[data-press] {
+  scale: 0.92;
+  box-shadow: var(--press-shadow);
 }
-/* the round keys: search, and closing it */
-.key {
+.lens[hidden] {
+  display: none;
+}
+/* the round keys: the places, search, and closing it */
+.mast .key {
+  position: relative;
+  z-index: 1;
   display: grid;
   flex: none;
   place-items: center;
-  width: 38px;
+  width: 40px;
   height: 38px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--r-pill);
   background: transparent;
   color: var(--ink-2);
   cursor: pointer;
   transition:
     background-color 0.2s,
     color 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
-.key:hover {
-  background: var(--track);
+.mast .key:hover {
+  background: var(--wash);
+  color: var(--ink-e);
+}
+.mast .key[aria-current="page"],
+.mast .key[aria-current="page"]:hover {
+  background: transparent;
   color: var(--ink-e);
 }
 .mast .key:focus-visible,
-.mast .link:focus-visible,
 .mast .brand:focus-visible {
   outline: none;
   box-shadow: var(--ring);
 }
-.bar .key svg,
+.bar .key svg {
+  width: 20px;
+  height: 20px;
+}
 .find > svg {
   flex: none;
   width: 18px;
@@ -123,6 +318,37 @@
 .find .key svg {
   width: 16px;
   height: 16px;
+}
+/* a key's name, under the pill, when pointed at a moment (never on a touch screen, which has the menu) */
+.key[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 50%;
+  translate: -50% 4px;
+  padding: 7px 10px;
+  border-radius: var(--r-small);
+  background: var(--raised);
+  color: var(--ink-e);
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    translate 0.15s;
+}
+@media (hover: hover) {
+  .key[data-tip]:hover::after,
+  .key[data-tip]:focus-visible::after {
+    opacity: 1;
+    translate: -50% 0;
+    transition-delay: 0.35s;
+  }
 }
 .mast .find input {
   flex: 1;
@@ -133,7 +359,9 @@
   box-shadow: none;
   background: transparent;
   color: var(--ink-e);
-  font: 500 15px/1 var(--f-mono);
+  /* 16px, never less: a phone's browser (iPhone Safari, and Instagram's on top of it) zooms the whole page into
+     a field set smaller, which pushed the bar past the screen and left the page scrolling sideways */
+  font: 500 16px/1 var(--f-mono);
   letter-spacing: 0.02em;
   appearance: none;
 }
@@ -144,14 +372,13 @@
   appearance: none;
 }
 
-/* the page's one action: the masthead's pill, in the orange. It lifts on a spring when pointed at and
-   gives a little when pressed. */
+/* the page's one action: the masthead's pill, in the orange, always at the corner pill's start. It lifts on
+   a spring when pointed at and gives a little when pressed. */
 .mast .cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 38px;
-  margin-left: 4px;
   padding: 0 18px;
   border-radius: var(--r-pill);
   background: var(--cs-orange);
@@ -176,47 +403,14 @@
   box-shadow: var(--ring);
 }
 
-/* ── the account end (the product pages) ── */
-/* signed out: "Sign in" in the link's own box, and the empty face in the account key's place */
-.mast .signin {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 4px;
-  border-radius: var(--r-pill);
-  color: var(--ink-2);
-  transition:
-    background-color 0.2s,
-    color 0.2s;
-}
-.mast a.signin:hover {
-  background: var(--track);
-  color: var(--ink-e);
-}
-.mast a.signin:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-/* while the session loads: the same room, nothing in it to see */
-.signin[data-reserve] {
-  visibility: hidden;
-}
-.word {
-  padding: 12px 13px;
-  font: var(--t-label);
-  line-height: 1;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
+/* in the menu key: the empty face for no one, the person's photo or initial, round */
 .empty {
   display: grid;
   flex: none;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
 }
-/* signed in: the person's photo or initial, round, inside the account key (the shared Menu's) */
 .face {
   display: block;
   width: 30px;
@@ -231,23 +425,23 @@
   color: var(--ink-e);
   font: 500 14px/1 var(--f-mono);
 }
-/* the account menu hangs a little clear of the pill */
+/* the menu hangs a little clear of the pill; the page you're on is a plain lit row, not the record's colour */
 .mast [role="menu"] {
   top: calc(100% + 16px);
+  max-height: calc(100dvh - 96px - var(--top-dock-h, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.mast [role="menu"] .seat {
+  color: var(--cs-orange);
 }
 
-@media (max-width: 640px) {
-  .mast .link,
-  .mast .word {
-    display: none;
-  }
-  .bar {
-    padding-left: 8px;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .mast {
-    transition: width 0.42s var(--ease);
+    transition: none;
+  }
+  .lens {
+    transition: none;
   }
 }
 

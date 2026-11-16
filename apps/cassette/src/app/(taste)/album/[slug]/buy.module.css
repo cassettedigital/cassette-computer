@@ -1,0 +1,89 @@
+/*
+ * Buy's menu (BuyMenu.tsx): the chips for what you want, the list of stores that fits what they leave, and
+ * the one line at the foot. Inside the shared menu's panel, so its concentric corners (--row-r) and its
+ * lift are the panel's own.
+ */
+
+/* the main half's price, beside "Buy on ..." */
+.price {
+  flex: none;
+  font: 500 13px/1 var(--f-mono);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  color: var(--ink-2);
+}
+
+/* All, Digital, Physical: a track of three, the chosen one lifted */
+.chips {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 6px;
+  padding: 3px;
+  border-radius: var(--row-r);
+  background: rgba(239, 231, 218, 0.05);
+}
+.chip {
+  flex: 1;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--chip-r);
+  background: transparent;
+  color: var(--ink-3);
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.chip:hover {
+  color: var(--ink-e);
+}
+.chip[aria-checked="true"] {
+  background: var(--lift-bg);
+  box-shadow: var(--lift-shadow);
+  color: var(--ink-e);
+}
+.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* the stores: fits what the chips leave (eased by BuyMenu), up to eight; past that it scrolls, fading out at
+   the foot so you can tell there's more */
+.list {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 300px;
+  max-height: calc(8 * 48px + 12px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-4) transparent;
+  transition: height 0.28s cubic-bezier(0.3, 1.35, 0.5, 1);
+}
+.list[data-more] {
+  padding-bottom: 18px;
+  mask-image: linear-gradient(#000 calc(100% - 22px), transparent);
+}
+@container taste (width < 760px) {
+  .list {
+    min-width: 0;
+  }
+}
+
+.foot {
+  margin: 2px 0 0;
+  padding: 10px 14px 6px;
+  border-top: 1px solid var(--track);
+  font: italic 400 15px/1.35 var(--f-serif);
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

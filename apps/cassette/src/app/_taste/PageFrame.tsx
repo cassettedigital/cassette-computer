@@ -34,6 +34,7 @@ import { Footer } from "./Footer";
 import { Masthead } from "./Masthead";
 import { PlayerDock } from "./PlayerDock";
 import { PlayerProvider } from "./player";
+import { RadioRail } from "./radio/RadioRail";
 import { useReveal } from "./reveal";
 import t from "./taste.module.css";
 import f from "./frame.module.css";
@@ -59,6 +60,8 @@ function Paper({ oldKit, account = true, rootRef, dock, children }: Body & { roo
       </main>
       <Footer />
       {dock}
+      {/* a tuned station takes the same rail on a wide window (radio/RadioRail.tsx); the corner dock otherwise */}
+      <RadioRail rootRef={rootRef} />
     </div>
   );
 }

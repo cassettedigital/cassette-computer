@@ -7,8 +7,10 @@
  * store it leads with) or the first; the arrow keys move and wrap, Home and End jump, Escape closes and
  * gives the focus back to the button, Tab closes, and a click or tap outside closes. Picking closes it.
  *
- * One panel: the stock's raised surface, 5px corners, one ring, group heads in the label type, items in
- * the serif. The current choice is a lit row (a wash of the record's colour): no dot, no tick.
+ * One panel (the founder, 2026-11-16): made of the masthead's pill, its near-black glass on either paper,
+ * with concentric corners (menu.module.css). Group heads in the label type, items in the masthead's
+ * typewriter caps; the current choice is the masthead's lift: no dot, no tick. It grows out of its
+ * trigger when it opens.
  *
  * The trigger is one of the set's own parts: `trigger` "label" is the arrow link's underlined label, and
  * "button" the outlined Button, one word and the chevron, nothing else (Buy: the founder, 2026-10-21,
@@ -19,21 +21,26 @@
  * sentence: the player kit's answer face (italic, 500) in the record's colour with the chevron (the artist
  * page's "If you like Radiohead for their *sound*"); it needs the head's row to set `inline`. "avatar" is the
  * masthead's round account key,
- * the person's own face (`face`) in it; its spoken name is `buttonLabel`. `align` is which edge the panel
+ * the person's own face (`face`) in it; its spoken name is `buttonLabel`. "menu" is the masthead's corner key:
+ * the menu's two lines and, after them, `face` (the person's face, or the empty face for no one); it lifts
+ * out of the pill while the menu is open. "split" is a split button (Buy): `primary` is its main half (a link
+ * the page draws, with `splitMainClass`), and the menu opens from the chevron half beside it. `align` is which edge the panel
  * hangs from; under 760 a start-aligned panel hangs from the whole row the page puts the menu in (the
  * page makes that row the positioned box), so a long line never wraps. "row" hangs it from the start of
  * that row at every width (Buy: the last of a row of buttons, its menu opens under the whole row, never
  * past the window's edge).
  *
  * Items: MenuRadio (one choice of several), MenuLink (a store), MenuItem (a plain place or action:
- * the account's Library, Settings, Sign out).
+ * the account's Apps, Settings, Sign out), MenuPerson (the signed-in person at the top of the masthead's
+ * menu), MenuLine (a line between kinds of rows).
  */
 
 import { createContext, useContext, useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { Button } from "./Button";
-import { Icon } from "./Icon";
+import { Icon, type IconName } from "./Icon";
 import b from "./button.module.css";
 import m from "./menu.module.css";
+import t from "./taste.module.css";
 
 const Ctx = createContext<{ close: (refocus: boolean) => void } | null>(null);
 function useMenu() {
@@ -48,18 +55,21 @@ export function Menu({
   label,
   title,
   face,
+  primary,
   buttonLabel,
   focusOnOpen,
   onWarm,
   children,
 }: {
-  trigger: "label" | "button" | "text" | "avatar" | "word";
+  trigger: "label" | "button" | "text" | "avatar" | "word" | "menu" | "split";
   align: "start" | "end" | "row";
   /** The menu's spoken name. */
   label: string;
+  /** trigger "split": the main half, drawn by the page (a link with `splitMainClass`). */
+  primary?: ReactNode;
   /** The button's word ("Buy"), the small text of a "text" trigger, the word of a "word" one. */
   title?: ReactNode;
-  /** trigger "avatar": what sits in the round key (the person's photo or initial). */
+  /** trigger "avatar" or "menu": the person's photo or initial (or, for "menu", the empty face). */
   face?: ReactNode;
   /** The button's spoken name, when it should say more than its word. */
   buttonLabel?: string;
@@ -78,7 +88,8 @@ export function Menu({
   const focusRef = useRef(focusOnOpen);
   focusRef.current = focusOnOpen;
 
-  const items = () => Array.from(panel.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? []);
+  // the items the keys walk: never one a page has hidden (Buy's chips leave stores out)
+  const items = () => Array.from(panel.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? []).filter((el) => !el.hidden);
   const close = (refocus: boolean) => {
     setOpen(false);
     if (refocus) button.current?.focus();
@@ -153,6 +164,18 @@ export function Menu({
           <button type="button" className={m.avatar} data-open={open || undefined} {...buttonProps}>
             {face}
           </button>
+        ) : trigger === "split" ? (
+          <span className={m.split} data-open={open || undefined}>
+            {primary}
+            <button type="button" className={m.splitMore} {...buttonProps}>
+              <Icon name="chevron" size={12} />
+            </button>
+          </span>
+        ) : trigger === "menu" ? (
+          <button type="button" className={m.menuKey} data-open={open || undefined} {...buttonProps}>
+            <Icon name="menu" size={20} />
+            {face}
+          </button>
         ) : trigger === "word" ? (
           <button type="button" className={m.word} data-open={open || undefined} {...buttonProps}>
             {title}
@@ -168,13 +191,16 @@ export function Menu({
             {title}
           </Button>
         )}
-        <div ref={panel} id={menuId} role="menu" aria-label={label} className={m.panel} hidden={!open} onKeyDown={onMenuKey}>
+        <div ref={panel} id={menuId} role="menu" aria-label={label} className={`${t.dark} ${m.panel}`} hidden={!open} onKeyDown={onMenuKey}>
           {children}
         </div>
       </div>
     </Ctx.Provider>
   );
 }
+
+/** The class for a split trigger's main half (the page draws the link itself). */
+export const splitMainClass = m.splitMain;
 
 /** A labelled group of items; its head is for the eye, the group's label for the ear. */
 export function MenuGroup({ label, children }: { label: string; children: ReactNode }) {
@@ -209,32 +235,35 @@ export function MenuRadio({ checked, onPick, children }: { checked: boolean; onP
 }
 
 /**
- * One store: its name with a small tag (information, not state), what you get, the price, and the
- * up-and-out arrow when it leaves the site. `lead` lights the row it leads with. Picking follows the link
- * and closes the menu; a pick that starts something of its own first (a checkout) stops the link through
- * the click it is handed. `sponsored` marks a store link that can earn us a commission.
+ * One store (Buy): its name, and at the right its price when the store gave us one. Pointing at it swaps the
+ * price for its way out (`go`: "Buy" for our own checkout, drawn in the orange, or "Open" for a store that
+ * leaves the site). `chosen` is the store the person's Buy button goes to: the lift. Picking follows the
+ * link and closes the menu; a pick that starts something of its own first (a checkout) stops the link
+ * through the click it is handed. `sponsored` marks a store link that can earn us a commission. `hidden`
+ * leaves it out while the menu's chips narrow the stores.
  */
 export function MenuLink({
   href,
   external,
   sponsored = false,
-  lead,
-  priced,
+  chosen,
   name,
-  tag,
-  what,
   price,
+  go,
+  hidden,
+  store,
   onPick,
 }: {
   href: string;
   external: boolean;
   sponsored?: boolean;
-  lead: boolean;
-  priced: boolean;
+  chosen: boolean;
+  /** The store's key, for the page to find its row (the focus on opening). */
+  store?: string;
   name: ReactNode;
-  tag: ReactNode;
-  what: ReactNode;
-  price: ReactNode;
+  price: ReactNode | null;
+  go: "Buy" | "Open";
+  hidden?: boolean;
   onPick: (e: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const { close } = useMenu();
@@ -243,26 +272,52 @@ export function MenuLink({
       role="menuitem"
       tabIndex={-1}
       className={`${m.item} ${m.store}`}
-      data-lit={lead || undefined}
-      data-priced={priced ? "" : undefined}
+      data-lit={chosen || undefined}
+      data-store={store}
+      hidden={hidden}
       href={href}
-      {...(external ? { target: "_blank", rel: `noopener noreferrer nofollow${sponsored ? " sponsored" : ""}` } : {})}
+      {...(external
+        ? {
+            target: "_blank",
+            // A store link that can earn never drops the referrer: the network has to see
+            // the click came from our page (the Amazon closure, BUG-335; Sovrn's site check).
+            rel: sponsored ? "noopener nofollow sponsored" : "noopener noreferrer nofollow",
+          }
+        : {})}
       onClick={(e) => {
         onPick(e);
         close(false);
       }}
     >
-      <span className={m.name}>
-        {name}
-        {tag && <span className={m.tag}>{tag}</span>}
-      </span>
-      <span className={m.what}>{what}</span>
-      <span className={m.price}>{price}</span>
-      {external && (
-        <span className={m.out} aria-hidden="true">
-          <Icon name="out" size={12} />
+      <span className={m.storeName}>{name}</span>
+      <span className={m.storeEnd}>
+        {price != null && <span className={m.price}>{price}</span>}
+        <span className={m.go} data-ours={go === "Buy" || undefined} aria-hidden="true">
+          {go}
+          {go === "Open" && <Icon name="out" size={11} />}
         </span>
-      )}
+      </span>
+    </a>
+  );
+}
+
+/** A line between kinds of rows (the masthead's menu: you above it, the places below). */
+export function MenuLine({ hidden }: { hidden?: boolean }) {
+  return <div className={m.line} role="separator" hidden={hidden} />;
+}
+
+/** The signed-in person, first in the masthead's menu: their face and name, going to their account. */
+export function MenuPerson({ href, face, name, sub }: { href: string; face: ReactNode; name: string; sub: string }) {
+  const { close } = useMenu();
+  return (
+    <a role="menuitem" tabIndex={-1} className={`${m.item} ${m.person}`} href={href} onClick={() => close(false)}>
+      <span className={m.lead} aria-hidden="true">
+        {face}
+      </span>
+      <span>
+        <span className={m.personName}>{name}</span>
+        <span className={m.personSub}>{sub}</span>
+      </span>
     </a>
   );
 }
@@ -270,34 +325,62 @@ export function MenuLink({
 /**
  * A plain item: a place (`href`, a plain link, so it can leave this app for the dashboard) or an action
  * (`onPick` alone, a button). Picking closes the menu; an action gives the focus back to the button.
+ * `icon` leads the row with its glyph (the masthead's menu, where each place wears the icon it has in the
+ * pill); `current` marks the page you are on (a lit row, and aria-current). `className` lets a page show or
+ * hide a row by its own rules.
  */
-export function MenuItem({ href, onPick, children }: { href?: string; onPick?: () => void; children: ReactNode }) {
+export function MenuItem({
+  href,
+  onPick,
+  icon,
+  current,
+  className,
+  children,
+}: {
+  href?: string;
+  onPick?: () => void;
+  icon?: IconName;
+  current?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
   const { close } = useMenu();
+  const cls = [m.item, icon ? m.withIcon : "", className ?? ""].filter(Boolean).join(" ");
+  const body = icon ? (
+    <>
+      <Icon name={icon} size={20} />
+      <span>{children}</span>
+    </>
+  ) : (
+    children
+  );
   return href ? (
     <a
       role="menuitem"
       tabIndex={-1}
-      className={m.item}
+      className={cls}
+      data-lit={current || undefined}
+      aria-current={current ? "page" : undefined}
       href={href}
       onClick={() => {
         onPick?.();
         close(false);
       }}
     >
-      {children}
+      {body}
     </a>
   ) : (
     <button
       type="button"
       role="menuitem"
       tabIndex={-1}
-      className={m.item}
+      className={cls}
       onClick={() => {
         onPick?.();
         close(true);
       }}
     >
-      {children}
+      {body}
     </button>
   );
 }

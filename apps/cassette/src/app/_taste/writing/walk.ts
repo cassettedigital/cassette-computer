@@ -102,6 +102,22 @@ export function childrenOf(node: Loose): unknown[] {
   return isObj(node) && Array.isArray(node.content) ? node.content : [];
 }
 
+/** The first picture in a piece's body that can be drawn, in reading order (a shelf's and a link's fallback). */
+export function firstPicture(post: Pick<Post, "body">): NonNullable<ReturnType<typeof pictureFacts>> | null {
+  const walk = (nodes: unknown[]): NonNullable<ReturnType<typeof pictureFacts>> | null => {
+    for (const n of nodes) {
+      if (isObj(n) && n.type === "picture") {
+        const facts = pictureFacts(isObj(n.attrs) ? n.attrs : null);
+        if (facts) return facts;
+      }
+      const inner = walk(childrenOf(n as Loose));
+      if (inner) return inner;
+    }
+    return null;
+  };
+  return walk(childrenOf(post.body as Loose));
+}
+
 /** A record card's or list entry's record, when it names one properly. */
 export function refOf(node: Loose): RecordRef | null {
   if (!isObj(node) || !isObj(node.attrs)) return null;
@@ -112,19 +128,19 @@ export function refOf(node: Loose): RecordRef | null {
   return null;
 }
 
-/** A picture's facts, when it has its upload and its credit (format.ts refuses one without). */
+/** A picture's facts, when it has its upload. Its credit is empty when it has none (format.ts allows that). */
 export function pictureOf(node: Loose): { src: string; alt: string; credit: string; caption: string | null; width: number | null; height: number | null } | null {
   const a = isObj(node) && isObj(node.attrs) ? node.attrs : null;
   return pictureFacts(a);
 }
 
 export function pictureFacts(a: Record<string, unknown> | null | undefined) {
-  if (!a || typeof a.src !== "string" || !a.src.trim() || typeof a.credit !== "string" || !a.credit.trim()) return null;
+  if (!a || typeof a.src !== "string" || !a.src.trim()) return null;
   const size = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.round(v) : null);
   return {
     src: a.src.trim(),
     alt: typeof a.alt === "string" ? a.alt : "",
-    credit: a.credit.trim(),
+    credit: typeof a.credit === "string" ? a.credit.trim() : "",
     caption: typeof a.caption === "string" && a.caption.trim() ? a.caption.trim() : null,
     width: size(a.width),
     height: size(a.height),

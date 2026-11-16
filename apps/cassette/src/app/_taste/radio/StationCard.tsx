@@ -37,7 +37,8 @@ export function StationCard({ station, live }: { station: StationCardData; live?
   const kicker = station.kicker;
   return (
     <article className={styles.card} style={{ ["--station" as string]: station.accent } as CSSProperties}>
-      <Link href={`/radio/${station.slug}`} className={styles.top}>
+      {/* no prefetch: a dial of 60 cards prefetched 60 live station pages, each read from its station (2026-11-15) */}
+      <Link href={`/radio/${station.slug}`} className={styles.top} prefetch={false}>
         <StationArt src={art} name={station.name} size={64} className={styles.art} />
         <span className={styles.titles}>
           <span className={styles.kicker}>{kicker}</span>

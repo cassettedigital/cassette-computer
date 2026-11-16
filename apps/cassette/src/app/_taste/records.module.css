@@ -18,6 +18,42 @@
   flex-direction: column;
   min-width: 0;
 }
+/* a figure over the cover while it's pointed at or focused (a station's plays of it): the number large, its
+   word under it, on a dimming of the cover so it reads on any art, light or dark */
+.stat {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  background: rgba(10, 8, 6, 0.5);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.tile:is(:hover, :focus-visible) .stat {
+  opacity: 1;
+}
+.statValue {
+  font: 800 44px/0.9 var(--f-display);
+  letter-spacing: -0.01em;
+}
+.statWord {
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  text-transform: uppercase;
+}
+.say {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 /* why this record is here */
 .note {
   margin-top: 6px;
