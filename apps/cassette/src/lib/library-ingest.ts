@@ -220,6 +220,9 @@ async function askAddMode(invoke: ShellInvoke): Promise<AddMode | null> {
 }
 
 type AddReport = { added: number; already: number; failed: number; error: string | null };
+/** What the app says after every song while an add runs (add_music.rs PROGRESS_EVENT). */
+type AddProgress = { done: number; total: number; added: number; already: number; failed: number };
+const ADD_PROGRESS_EVENT = "add-music-progress";
 
 /** Files and folders by their place on this computer (a drop on the window, or the picker), moved or copied into
  *  the music folder by the app, then shown on the device card like any other add. Desktop app only. */
@@ -232,6 +235,19 @@ export async function addPathsInApp(paths: string[]): Promise<void> {
   if (clearTimer) clearTimeout(clearTimer);
   const album = albumFromFiles(paths.map((p) => ({ relPath: p.split("/").filter(Boolean).pop() ?? p })));
   set({ phase: "uploading", album, total: paths.length, uploaded: 0, failed: 0, identified: 0, queued: 0 });
+  // The app says how far it has got after every song, so the card counts up while the music goes in, not only
+  // once it has all gone in.
+  let stopListening: (() => void) | null = null;
+  const listen = shell()?.event?.listen;
+  if (listen) {
+    try {
+      stopListening = await listen<AddProgress>(ADD_PROGRESS_EVENT, (e) =>
+        set({ total: e.payload.total, uploaded: e.payload.done }),
+      );
+    } catch {
+      // no word from the app as it goes: the card fills in when the add ends
+    }
+  }
   let report: AddReport;
   try {
     report = await invoke<AddReport>("add_music", { paths, mode });
@@ -242,6 +258,8 @@ export async function addPathsInApp(paths: string[]): Promise<void> {
     scheduleClear();
     void tell(typeof e === "string" ? e : "Cassette couldn't add that music.");
     return;
+  } finally {
+    stopListening?.();
   }
   set({ total: report.added + report.already + report.failed, uploaded: report.added + report.already, failed: report.failed });
   if (report.error) void tell(`Some of it couldn't be added. ${report.error}`);

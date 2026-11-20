@@ -1,4 +1,4 @@
-# Cassette for your computer 0.5.49, exported from Cassette's own repository at 6f031ac6524853da10acdba19436de5da7ac87c7.
+# Cassette for your computer 0.5.50, exported from Cassette's own repository at acea6af378e95123392c5757cd50552791008aad.
 # One line per file: where it came from, then its path.
 #   engine: the computer app's own folder; desk: a player screen or what it imports, as the website runs it;
 #   stand-in / public copy: the public copy's own file in place of the website's; package, config, asset, made.
@@ -236,6 +236,8 @@ engine	apps/cassette-player/sidecar/lan-tls.go
 engine	apps/cassette-player/sidecar/library-artist-photo-replace.go
 engine	apps/cassette-player/sidecar/library-cover-replace_test.go
 engine	apps/cassette-player/sidecar/library-cover-replace.go
+engine	apps/cassette-player/sidecar/library-filename_test.go
+engine	apps/cassette-player/sidecar/library-filename.go
 engine	apps/cassette-player/sidecar/library-info.go
 engine	apps/cassette-player/sidecar/library-sync-pages_test.go
 engine	apps/cassette-player/sidecar/library-sync.go
@@ -265,6 +267,9 @@ engine	apps/cassette-player/sidecar/replace-file_other.go
 engine	apps/cassette-player/sidecar/replace-file_test.go
 engine	apps/cassette-player/sidecar/replace-file_windows.go
 engine	apps/cassette-player/sidecar/replace-file.go
+engine	apps/cassette-player/sidecar/reveal_other.go
+engine	apps/cassette-player/sidecar/reveal_test.go
+engine	apps/cassette-player/sidecar/reveal_windows.go
 engine	apps/cassette-player/sidecar/rip_acoustid_test.go
 engine	apps/cassette-player/sidecar/rip_acoustid.go
 engine	apps/cassette-player/sidecar/rip_align_test.go
@@ -772,6 +777,7 @@ desk	apps/cassette/src/data/playlist-cover-presets.ts
 desk	apps/cassette/src/instrumentation-client.ts
 desk	apps/cassette/src/lib/account-delete.ts
 stand-in	apps/cassette/src/lib/account-player-data.ts
+desk	apps/cassette/src/lib/account/get-the-app.ts
 desk	apps/cassette/src/lib/app-surface.ts
 desk	apps/cassette/src/lib/appearance.ts
 desk	apps/cassette/src/lib/artist-own-links-rules.ts
@@ -784,6 +790,7 @@ desk	apps/cassette/src/lib/avatar.ts
 desk	apps/cassette/src/lib/caa-address.ts
 desk	apps/cassette/src/lib/cloud-answer.ts
 desk	apps/cassette/src/lib/cloud-fetch.ts
+desk	apps/cassette/src/lib/computer-words.ts
 desk	apps/cassette/src/lib/cover-art/browser.ts
 desk	apps/cassette/src/lib/cover-art/color.ts
 desk	apps/cassette/src/lib/cover-art/draw.ts

@@ -3084,9 +3084,38 @@ button.barMode:focus-visible {
   place-items: center;
   width: 44px;
   height: 44px;
+  padding: 0;
+  border: 0;
   border-radius: var(--pk-r-pill);
+  background: transparent;
   color: var(--pk-text-primary);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pk-text-primary) 35%, transparent);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s;
+}
+.addPlus:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pk-text-primary) 60%, transparent);
+}
+.addPlus:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.addPlus:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+/* a section's heading with its one key on the right (Devices: the computer and Show in Finder) */
+.detailHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.detailHead > :first-child {
+  min-width: 0;
 }
 .addWords {
   display: grid;

@@ -100,12 +100,15 @@ export function useSongs(want: boolean) {
   return list;
 }
 
-/** Songs in record order: by record (as given), then track number, then title. */
+/** Songs in record order: by record (as given), then disc, then track number, then title. A song with
+ *  no disc number is on disc 1, so a single-disc record is unchanged and a three-disc one never
+ *  interleaves its discs (2026-11-20: an imported three-disc record listed 1-13 first). */
 export function inRecordOrder(songs: OwnedTrack[], recordKeys: string[]): OwnedTrack[] {
   const rank = new Map(recordKeys.map((k, i) => [k, i]));
   return [...songs].sort(
     (a, b) =>
       (rank.get(a.albumKey ?? "") ?? 1e9) - (rank.get(b.albumKey ?? "") ?? 1e9) ||
+      (a.discNo ?? 1) - (b.discNo ?? 1) ||
       (a.trackNo ?? 1e9) - (b.trackNo ?? 1e9) ||
       a.title.localeCompare(b.title),
   );

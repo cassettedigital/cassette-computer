@@ -31,7 +31,10 @@ import type { HomeRow } from "@/lib/home/types";
 import { useHome, useOnMac } from "./home";
 import { AllShelvesRow, FeatureCard, ReachRow } from "./Reach";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
-import { inRecordOrder, useSongs } from "./songs";
+import { inRecordOrder, loadSongs, songsOfRecordNow, useSongs } from "./songs";
+import { SIDECAR_SAME_ORIGIN } from "@/lib/hub-origin";
+import { revealInLibrary, revealLibrary } from "@/lib/library-remote";
+import { computerWordsForUserAgent } from "@/lib/computer-words";
 import { useOnline } from "./network";
 import { collectInputFiles, pickMusicInApp, startIngest, useLibraryIngest } from "@/lib/library-ingest";
 import { ripDoneCount } from "@/lib/rip-status";
@@ -141,6 +144,32 @@ export function usePlaylistAdds() {
   };
 }
 
+/** What the computer's own file window is called here: Show in Finder, Show in File Explorer. */
+function revealWord(): string {
+  return computerWordsForUserAgent(typeof navigator === "undefined" ? "" : navigator.userAgent).reveal;
+}
+
+/**
+ * Show in Finder (Show in File Explorer on Windows) for a record or a song, from its right-click menu (the
+ * founder, 2026-11-20: after adding music there was no way to see where it went). A record shows its
+ * folder, a song its file. Only in the app, on the computer the music lives on: the website can't reach
+ * the computer, and a second computer's copies came from the main one.
+ */
+function useShowInFiles() {
+  const notMain = useNotMain();
+  const { showToast } = useShell();
+  return (target: { record: string } | { song: OwnedTrack }): MenuItem[] => {
+    if (!SIDECAR_SAME_ORIGIN || notMain) return [];
+    const isSong = "song" in target;
+    const show = async () => {
+      const songs = isSong ? [target.song] : (songsOfRecordNow(target.record) ?? (await loadSongs().catch(() => [] as OwnedTrack[])).filter((x) => x.albumKey === target.record));
+      const id = songs.find((x) => x.subsonicTrackId)?.subsonicTrackId;
+      if (!id || !(await revealInLibrary(id, isSong ? "song" : "record"))) showToast("Couldn't find that on this computer.", { variant: "error" });
+    };
+    return [{ label: revealWord(), onSelect: () => void show(), disabled: isSong && !target.song.subsonicTrackId }];
+  };
+}
+
 /**
  * An album's menu, the same wherever the album shows (it was four menus, D-C5): its tile, the side view's
  * "…", its page's "…" and the sidebar. `here` says what changes with the place: `play`, the first lines
@@ -155,6 +184,7 @@ export function useRecordMenu() {
   const editRecord = useEditRecord();
   const remove = useRemoveFromLibrary();
   const queue = useQueueLines();
+  const showInFiles = useShowInFiles();
   const { shelf } = useDesk();
   return (a: Pick<DeskAlbum, "key" | "slug" | "artist" | "artistSlug">, here: { play?: MenuItem[] | null; onPage?: boolean } = {}): MenuItem[] => {
     const full = shelf.find((x) => x.key === a.key);
@@ -171,6 +201,7 @@ export function useRecordMenu() {
       ...(full
         ? ([
             "separator",
+            ...showInFiles({ record: full.key }),
             { label: "Hide album…", onSelect: () => void remove.hideAlbum(full) },
             { label: "Delete album…", onSelect: () => remove.deleteAlbum(full) },
           ] as MenuItem[])
@@ -190,6 +221,7 @@ export function useSongMenu() {
   const router = useRouter();
   const adds = usePlaylistAdds();
   const queue = useQueueLines();
+  const showInFiles = useShowInFiles();
   const { showToast } = useShell();
   return (t: OwnedTrack, at: { play?: MenuItem[]; extra?: MenuItem[]; except?: string } = {}): MenuItem[] => {
     const record = t.albumKey ? deskAlbum({ key: t.albumKey, slug: t.albumSlug }) : t.albumSlug ? deskAlbum(t.albumSlug) : null;
@@ -200,6 +232,7 @@ export function useSongMenu() {
       "separator",
       { label: "Go to the album", onSelect: () => record && router.push(record), disabled: !record },
       { label: "Go to the artist", onSelect: () => router.push(deskArtistOf(t)), disabled: !t.artist && !t.artistSlug },
+      ...showInFiles({ song: t }),
       ...(at.extra?.length ? ["separator" as const, ...at.extra] : []),
       ...adds({ songs: [t] }, at.except),
     ];
@@ -1586,13 +1619,27 @@ function MacDetail({ devices }: { devices: DeskDevices }) {
   const { shelf, mac } = useDesk();
   const menu = useRecordMenu();
   const cm = useContextMenu();
+  const notMain = useNotMain();
+  const { showToast } = useShell();
   const added = useMemo(() => [...shelf].filter((a) => a.added).sort((x, y) => (y.added! > x.added! ? 1 : -1)).slice(0, 16), [shelf]);
   const reachable = devices.phones.filter((p) => p.light === "live").length;
   if (!devices.mac) return null;
   return (
     <section className={d.detail} aria-label={devices.mac.name}>
       {/* the computer is the hub: what it holds and who's connected (never "in sync": with itself?) */}
-      <Heading shout={mac?.name ?? devices.mac.name} answer="this computer" tone="quiet" />
+      {/* the music folder itself, one click away in the computer's own file window (the founder, 2026-11-20),
+          in the app on the computer the music lives on */}
+      <div className={d.detailHead}>
+        <Heading shout={mac?.name ?? devices.mac.name} answer="this computer" tone="quiet" />
+        {SIDECAR_SAME_ORIGIN && !notMain && (
+          <Key
+            onClick={() => void revealLibrary().then((ok) => !ok && showToast("Couldn't open your music folder.", { variant: "error" }))}
+            title="Your music folder"
+          >
+            {revealWord()}
+          </Key>
+        )}
+      </div>
       <Stats size="small">
         <Stat label="Albums" value={String(devices.albumTotal || shelf.length)} />
         <Stat label="Songs" value={devices.songs.toLocaleString()} />
@@ -1626,9 +1673,10 @@ function AddMusicRow() {
   return (
     <div className={d.addRow} data-two={(disc.shown && !!s) || undefined}>
       <div className={d.addCard}>
-        <span className={d.addPlus} aria-hidden="true">
+        {/* drawn as a key, so it is one: the same as Choose… (the founder, 2026-11-20: it looked pressable and wasn't) */}
+        <button type="button" className={d.addPlus} onClick={() => pickMusicInApp() || pick.current?.click()} disabled={busy} aria-label="Choose music to add" title="Choose music to add">
           <Glyph name="plus" size={17} />
-        </span>
+        </button>
         {ingest.phase === "idle" ? (
           <span className={d.addWords}>
             <span className={d.addTitle}>Add music</span>

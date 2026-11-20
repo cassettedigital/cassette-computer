@@ -5,7 +5,9 @@
  * box a phone's menu hangs from. `inline` is for a control that is the sentence's last word ("If you like X for
  * their ___"): the row takes the head's own type, so the word space and the word's size follow the head's.
  * `trail` puts a control at the far end; passing it
- * at all, even as false, keeps the row, so the head sits the same with or without the control.
+ * at all, even as false, keeps the row, so the head sits the same with or without the control. With `after` as well,
+ * the trail stands at the end of the head and its control together, and never wraps away from them onto a line of its
+ * own (a Discover shelf's menu word, then its play key).
  */
 
 import type { ReactNode } from "react";
@@ -33,18 +35,19 @@ export function SectionHead({
       {children}
     </h2>
   );
-  if (after !== undefined) {
-    return (
+  const row =
+    after !== undefined ? (
       <div className={h.withAfter} data-inline={inline || undefined} data-small={size === "small" || undefined}>
         {head}
         {after}
       </div>
+    ) : (
+      head
     );
-  }
-  if (trail === undefined) return head;
+  if (trail === undefined) return row;
   return (
     <div className={h.withTrail}>
-      {head}
+      {row}
       {trail}
     </div>
   );

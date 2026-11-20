@@ -10,11 +10,18 @@
  * completion. This covers the overwhelmingly common case (clicking a link); it
  * intentionally does not try to instrument programmatic router.push or
  * back/forward, which would need framework internals.
+ *
+ * A link into /api/ is never a page (a download key, /api/desktop/download/..., hands over a file and the
+ * page stays put), so it starts nothing; and any bar that sees no new page within a few seconds clears
+ * itself (2026-11-20: after downloading the Mac app the bar slid on forever).
  */
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import styles from "./NavProgress.module.css";
+
+/** How long the bar waits for a new page before it lets go. */
+const GIVE_UP_MS = 10_000;
 
 export function NavProgress() {
   const pathname = usePathname();
@@ -41,6 +48,7 @@ export function NavProgress() {
       if (!href || !href.startsWith("/")) return;
       const [path] = href.split(/[?#]/);
       if (path === pathname) return;
+      if (path === "/api" || path.startsWith("/api/")) return;
 
       // Decide once the click has finished its trip: this listener runs first (capture, on the
       // document), before a link's own handler can claim the click (the desk's tiles select on a
@@ -53,6 +61,13 @@ export function NavProgress() {
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, [pathname]);
+
+  // a navigation that never arrives (or a click that turned out not to be one) doesn't keep the bar up
+  useEffect(() => {
+    if (!active) return;
+    const t = window.setTimeout(() => setActive(false), GIVE_UP_MS);
+    return () => window.clearTimeout(t);
+  }, [active]);
 
   if (!active) return null;
 

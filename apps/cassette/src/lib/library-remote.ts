@@ -228,3 +228,21 @@ export async function revealLibrary(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Show one song in the computer's own file window (Finder, File Explorer): `song` selects its file,
+ * `record` its record's folder. The hub finds the file by the id it plays it by and only ever reveals
+ * something inside the music folder (sidecar library-info.go handleLibraryReveal).
+ */
+export async function revealInLibrary(songId: string, what: "song" | "record"): Promise<boolean> {
+  try {
+    const r = await hubFetch(`/api/library/reveal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ songId, what }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -31,8 +31,8 @@ type librarySyncTrack struct {
 	// CassetteLocalID is Layer 1's cross-device identity fallback for
 	// tracks without an MBID. Computed in CassetteLocalIDFromSeconds and
 	// validated server-side against /^[0-9a-f]{32}$/.
-	CassetteLocalID string `json:"cassetteLocalId"`
-	TrackTitle      string `json:"trackTitle"`
+	CassetteLocalID string  `json:"cassetteLocalId"`
+	TrackTitle      string  `json:"trackTitle"`
 	ArtistName      string  `json:"artistName"`
 	AlbumName       string  `json:"albumName"`
 	AlbumArtist     *string `json:"albumArtist"`
@@ -67,6 +67,10 @@ type librarySyncTrack struct {
 	// fingerprinter can hash this track's own file. Local filesystem paths must
 	// never reach the cloud.
 	Path string `json:"-"`
+	// Navidrome's own track number for the song (Subsonic "track"), IN-PROCESS ONLY.
+	// fillFromFileNames turns it into DiscTrackIndex for every song carry did not
+	// place. 0 when the file has no track tag.
+	NavidromeTrack int `json:"-"`
 }
 
 type librarySyncPayload struct {
@@ -108,7 +112,7 @@ type subsonicSearch3Response struct {
 }
 
 type subsonicSong struct {
-	ID                 string `json:"id"`
+	ID string `json:"id"`
 	// Absolute on-disk path. Navidrome only reports the REAL path to a player row
 	// with report_real_path=1, which is why the library fetch uses its own client
 	// name (see librarySyncClientName). Never leaves this Mac.
@@ -122,6 +126,7 @@ type subsonicSong struct {
 	ContentType        string `json:"contentType"`
 	MusicBrainzID      string `json:"musicBrainzId"`
 	DiscNumber         int    `json:"discNumber"`
+	Track              int    `json:"track"`
 }
 
 func shouldRunLibrarySync(state *SidecarState) bool {
@@ -293,6 +298,11 @@ func syncLibraryInventory(token string, syncMode string, state *SidecarState) (t
 	// position) from rung-zero memory so the cloud reuses it instead of re-deriving
 	// (Stage 1) and the delete tombstone survives a re-rip (Stage 2).
 	carryDiscIdentity(tracks)
+
+	// Every other song's number on its disc (Navidrome's track number, else its file
+	// name's), and a title without the file name's number when the title IS the file
+	// name. After carry, so a CD rip's placement always wins (library-filename.go).
+	fillFromFileNames(tracks)
 
 	// Folder-cover fingerprints: stamp each track with its album's cover fingerprint
 	// and learn which albums' cover BYTES changed since the last sync.
@@ -471,6 +481,7 @@ func mapSubsonicSong(song subsonicSong) librarySyncTrack {
 		FileFormat:             fileFormat,
 		DiscNumber:             discNumber,
 		Path:                   song.Path,
+		NavidromeTrack:         song.Track,
 	}
 }
 

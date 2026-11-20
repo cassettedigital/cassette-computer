@@ -84,6 +84,8 @@ export type OwnedTrack = {
   seconds: number | null;
   /** its place on its record, when known (the song list for search and artist pages carries it) */
   trackNo?: number | null;
+  /** which disc of the record it's on, when it has more than one */
+  discNo?: number | null;
   /** in a playlist: the item's position (the order key a move writes between) */
   position?: number;
 };

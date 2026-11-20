@@ -3,7 +3,9 @@
 // Two small, additive, read-mostly endpoints:
 //
 //   GET  /api/library/info    → { musicDir, storageBytes, version }
-//   POST /api/library/reveal  → opens the library folder in Finder (macOS)
+//   POST /api/library/reveal  → opens the library folder in Finder (macOS), or
+//                               with {"songId","what":"song"|"record"} selects
+//                               one song's file or its record's folder
 //
 // The desktop app's page calls these through its same-origin /sidecar route (a
 // web dev server can, cross-origin, when a dev hub names it in
@@ -19,13 +21,18 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
@@ -105,14 +112,46 @@ func handleLibraryInfo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleLibraryReveal opens the library folder in Finder (macOS `open`). POST
-// only. We Start() the process (fire-and-forget) so the handler never blocks on
-// Finder; success means the command launched, not that a window is visible.
+// libraryRevealRequest is the optional JSON body of POST /api/library/reveal.
+// An empty body (or no songId) opens the whole music folder, as before.
+type libraryRevealRequest struct {
+	SongID string `json:"songId"` // the song's Subsonic track id
+	What   string `json:"what"`   // "song" (the default) or "record"
+}
+
+// errNotInLibrary is every way a song to show can fail to be a file in the music
+// folder: unknown to Navidrome, gone from the disk, or outside the folder.
+var errNotInLibrary = errors.New("not in the library")
+
+// handleLibraryReveal shows the library in the computer's file manager. POST
+// only. With no body it opens the whole music folder. With {"songId": "...",
+// "what": "song"|"record"} it selects that song's file, or the folder that holds
+// it, in Finder or File Explorer. We Start() the process (fire-and-forget) so the
+// handler never blocks on the file manager; success means the command launched,
+// not that a window is visible.
 func handleLibraryReveal(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "POST only"})
+		return
+	}
+	body, err := io.ReadAll(io.LimitReader(r.Body, 4096))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "could not read the request"})
+		return
+	}
+	var req libraryRevealRequest
+	if len(bytes.TrimSpace(body)) > 0 {
+		if err := json.Unmarshal(body, &req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "invalid JSON body"})
+			return
+		}
+	}
+	if id := strings.TrimSpace(req.SongID); id != "" {
+		revealSong(w, id, req.What)
 		return
 	}
 	// Open the library folder in the OS file manager. Per-OS command: Finder on
@@ -132,4 +171,106 @@ func handleLibraryReveal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+}
+
+// revealSong selects one song's file ("song") or the folder that holds it
+// ("record") in the file manager. The file must really be inside the music
+// folder, links followed; anything else answers 404 "not in the library".
+func revealSong(w http.ResponseWriter, songID, what string) {
+	what = strings.TrimSpace(what)
+	if what == "" {
+		what = "song"
+	}
+	if what != "song" && what != "record" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": `what must be "song" or "record"`})
+		return
+	}
+	if !isPlausibleTrackID(songID) {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "songId is not a song id"})
+		return
+	}
+	file, musicDir, err := songFileInLibrary(songID)
+	if err != nil {
+		log.Printf("library-info: reveal %s %q refused: %v", what, songID, err)
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": errNotInLibrary.Error()})
+		return
+	}
+	target := revealTarget(file, musicDir, what)
+	cmd := revealInFileManager(target)
+	if err := cmd.Start(); err != nil {
+		log.Printf("library-info: reveal %s failed for %q: %v", what, target, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "could not open the file manager"})
+		return
+	}
+	// Reap the process whatever it says: Explorer exits 1 even when it worked.
+	go func() { _ = cmd.Wait() }()
+	_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+}
+
+// songFileInLibrary finds a song's own file the way library-trash.go does: the
+// path Navidrome reports for it (getSong on the real-path client), joined onto
+// the music folder when it is relative. It returns that file with links followed,
+// and the music folder with links followed, once the file is known to be inside.
+func songFileInLibrary(songID string) (file, musicDir string, err error) {
+	p, err := getSongPath(songID)
+	if err != nil {
+		return "", "", err
+	}
+	if p == "" {
+		return "", "", errNotInLibrary
+	}
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(sidecarMusicDir, p)
+	}
+	return pathInsideLibrary(p, sidecarMusicDir)
+}
+
+// pathInsideLibrary cleans p, makes it absolute and follows its links, then
+// requires the result to be strictly inside musicDir (its links followed too):
+// a path outside, a "../" climb out, or a link inside the folder that points out
+// of it are all refused. p must exist. It returns the real path of p and of
+// musicDir. Both sides are followed so a music folder reached through a link
+// (/tmp is /private/tmp on a Mac) still works.
+func pathInsideLibrary(p, musicDir string) (realPath, realDir string, err error) {
+	if musicDir == "" {
+		return "", "", errNotInLibrary
+	}
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return "", "", err
+	}
+	realPath, err = filepath.EvalSymlinks(filepath.Clean(abs))
+	if err != nil {
+		return "", "", err
+	}
+	dirAbs, err := filepath.Abs(musicDir)
+	if err != nil {
+		return "", "", err
+	}
+	realDir, err = filepath.EvalSymlinks(filepath.Clean(dirAbs))
+	if err != nil {
+		return "", "", err
+	}
+	realPath, realDir = filepath.Clean(realPath), filepath.Clean(realDir)
+	rel, err := filepath.Rel(realDir, realPath)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", "", fmt.Errorf("%q is not inside %q: %w", realPath, realDir, errNotInLibrary)
+	}
+	return realPath, realDir, nil
+}
+
+// revealTarget is what to select: the song's file, or for "record" the folder
+// that holds it, unless that folder is the music folder itself, when the file is
+// the closest thing to the record there is.
+func revealTarget(file, musicDir, what string) string {
+	if what == "record" {
+		if dir := filepath.Dir(file); filepath.Clean(dir) != filepath.Clean(musicDir) {
+			return dir
+		}
+	}
+	return file
 }

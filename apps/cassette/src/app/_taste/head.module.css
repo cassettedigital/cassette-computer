@@ -57,6 +57,7 @@
   justify-content: space-between;
   gap: 10px 20px;
 }
-.withTrail > .head {
+.withTrail > .head,
+.withTrail > .withAfter {
   min-width: 0;
 }
