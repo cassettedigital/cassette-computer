@@ -20,6 +20,8 @@ export interface RadioShow {
   genres?: string[];
   /** The show's own picture, when the station publishes one. */
   image?: string | null;
+  /** The show's own page on the station's site, when the station gives one (NTS, Radio Raheem). */
+  url?: string | null;
 }
 
 export interface RadioTrack {
@@ -65,6 +67,8 @@ export interface RadioPlay extends RadioTrack {
   playedAt?: string | null;
   /** The MusicBrainz recording id, when the station names it (KEXP): an exact match to our songs. */
   recordingMbid?: string | null;
+  /** The MusicBrainz release group, when the station names it (KEXP, The Current): an exact match to our records. */
+  releaseGroupMbid?: string | null;
   /** The record on Cassette it came from, when the station page matched it (lib/radio/station-page). */
   match?: RadioMatch | null;
 }
@@ -91,12 +95,15 @@ export interface RadioCatalogStation {
   slug: string;
   name: string;
   source: string;
-  /** The network name a card shows ("WWOZ 90.7", "SomaFM", "FIP · Radio France"). */
+  /** The network name a card shows ("WWOZ 90.7", "NTS", "FIP · Radio France"). */
   sourceLabel: string;
   kind: "channel" | "station";
   streamUrl: string;
   homepage: string | null;
+  /** Where to support the station (donate, membership). */
   supportUrl: string | null;
+  /** The station's own shop (merch, its own records); never an affiliate link. */
+  shopUrl: string | null;
   description: string;
   image: string | null;
   accent: string;
@@ -166,7 +173,8 @@ export type DialStation = {
   section: string;
   /** the station publishes what's on (a show or a song) */
   live: boolean;
-  /** its own website, and where to support it (a donate or store page), for its menu */
+  /** its own website, and where to support it (a donate page) and its own shop, for its menu */
   homepage: string | null;
   supportUrl: string | null;
+  shopUrl: string | null;
 };

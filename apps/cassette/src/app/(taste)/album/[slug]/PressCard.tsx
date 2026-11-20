@@ -7,6 +7,9 @@
  * headline. The card, the byline, the outlet's mark and the grade are the shared
  * Quote family (src/app/_taste/Quote.tsx); this file decides what goes on them.
  *
+ * In a pair of columns a card's words may sit a size up or down from their own (`give`, shape.ts settle), so
+ * the columns end level.
+ *
  * Emphasis (the founder, 2026-10-21: "The review formatting lost quite a bit of its character and
  * emphasis"; the highlighter is to be reserved "only for the strongest of sentiments"): a headline the
  * editor stored as "stroke" on a rave takes the highlighter (shape.ts strokeOf); "accent" colours its
@@ -16,7 +19,7 @@
 import type { CSSProperties } from "react";
 import { Accent, Byline, QuoteCard } from "@/app/_taste/Quote";
 import type { PressEntry } from "@/app/(taste)/_kit/types";
-import { headParts, headlineOf, quoteLength, strokeOf } from "./shape";
+import { headParts, headlineOf, quoteLength, shiftLength, strokeOf } from "./shape";
 import a from "./album.module.css";
 
 function Headline({ text, e }: { text: string; e: PressEntry }) {
@@ -32,14 +35,14 @@ function Headline({ text, e }: { text: string; e: PressEntry }) {
   );
 }
 
-export function PressCard({ e, emphasis, o, solo }: { e: PressEntry; emphasis: "lead" | "card" | "more"; o: number; solo?: boolean }) {
+export function PressCard({ e, emphasis, o, solo, give = 0 }: { e: PressEntry; emphasis: "lead" | "card" | "more"; o: number; solo?: boolean; give?: number }) {
   if (!e.quote) return null;
   const headline = headlineOf(e);
   return (
     <QuoteCard
       emphasis={emphasis}
       voice={e.voice}
-      length={quoteLength(e.quote, !!headline && emphasis !== "lead")}
+      length={shiftLength(quoteLength(e.quote, !!headline && emphasis !== "lead"), give)}
       solo={solo}
       stroke={strokeOf(e)}
       style={{ "--o": o } as CSSProperties}

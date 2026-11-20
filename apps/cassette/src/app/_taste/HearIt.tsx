@@ -17,6 +17,7 @@ export function HearIt({
   startIndex,
   record,
   verb = "Preview album",
+  short = "Preview",
 }: {
   /** The record's playable songs in running order. */
   playables: Playable[];
@@ -26,6 +27,8 @@ export function HearIt({
   record?: string;
   /** The button's word: "Preview" in the iPhone app's half-width key, where the two words don't fit. */
   verb?: string;
+  /** Its short form, for a row of buttons short of room (ActionRow). */
+  short?: string;
 }) {
   const { track, status, playList, toggle } = usePlayer();
   const start = playables[startIndex];
@@ -42,6 +45,7 @@ export function HearIt({
     <PlayButton
       state={mine ? status : "idle"}
       verb={verb}
+      short={short}
       aria-pressed={live}
       aria-label={aria}
       onClick={() => (mine ? toggle() : playList(playables, startIndex, { wrap: true }))}

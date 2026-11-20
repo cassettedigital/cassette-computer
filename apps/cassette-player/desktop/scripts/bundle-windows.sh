@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build the Cassette desktop app for Windows: an unsigned NSIS installer (the Windows port, 2026-11-07,
+# Build the Cassette desktop app for Windows: a signed NSIS installer (the Windows port, 2026-11-07,
 # docs/CASSETTE_WINDOWS_PORT_PLAN_2026-11-07.md). The Windows twin of bundle-macos.sh, run with Git Bash on a
 # Windows computer (GitHub's hosted Windows machines have it; .github/workflows/windows-desktop.yml runs this).
 #
@@ -11,11 +11,18 @@
 #
 # What it never carries: a database address, an auth secret, a signing key. The UI is built in Next's
 # compile-only mode, so no page is drawn from the database at build time (BUG-593); a stand-in token puts the
-# build in token mode and never leaves this machine (checked below). The installer is not code-signed:
-# Windows shows its "protected your PC" screen, which is expected for the testers' builds.
+# build in token mode and never leaves this machine (checked below).
+#
+# Signing (2026-11-20): Microsoft Artifact Signing, account cassettesigning, profile cassette, under the founder's
+# own verified name. There is no key to carry: the build machine signs in with a sign-only app login
+# (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET from the workflow's secrets) and Microsoft signs each
+# file. Every program in the install is signed, not only the installer: Smart App Control checks each exe and
+# DLL as it starts, so one unsigned DLL is enough to get the app blocked. Without the three values the build is
+# unsigned and says so, unless WINDOWS_SIGNING=required (the workflow), when it stops instead.
 #
 # Needs: Git Bash, pnpm, Node 22+, Go, Rust (MSVC), 7-Zip, and MSYS2's MinGW gcc (Navidrome's database driver is C)
-# at $MSYS2_ROOT. NAVIDROME_REF is the fork commit to build (the release pins it).
+# at $MSYS2_ROOT. NAVIDROME_REF is the fork commit to build (the release pins it). To sign: the Windows SDK's
+# signtool and the .NET 10 runtime (Microsoft's signing plug-in runs on it).
 #
 # Usage:  NAVIDROME_REF=<sha> MSYS2_ROOT=/c/msys64 ./scripts/bundle-windows.sh
 set -euo pipefail
@@ -57,6 +64,69 @@ with_dlls() {
 
 rm -rf "$RES" "$WORK"
 mkdir -p "$RES" "$BIN" "$WORK"
+
+# ─── Signing: set up first, so a bad login stops the build in a minute, not after half an hour ───────────────
+SIGN_ENDPOINT="https://eus.codesigning.azure.net"
+SIGN_ACCOUNT="cassettesigning"
+SIGN_PROFILE="cassette"
+TIMESTAMP_URL="http://timestamp.acs.microsoft.com"
+# Microsoft's signing plug-in for signtool (NuGet Microsoft.ArtifactSigning.Client), pinned and checked like
+# everything else fetched here. It runs on .NET 10.
+SIGN_CLIENT_VERSION="1.0.151"
+SIGN_CLIENT_SHA256="35375a4bc4e1102da729fc3d8d9925f774c3baae6b8b7ff6398d948ca9ab0d8a"
+SIGNING=""
+if [ -n "${AZURE_TENANT_ID:-}" ] && [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_CLIENT_SECRET:-}" ]; then
+  SIGNING=1
+  echo "==> [sign] Microsoft Artifact Signing, ${SIGN_ACCOUNT} / ${SIGN_PROFILE}…"
+  KITS="/c/Program Files (x86)/Windows Kits/10/bin"
+  SIGNTOOL=""
+  for v in $(ls -1 "$KITS" 2>/dev/null | grep -E '^10\.' | sort -V); do
+    [ -f "$KITS/$v/x64/signtool.exe" ] && SIGNTOOL="$KITS/$v/x64/signtool.exe"
+  done
+  [ -n "$SIGNTOOL" ] || { echo "FATAL: no signtool.exe under $KITS (install the Windows SDK)"; exit 1; }
+  echo "    signtool: $SIGNTOOL"
+  fetch "https://www.nuget.org/api/v2/package/Microsoft.ArtifactSigning.Client/$SIGN_CLIENT_VERSION" "$WORK/sign-client.nupkg"
+  [ "$(sha256sum "$WORK/sign-client.nupkg" | cut -c1-64)" = "$SIGN_CLIENT_SHA256" ] \
+    || { echo "FATAL: the signing plug-in's checksum doesn't match"; exit 1; }
+  unpack "$WORK/sign-client.nupkg" "$WORK/sign-client"
+  DLIB="$WORK/sign-client/bin/x64/Azure.CodeSigning.Dlib.dll"
+  [ -f "$DLIB" ] || { echo "FATAL: no Azure.CodeSigning.Dlib.dll in the signing plug-in"; exit 1; }
+  # Only the build machine's own login (the three AZURE_ values) is tried; the plug-in skips its slower guesses.
+  cat > "$WORK/sign-metadata.json" <<META
+{
+  "Endpoint": "$SIGN_ENDPOINT",
+  "CodeSigningAccountName": "$SIGN_ACCOUNT",
+  "CertificateProfileName": "$SIGN_PROFILE",
+  "CorrelationId": "cassette-windows-${GITHUB_RUN_ID:-local}",
+  "ExcludeCredentials": [
+    "ManagedIdentityCredential", "WorkloadIdentityCredential", "SharedTokenCacheCredential",
+    "VisualStudioCredential", "VisualStudioCodeCredential", "AzureCliCredential",
+    "AzurePowerShellCredential", "AzureDeveloperCliCredential", "InteractiveBrowserCredential"
+  ]
+}
+META
+  DLIB_W="$(cygpath -w "$DLIB")"
+  META_W="$(cygpath -w "$WORK/sign-metadata.json")"
+  # Git Bash turns any argument that starts with / into a path (/fd would reach signtool as C:/Program
+  # Files/Git/fd), hence MSYS_NO_PATHCONV. Files are passed in Windows form.
+  sign() {
+    MSYS_NO_PATHCONV=1 "$SIGNTOOL" sign /fd SHA256 /tr "$TIMESTAMP_URL" /td SHA256 /d Cassette \
+      /dlib "$DLIB_W" /dmdf "$META_W" "$@"
+  }
+  signed() { MSYS_NO_PATHCONV=1 "$SIGNTOOL" verify /pa /q "$1" >/dev/null 2>&1; }
+  # One signature now, on a throwaway copy of signtool itself: the login, the signer role, the account and the
+  # profile name are all proved before anything is built.
+  cp "$SIGNTOOL" "$WORK/sign-probe.exe"
+  sign "$(cygpath -w "$WORK/sign-probe.exe")" \
+    || { echo "FATAL: Microsoft refused to sign (check the app login's secret, its Certificate Profile Signer role, and the account and profile names above)"; exit 1; }
+  signed "$(cygpath -w "$WORK/sign-probe.exe")" || { echo "FATAL: the probe was signed but doesn't verify"; exit 1; }
+  echo "    signing works"
+elif [ "${WINDOWS_SIGNING:-}" = "required" ]; then
+  echo "FATAL: WINDOWS_SIGNING=required, but AZURE_TENANT_ID, AZURE_CLIENT_ID or AZURE_CLIENT_SECRET is missing"
+  exit 1
+else
+  flag "unsigned: no signing login (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET), so Windows will warn on install"
+fi
 
 # ─── The UI server ──────────────────────────────────────────────────────────────────────────────────────────
 echo "==> [ui] Next.js standalone, compile-only, no database…"
@@ -216,10 +286,49 @@ GNUDB_CONTACT_EMAIL=
 ENV
 mkdir -p "$RES/certs" && : > "$RES/certs/.keep"
 
+# ─── Signing what the app carries ───────────────────────────────────────────────────────────────────────────
+# Every program in resources-win. One its own publisher already signed (Node) keeps that signature; the rest (the
+# Go builds, MinGW's DLLs, mpv, ffmpeg, the disc tools, any native module in the UI server) get ours. Tauri would
+# sign the .exe and .dll ones itself, one call each, but not a native module (.node), which is a DLL that Windows
+# checks all the same; signing them all here, many per call, covers both.
+TAURI_ARGS=()
+if [ -n "$SIGNING" ]; then
+  echo "==> [sign] the programs inside the app…"
+  TO_SIGN=()
+  KEPT=0
+  while IFS= read -r -d '' f; do
+    w="$(cygpath -w "$f")"
+    if signed "$w"; then KEPT=$((KEPT + 1)); else TO_SIGN+=("$w"); fi
+  done < <(find "$RES" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.node' \) -print0)
+  echo "    ${#TO_SIGN[@]} to sign, $KEPT already signed by their own publisher"
+  for ((i = 0; i < ${#TO_SIGN[@]}; i += 20)); do
+    sign "${TO_SIGN[@]:i:20}" || { echo "FATAL: signing the app's programs failed"; exit 1; }
+  done
+  # Tauri signs the rest with the same command: the app itself, the installer's plug-ins, the uninstaller, and
+  # the installer. Written by Node so the paths need no quoting by hand.
+  SIGN_CONF="$WORK/tauri.sign.json"
+  MSYS_NO_PATHCONV=1 SIGNTOOL_W="$(cygpath -w "$SIGNTOOL")" DLIB_W="$DLIB_W" META_W="$META_W" TS="$TIMESTAMP_URL" \
+    OUT="$(cygpath -w "$SIGN_CONF")" node -e '
+      const e = process.env;
+      const args = ["sign", "/fd", "SHA256", "/tr", e.TS, "/td", "SHA256", "/d", "Cassette",
+        "/dlib", e.DLIB_W, "/dmdf", e.META_W, "%1"];
+      const conf = { bundle: { windows: { signCommand: { cmd: e.SIGNTOOL_W, args } } } };
+      require("fs").writeFileSync(e.OUT, JSON.stringify(conf, null, 2));
+    '
+  # The forward-slash form: pnpm 9 hands script arguments to a shell inside double quotes.
+  TAURI_ARGS=(--config "$(cygpath -m "$SIGN_CONF")")
+fi
+
 # ─── The shell and the installer ────────────────────────────────────────────────────────────────────────────
 echo "==> [shell] Tauri build (NSIS installer; tauri.windows.conf.json merges in by itself)…"
 pnpm -C "$DESKTOP_DIR" install --ignore-workspace --frozen-lockfile
-pnpm -C "$DESKTOP_DIR" tauri build
+pnpm -C "$DESKTOP_DIR" tauri build "${TAURI_ARGS[@]}"
+
+SETUP="$(ls "$DESKTOP_DIR"/src-tauri/target/release/bundle/nsis/*-setup.exe | head -1)"
+if [ -n "$SIGNING" ]; then
+  signed "$(cygpath -w "$SETUP")" || { echo "FATAL: the installer came out unsigned"; exit 1; }
+  echo "==> [sign] the installer is signed (the workflow checks every program inside it)"
+fi
 
 echo "==> Built:"
 ls -la "$DESKTOP_DIR/src-tauri/target/release/bundle/nsis/"

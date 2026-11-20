@@ -2,8 +2,8 @@
 
 /**
  * The one Buy button, a split button (the founder, 2026-11-16, dropdown-sketches): its main half says your
- * store and goes straight there ("Buy on Barnes & Noble", with the price when the store gave us one); its
- * chevron opens every store. Your store is the one you picked last (kept in this browser, on every record),
+ * store and goes straight there ("Buy on Barnes & Noble", with the price when the store gave us one; just
+ * "Buy" in a row of buttons short of room, ActionRow); its chevron opens every store. Your store is the one you picked last (kept in this browser, on every record),
  * else our pick (buy.ts). Picking a store in the menu goes there and makes it your button from then on.
  *
  * The menu is built to hold many stores without overwhelming: chips for All, Digital and Physical (a store
@@ -26,10 +26,12 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import { Icon } from "@/app/_taste/Icon";
 import { Menu, MenuLine, MenuLink, splitMainClass } from "@/app/_taste/Menu";
+import { Say } from "@/app/_taste/Say";
 import { inPanelFrame, type Surface } from "@/lib/app-surface";
 import { tell } from "@/lib/ask";
 import { openOutside } from "@/lib/open-outside";
 import { PUBLIC_SITE_URL } from "@/lib/urls";
+import { BUY_STORE_COOKIE } from "./buy";
 import type { BuyOption } from "./types";
 import b from "./buy.module.css";
 
@@ -90,7 +92,15 @@ function readUsual(): string | null {
     return null;
   }
 }
+function keepCookie(key: string) {
+  try {
+    document.cookie = `${BUY_STORE_COOKIE}=${encodeURIComponent(key)}; path=/; max-age=31536000; samesite=lax`;
+  } catch {
+    // blocked: the page just draws our pick first
+  }
+}
 function keepUsual(key: string) {
+  keepCookie(key);
   try {
     window.localStorage.setItem(KEY, key);
   } catch {
@@ -163,10 +173,33 @@ export function BuyMenu({
 
   useEffect(() => {
     const u = readUsual();
-    if (u) setUsual(u);
+    if (u) {
+      setUsual(u);
+      // a choice made before the cookie existed: the next page drawn per request draws it from the start
+      if (!document.cookie.includes(`${BUY_STORE_COOKIE}=`)) keepCookie(u);
+    }
     // Apple as your store: its row (and so the button's link) is asked for at once
     if (u === "apple") ask();
   }, []); // once, on arrival
+
+  // Apple's row is asked for once the button has been in view a moment on a computer, not only when it is
+  // pointed at, so the menu is whole when it opens rather than filling in under the pointer (the founder,
+  // 2026-11-18: "when I open it for the first time... things jump around"). Still never while the page renders.
+  const seen = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    const el = seen.current;
+    if (!el || !askApple || typeof IntersectionObserver === "undefined" || !window.matchMedia("(hover: hover)").matches) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const io = new IntersectionObserver(([e]) => {
+      clearTimeout(t);
+      if (e?.isIntersecting) t = setTimeout(() => (ask(), io.disconnect()), 800);
+    });
+    io.observe(el);
+    return () => {
+      clearTimeout(t);
+      io.disconnect();
+    };
+  }, [askApple]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mine = usual && options.some((o) => o.key === usual) ? usual : null;
   const lead = options.find((o) => o.key === (mine ?? pick)) ?? options[0];
@@ -227,14 +260,16 @@ export function BuyMenu({
       onWarm={ask}
       primary={
         <a
+          ref={seen}
           href={lead.href}
           className={splitMainClass}
+          data-give="name"
           onClick={choose(lead)}
           onPointerEnter={ask}
           onFocus={ask}
           {...linkProps(lead)}
         >
-          <span>Buy on {lead.store}</span>
+          <Say whole={`Buy on ${lead.store}`} short="Buy" />
           {lead.price && <span className={b.price}>{lead.price}</span>}
           {leaves(lead) && <Icon name="out" size={12} />}
         </a>

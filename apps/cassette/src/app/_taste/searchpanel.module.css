@@ -22,7 +22,7 @@
   width: min(720px, calc(100vw - 24px - var(--rail-w, 0px)));
   max-height: calc(100vh - 96px - var(--top-dock-h, 0px));
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain; /* up and down only: a sideways swipe is Safari's Back (globals.css) */
   scroll-padding: 8px 0 76px; /* a row the arrows reach never hides under the held foot */
   padding: 8px;
   border-radius: var(--r-area);

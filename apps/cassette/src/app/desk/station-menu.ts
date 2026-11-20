@@ -17,6 +17,7 @@ import { useOnline } from "./network";
 import { useStationSave } from "./saved-stations";
 import { openOutside } from "@/lib/open-outside";
 import { DESK } from "./types";
+import { giveMenu } from "@/lib/radio/give";
 
 
 /** "kexp.org" for https://www.kexp.org/ */
@@ -41,7 +42,7 @@ export function useStationMenu(): (slug: string) => MenuItem[] {
     const on = radio.isCurrent(slug) && radio.status !== "idle";
     const places: MenuItem[] = [];
     if (s?.homepage) places.push({ label: `Go to ${siteOf(s.homepage)}`, onSelect: () => openOutside(s.homepage!) });
-    if (s?.supportUrl) places.push({ label: `Support ${s.name}`, onSelect: () => openOutside(s.supportUrl!) });
+    if (s) places.push(...giveMenu(s, openOutside));
     return [
       { label: on ? "Stop" : "Tune in", onSelect: () => (online || on ? radio.toggle(slug) : showToast("Radio needs the internet")), disabled: !online && !on },
       { label: save.isSaved(slug) ? "Remove from your stations" : "Save", onSelect: () => save.toggle(slug) },

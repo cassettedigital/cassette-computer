@@ -54,12 +54,26 @@ export function curl(text: string): string {
 }
 
 /**
- * One mechanical display cleanup for stored quotes: a missing space after a colon, semicolon or comma
- * when a letter follows directly ("tracks:just primo" reads "tracks: just primo"). Never inside a
- * number ("9.3", "1,000") or an address ("http://").
+ * A review page's own heading glued to the front of a stored quote: Sputnikmusic's "Review Summary:" (50 stored
+ * quotes on 2026-11-18), and a section title whose punctuation was lost ("Conclusion A solid album...", "Final Rating
+ * I think...", "Bottom Line Good intentions aside...", 16 more). Only these headings, only at the very start, only
+ * before a capital or an opening quote mark, and never before a short label ("Verdict T: ..." stays as it is).
+ * "Overall" is not one: writers open sentences with it. The press editor drops the same headings (hobby-press.ts).
+ */
+const GLUED_HEADING =
+  /^(?:Review Summary:|(?:The\s+)?(?:Final (?:Rating|Verdict|Thoughts|Words)|(?:Our |My )?Verdict|Conclusions?|In Conclusion|Summary|Bottom Line|Rating|Score|Recommended Tracks|Key Tracks|Standout Tracks|Highlights|Closing Thoughts|Review)\s*:?)\s+(?=["“‘'A-Z])(?![A-Z]{1,3}:)/;
+export function withoutHeading(text: string): string {
+  const m = GLUED_HEADING.exec(text);
+  return m ? text.slice(m[0].length) : text;
+}
+
+/**
+ * One mechanical display cleanup for stored quotes: a review page's heading glued to its front is dropped
+ * (withoutHeading), and a missing space after a colon, semicolon or comma when a letter follows directly ("tracks:just
+ * primo" reads "tracks: just primo"). Never inside a number ("9.3", "1,000") or an address ("http://").
  */
 export function tidyQuote(text: string): string {
-  return joinDropCap(text).replace(/([a-zà-ɏ)\]"”'’])([:;,])(?=[A-Za-zÀ-ɏ])/g, "$1$2 ");
+  return joinDropCap(withoutHeading(text.trimStart())).replace(/([a-zà-ɏ)\]"”'’])([:;,])(?=[A-Za-zÀ-ɏ])/g, "$1$2 ");
 }
 
 /**

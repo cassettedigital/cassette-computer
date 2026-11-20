@@ -9,6 +9,14 @@
 export const R2_DEV_MEDIA = "https://pub-1de521a89e3a4d0eb77cf2557bbd8818.r2.dev/";
 
 /**
+ * The media bucket's own name, the one behind R2_DEV_MEDIA (the image ladder's edge binds it as MEDIA,
+ * services/media-edge/wrangler.jsonc). A writer that stores covers checks its R2_BUCKET_NAME is this as
+ * well as its public address: the two are separate settings, and keys borrowed from another service can
+ * name the media bucket's address while writing somewhere else (BUG-1052).
+ */
+export const R2_MEDIA_BUCKET = "cassette-media";
+
+/**
  * The uploads bucket's r2.dev development address (people's avatars, playlist covers, cover and photo
  * picks, creator uploads). The bucket has no custom domain (Cloudflare, read 2026-11-04), so this is the
  * only public address its pictures have; the image ladder's edge resizer reads the bucket directly and

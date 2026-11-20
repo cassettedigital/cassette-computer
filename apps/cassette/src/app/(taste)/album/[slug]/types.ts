@@ -51,15 +51,20 @@ export type BuyOption = {
 /** The press, already laid out on the server so nothing jumps after hydration. */
 export type PressLayout = {
   lead: PressEntry | null;
-  /** The rest of the top set in two balanced columns, each in editor order. */
+  /** The rest of the top set in two columns that end level, each in editor order (shape.ts arrange). */
   rest: [PressEntry[], PressEntry[]];
   /** Exactly one card after the lead: it takes the full width. */
   restSolo: boolean;
+  /** An odd count: the card across the columns' foot. */
+  restWide: PressEntry | null;
   /** Grade-only entries: one row of grades, under the top cards while Read all is closed, after the last revealed card once it is open. */
   grades: PressEntry[];
-  /** The entries behind Read all that carry a quote, in two balanced columns. */
+  /** The entries behind Read all that carry a quote, the same way. */
   moreQuotes: [PressEntry[], PressEntry[]];
   moreQuotesSolo: boolean;
+  moreWide: PressEntry | null;
+  /** String(entry.order) to the sizes a card's words move up (+1) or down (-1) so its columns end level (shape.ts settle). */
+  give: Record<string, number>;
   /** String(entry.order) to its place in the top set (lead 0) or in the revealed cards: the phone's one-column order. */
   phoneOrder: Record<string, number>;
 };

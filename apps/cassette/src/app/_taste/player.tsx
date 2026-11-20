@@ -41,6 +41,8 @@ import {
 import { tellApp } from "@/lib/app-surface";
 import { announceAudioLane, onOtherAudioLane } from "@/lib/audio-lane";
 import { reportWebError } from "@/lib/diagnostics/web-report";
+import { useNoteNowPlaying } from "@/lib/diagnostics/now-playing";
+import { REPORTED_KEY, REPORT_PATH, dayOf, noteReport, pickReport, unplayableReportsOn } from "@/lib/media/player-report-plan";
 import { fromIndex, wrapFrom, type Playable } from "./play";
 import { primeYouTube, type FrameApi } from "./YouTubeFrame";
 
@@ -174,6 +176,46 @@ function reportStall(said: string[]): void {
   reportWebError(new Error(`${STALLED_IN_A_ROW} previews in a row did not play (${why})`), { source: "preview-player" });
 }
 
+/**
+ * A song YouTube refused: say so once, so the videos job re-checks its record the next morning instead of
+ * up to 27 days later (lib/media/player-report-plan.ts has the rules). Only the song's catalog id, the upload
+ * refused and YouTube's code; once per song per browser per day; only for a refusal about the upload itself,
+ * never a refusal with no code, a song that ended at once, or the browser's own trouble (codes 5, 152, 153).
+ * Sent and forgotten: it never waits and never throws, and the player moves on exactly as it did before.
+ * Nothing at all (no call, nothing kept in the browser) until NEXT_PUBLIC_PLAYER_UNPLAYABLE_REPORT reads "on",
+ * the same switch the endpoint answers to.
+ */
+let reportedMemo: string | null = null; // today's songs when the browser keeps nothing (a private window)
+function reportUnplayable(track: Playable | null, codes: number[]): void {
+  try {
+    if (!unplayableReportsOn()) return;
+    const report = pickReport(track, codes);
+    if (!report) return;
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(REPORTED_KEY);
+    } catch {
+      // blocked storage: this visit's own memory below
+    }
+    const seen = noteReport(stored ?? reportedMemo, report.trackId, dayOf(Date.now()));
+    if (!seen.send || !seen.next) return;
+    reportedMemo = seen.next;
+    try {
+      window.localStorage.setItem(REPORTED_KEY, seen.next);
+    } catch {
+      // kept for this visit only
+    }
+    void fetch(REPORT_PATH, {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(report),
+    }).catch(() => {});
+  } catch {
+    // a report never gets in the player's way
+  }
+}
+
 /** The rail's list slot: the place under the video where a page's own list goes. Not for pages: they use
  *  useRailSlot. */
 type Rail = {
@@ -217,6 +259,13 @@ const keep = (list: Playable[]) => (list.length > HISTORY_MAX ? list.slice(list.
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [core, setCore] = useState<Core>(CLOSED);
+  // a note to the founder says which song the preview player had on (lib/diagnostics/now-playing)
+  useNoteNowPlaying(
+    "preview",
+    core.track
+      ? { state: core.unplayable ? "unplayable" : core.status, title: core.track.title, artist: core.track.artist, album: core.track.album }
+      : null,
+  );
   const [bigAsk, setBigAsk] = useState(0);
   const [shared, setShared] = useState(false);
   const [waiting, setWaiting] = useState<{ at: number | null } | null>(null);
@@ -510,6 +559,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setWaiting({ at: on ? Date.now() + UP_NEXT_SECONDS * 1000 : null });
       },
       onUnplayable: (codes) => {
+        reportUnplayable(coreRef.current.track, codes);
         if (stall(codes.length ? codes.map(String) : ["refused"])) return;
         if (coreRef.current.queue.length > 0) next();
         else setCore((c) => (c.track ? { ...c, status: "paused", unplayable: true } : c));

@@ -1,17 +1,12 @@
 /**
- * SkeletonBlock — the base pulse primitive. Every other skeleton composes from
- * this one box. Server component (no hooks) so it renders inside route-level
- * loading.tsx files and streaming Suspense fallbacks with zero client cost.
- *
- * Visual spec (see spec §4.1):
- *   - fill: var(--cs-bg2)
- *   - animation: cs-loadPulse 1.4s ease-in-out infinite (globals.css)
- *   - stagger: animationDelay = (delay % 6) * 0.1s
- *   - reduced motion: animation removed, opacity 0.45 (handled in CSS module)
+ * SkeletonBlock: the dashboard's bone, sized by width, height and a corner radius. It wears the site's one
+ * bone (app/_taste/skeleton.module.css: nothing for a quick load, then one band of light across every bone
+ * at once, still for less motion), so the dashboard's skeletons load the way every other page does. Server
+ * component (no hooks), for loading.tsx files and Suspense fallbacks alike.
  */
 
 import type { CSSProperties } from "react";
-import styles from "./skeleton.module.css";
+import sk from "@/app/_taste/skeleton.module.css";
 
 const RADII = {
   sm: "var(--cs-radius-sm)",
@@ -28,7 +23,7 @@ export type SkeletonBlockProps = {
   /** Box height. Omit only when an aspect ratio (via `style`) drives height. */
   height?: number | string;
   radius?: SkeletonRadius;
-  /** Stagger index — multiplied into a 0–0.5s animation delay (mod 6). */
+  /** Kept for older callers; ignored. Every bone shares the one band of light, never staggered. */
   delay?: number;
   className?: string;
   /** Escape hatch for one-offs (aspectRatio, margin, flex). Merged last. */
@@ -39,19 +34,18 @@ export function SkeletonBlock({
   width = "100%",
   height,
   radius = "md",
-  delay = 0,
+  delay: _delay = 0,
   className,
   style,
 }: SkeletonBlockProps) {
   return (
     <div
       aria-hidden="true"
-      className={className ? `${styles.block} ${className}` : styles.block}
+      className={className ? `${sk.bone} ${className}` : sk.bone}
       style={{
         width,
         height,
         borderRadius: RADII[radius],
-        animationDelay: `${(delay % 6) * 0.1}s`,
         ...style,
       }}
     />

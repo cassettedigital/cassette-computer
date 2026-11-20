@@ -32,13 +32,38 @@
   --press-shadow: inset 0 1px 0 rgba(255, 248, 236, 0.06), 0 1px 1px rgba(0, 0, 0, 0.4);
   --spring: cubic-bezier(0.3, 1.35, 0.5, 1);
 
+  /* below whatever the page has pinned to the top of the window: the radio dial's sections (Masthead.tsx measures
+     what's pinned into --mast-inset and the masthead eases down below it, then back up when it lets go). That move
+     is spread over its whole 300ms on an even curve: on the site's quick ease nearly all of it happened in the first
+     50ms (the founder, 2026-11-17: it "jumps up pretty quickly"; "draw that out to a nice 200 or 300ms") */
+  transform: translateY(var(--mast-inset, 0px));
+  /* every move the masthead makes rides this one even curve (the site's quick ease put nearly all of a move in its
+     first 50ms, which read as a jump; the founder, 2026-11-17). Coming back it slides down in 360ms */
+  --mast-curve: cubic-bezier(0.4, 0, 0.2, 1);
   transition:
-    translate 0.3s var(--ease),
+    translate 360ms var(--mast-curve),
+    transform 300ms var(--mast-curve),
     right 0.45s var(--ease);
 }
-/* away while the page scrolls down, unless something in it has the focus */
+/* away while the page scrolls down, unless something in it has the focus: up and gone, not just out of the window.
+   The pills fade as it goes (Safari draws what's above the page faintly under its see-through toolbar; the
+   founder saw it there, 2026-11-17). They fade themselves: a fade on the masthead would switch off their frosted
+   glass while it ran. */
 .mast[data-away]:not(:focus-within) {
-  translate: 0 calc(-100% - 20px);
+  /* past whatever is pinned above it too, so it never lies over a pinned bar */
+  translate: 0 calc(-100% - 20px - var(--mast-inset, 0px));
+  /* going, a little slower than coming back, so it leaves rather than vanishes (the founder, 2026-11-17: "it
+     vanishes too quickly") */
+  transition:
+    translate 440ms var(--mast-curve),
+    transform 300ms var(--mast-curve),
+    right 0.45s var(--ease);
+}
+.mast[data-away]:not(:focus-within) .pill {
+  opacity: 0;
+  pointer-events: none;
+  /* it fades over most of its way up and is gone just before it clears the window */
+  transition: opacity 400ms var(--mast-curve);
 }
 
 /* the two pills: the places in the middle, you in the corner */
@@ -55,6 +80,8 @@
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(12px);
   pointer-events: auto;
+  /* coming back it's there early in its slide down */
+  transition: opacity 240ms var(--mast-curve);
 }
 .places {
   position: absolute;
@@ -63,7 +90,9 @@
   translate: -50% 0;
   width: max-content;
   max-width: 100%;
-  transition: width 0.42s var(--ease);
+  transition:
+    width 0.42s var(--ease),
+    opacity 240ms var(--mast-curve);
 }
 .you {
   position: absolute;
@@ -82,11 +111,19 @@
   display: none;
 }
 
+/* this browser was signed in last time (data-who, set before the first paint by the root layout and kept true by
+   Masthead once the session answers): Save a seat is not for them, so neither it nor the room it takes is drawn
+   while the session is still answering; every rule below that keys on data-cta asks the same (the founder,
+   2026-11-17: no more flash of Save a seat) */
+:global(html[data-who="in"]) .mast .cta {
+  display: none;
+}
+
 /* joined: one bar, the places at its start and the menu at its end. With Save a seat in the corner they
    join when the header's room is less than the middle pill and twice (the corner pill + 16px): 701, measured
    (middle 283, corner 193); without it (corner 84), 483. */
 @container mast (width < 702px) {
-  .mast[data-cta] .row {
+  :global(html:not([data-who="in"])) .mast[data-cta] .row {
     display: flex;
     align-items: center;
     padding: 6px;
@@ -96,7 +133,7 @@
     backdrop-filter: blur(12px);
     pointer-events: auto;
   }
-  .mast[data-cta] .pill {
+  :global(html:not([data-who="in"])) .mast[data-cta] .pill {
     position: static;
     translate: none;
     height: 38px;
@@ -105,16 +142,16 @@
     box-shadow: none;
     backdrop-filter: none;
   }
-  .mast[data-cta] .you {
+  :global(html:not([data-who="in"])) .mast[data-cta] .you {
     margin-left: auto;
   }
 }
 /* joined, the menu takes the bar's own width and hangs just under it, as the bar opening */
 @container mast (width < 702px) {
-  .mast[data-cta] .you [data-align] {
+  :global(html:not([data-who="in"])) .mast[data-cta] .you [data-align] {
     position: static;
   }
-  .mast[data-cta] .you [role="menu"] {
+  :global(html:not([data-who="in"])) .mast[data-cta] .you [role="menu"] {
     left: 0;
     right: 0;
     width: auto;
@@ -124,10 +161,12 @@
   }
 }
 @container mast (width < 484px) {
-  .mast:not([data-cta]) .you [data-align] {
+  .mast:not([data-cta]) .you [data-align],
+  :global(html[data-who="in"]) .mast .you [data-align] {
     position: static;
   }
-  .mast:not([data-cta]) .you [role="menu"] {
+  .mast:not([data-cta]) .you [role="menu"],
+  :global(html[data-who="in"]) .mast .you [role="menu"] {
     left: 0;
     right: 0;
     width: auto;
@@ -137,7 +176,8 @@
   }
 }
 @container mast (width < 484px) {
-  .mast:not([data-cta]) .row {
+  .mast:not([data-cta]) .row,
+  :global(html[data-who="in"]) .mast .row {
     display: flex;
     align-items: center;
     padding: 6px;
@@ -147,7 +187,8 @@
     backdrop-filter: blur(12px);
     pointer-events: auto;
   }
-  .mast:not([data-cta]) .pill {
+  .mast:not([data-cta]) .pill,
+  :global(html[data-who="in"]) .mast .pill {
     position: static;
     translate: none;
     height: 38px;
@@ -156,7 +197,8 @@
     box-shadow: none;
     backdrop-filter: none;
   }
-  .mast:not([data-cta]) .you {
+  .mast:not([data-cta]) .you,
+  :global(html[data-who="in"]) .mast .you {
     margin-left: auto;
   }
 }
@@ -164,13 +206,13 @@
    spare (488 with Save a seat, 379 without); then, for someone not yet in, the menu key drops the empty face
    so Save a seat stays on a phone; only under that (333 with both) does Save a seat move into the menu */
 @container mast (width < 500px) {
-  .mast[data-cta] .word {
+  :global(html:not([data-who="in"])) .mast[data-cta] .word {
     display: none;
   }
-  .mast[data-cta] .brand {
+  :global(html:not([data-who="in"])) .mast[data-cta] .brand {
     margin-right: 2px;
   }
-  .mast[data-cta] .bar {
+  :global(html:not([data-who="in"])) .mast[data-cta] .bar {
     padding-left: 2px;
   }
 }
@@ -185,10 +227,10 @@
   .mast .bar {
     padding-left: 2px;
   }
-  .mast[data-cta] .you .empty {
+  :global(html:not([data-who="in"])) .mast[data-cta] .you .empty {
     display: none;
   }
-  .mast[data-cta] .you button[aria-haspopup] {
+  :global(html:not([data-who="in"])) .mast[data-cta] .you button[aria-haspopup] {
     padding: 0 10px;
   }
 }
@@ -430,7 +472,7 @@
   top: calc(100% + 16px);
   max-height: calc(100dvh - 96px - var(--top-dock-h, 0px));
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain; /* up and down only: a sideways swipe is Safari's Back (globals.css) */
 }
 .mast [role="menu"] .seat {
   color: var(--cs-orange);

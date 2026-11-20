@@ -39,12 +39,13 @@ import { useSession } from "next-auth/react";
 import { resolveAvatar } from "@/lib/avatar";
 import { Picture } from "@discovery/cassette-kit/picture";
 import { picture } from "@/lib/images/picture";
-import { APPS_HREF } from "@/lib/account/setup";
 import { signOut } from "@/lib/sign-out";
+import { openFeedback } from "@/app/components/feedback-door";
 import { useTypeahead } from "@/lib/search/use-typeahead";
 import { LogoMark } from "./Brand";
 import { Icon, type IconName } from "./Icon";
 import { Menu, MenuItem, MenuLine, MenuPerson } from "./Menu";
+import { siteMenu, sitePlaceOf, type SitePlace } from "./site-menu";
 import { SearchPanel, toHits, useSearchPreview } from "./SearchPanel";
 import t from "./taste.module.css";
 import s from "./masthead.module.css";
@@ -104,28 +105,11 @@ const KEYS = [
 ] as const satisfies ReadonlyArray<{ id: string; href: string; label: string; icon: IconName }>;
 const SEARCH_AT = KEYS.length;
 
-/** Which place the page is: a key's, or one only the menu names. */
-function placeOf(path: string): "discover" | "radio" | "search" | "journal" | "guides" | "apps" | null {
-  const under = (p: string) => path === p || path.startsWith(`${p}/`);
-  if (under("/discover")) return "discover";
-  if (under("/radio")) return "radio";
-  if (under("/search")) return "search";
-  if (under("/journal")) return "journal";
-  if (under("/guides")) return "guides";
-  if (under("/apps")) return "apps";
-  return null;
-}
-
 type Link = { href: string; label: string; icon?: IconName };
 
 /**
- * The corner pill's menu (the founder, 2026-11-16), in order of how much a person wants each thing, with no
- * group heads, only lines between kinds. First you: signed in, your face and name (your account), Apps (the public
- * /apps page, its downloads for you), and Studio and Admin when you may; signed out, Sign in and Apps
- * (and, on a narrow phone, Save a seat). Then the places: Discover, Radio, Search, Journal, Guides (one page for
- * how Cassette works, help and the guides) and the page's own links. Last, signed in, the rarely wanted:
- * Settings and Sign out. While the session loads, the places alone. Nothing for an account shows to someone
- * signed out, and Studio and Admin only to those their own doors let in (the pages check again).
+ * The corner pill's menu: the site's menu (site-menu.ts, the same places in the same order as every app rail's
+ * account menu), drawn with the shared menu, each place with the icon it wears in the pill.
  */
 function MainMenu({
   links,
@@ -137,14 +121,13 @@ function MainMenu({
   links: Link[];
   account: boolean;
   cta?: { href: string; label: string };
-  here: ReturnType<typeof placeOf>;
+  here: SitePlace;
   onSearch: () => void;
 }) {
   const { data: session, status } = useSession();
   // the session carries the id and isAdmin (lib/auth.ts session callback); the browser's session type doesn't declare them
   const user = session?.user as (NonNullable<typeof session>["user"] & { id?: string; isAdmin?: boolean }) | undefined;
   const signedIn = account && status === "authenticated" && !!user;
-  const signedOut = account && !signedIn && status !== "loading";
   const studio = useStudioEntry(signedIn ? user?.id : undefined);
   const who = user?.name?.trim() || user?.email?.split("@")[0] || "Your account";
   const face = signedIn ? (
@@ -154,72 +137,34 @@ function MainMenu({
       <Icon name="person" size={24} />
     </span>
   ) : null;
+  const entries = siteMenu({
+    who: signedIn ? "in" : account && status !== "loading" ? "out" : "loading",
+    name: who,
+    studio,
+    admin: user?.isAdmin === true,
+    here,
+    cta,
+    links,
+  });
   return (
     <Menu trigger="menu" align="end" label="Cassette" buttonLabel={signedIn ? `Menu and account for ${who}` : "Menu"} face={face}>
-      {signedIn && (
-        <>
-          <MenuPerson href="/account" face={<Face image={user?.image} name={user?.name} email={user?.email} />} name={who} sub="Your account" />
-          {/* the downloads for every app this account may have (the founder, 2026-11-07: "easy to reach through my online account") */}
-          <MenuItem href={APPS_HREF} icon="devices" current={here === "apps"}>
-            Apps
+      {entries.map((e, i) =>
+        e.kind === "line" ? (
+          <MenuLine key={`line-${i}`} />
+        ) : e.kind === "person" ? (
+          <MenuPerson key="person" href={e.href} face={<Face image={user?.image} name={user?.name} email={user?.email} />} name={e.name} sub="Your account" />
+        ) : (
+          <MenuItem
+            key={e.label}
+            href={e.href}
+            onPick={e.action === "search" ? onSearch : e.action === "signOut" ? signOut : e.action === "feedback" ? openFeedback : undefined}
+            icon={e.icon}
+            current={e.current}
+            className={e.seat ? s.seat : undefined}
+          >
+            {e.label}
           </MenuItem>
-          {studio && (
-            <MenuItem href="/studio" icon="idea">
-              Studio
-            </MenuItem>
-          )}
-          {user?.isAdmin === true && (
-            <MenuItem href="/admin/pipeline" icon="sliders">
-              Admin
-            </MenuItem>
-          )}
-        </>
-      )}
-      {signedOut && (
-        <>
-          <MenuItem href="/sign-in" icon="person">
-            Sign in
-          </MenuItem>
-          <MenuItem href={APPS_HREF} icon="devices" current={here === "apps"}>
-            Apps
-          </MenuItem>
-        </>
-      )}
-      {cta && !signedIn && (
-        <MenuItem href={cta.href} icon="arrow" className={s.seat}>
-          {cta.label}
-        </MenuItem>
-      )}
-      {(signedIn || signedOut) && <MenuLine />}
-      {KEYS.map((k) => (
-        <MenuItem key={k.id} href={k.href} icon={k.icon} current={here === k.id}>
-          {k.label}
-        </MenuItem>
-      ))}
-      <MenuItem icon="search" onPick={onSearch}>
-        Search
-      </MenuItem>
-      <MenuItem href="/journal" icon="book" current={here === "journal"}>
-        Journal
-      </MenuItem>
-      <MenuItem href="/guides" icon="signpost" current={here === "guides"}>
-        Guides
-      </MenuItem>
-      {links.map((l) => (
-        <MenuItem key={l.href} href={l.href} icon={l.icon ?? "arrow"}>
-          {l.label}
-        </MenuItem>
-      ))}
-      {signedIn && (
-        <>
-          <MenuLine />
-          <MenuItem href="/settings" icon="gear">
-            Settings
-          </MenuItem>
-          <MenuItem onPick={signOut} icon="leave">
-            Sign out
-          </MenuItem>
-        </>
+        ),
       )}
     </Menu>
   );
@@ -258,10 +203,24 @@ export function Masthead({
   const findId = `${useId()}-find`;
   const listId = `${findId}-list`;
   const router = useRouter();
-  const here = placeOf(usePathname() ?? "");
+  const here = sitePlaceOf(usePathname() ?? "");
   const { status } = useSession();
   // the action is for people not yet in, so it steps aside for someone signed in
   const showCta = !!cta && !(account && status === "authenticated");
+  // Until the session answers, the page draws for whoever this browser was last time: the root layout's script
+  // put that on <html> as data-who before the first paint, and the stylesheet keeps Save a seat (and the room
+  // it takes) away while it says "in". Once the session answers, the mark is made true for this page and the
+  // next one.
+  useEffect(() => {
+    if (!account || status === "loading") return;
+    const who = status === "authenticated" ? "in" : "out";
+    document.documentElement.setAttribute("data-who", who);
+    try {
+      localStorage.setItem("cs-who", who);
+    } catch {
+      // private window or storage blocked: the next page asks the session again, as before
+    }
+  }, [account, status]);
   // the lifted key: the page's own, or the one just pressed while the page changes
   const homeAt = here === "search" ? SEARCH_AT : KEYS.findIndex((k) => k.id === here);
   const [goingTo, setGoingTo] = useState<number | null>(null);
@@ -308,26 +267,71 @@ export function Masthead({
     return () => clearTimeout(id);
   }, [tell]);
 
-  // Down the page it slips away; any scroll back up brings it home. Near the top it always shows.
+  // Down the page it slips away; a scroll back up brings it home. Near the top it always shows.
+  // Each way needs a real scroll to count, measured from where the page last turned, so a nudge or a trackpad
+  // settling never flips it: 24px down to go, 48px back up to return (the founder, 2026-11-17: at 8px either way it
+  // felt "a little bit erratic at times").
+  // Whatever a page pins to the top of the window (a bar marked data-pins-top: the radio dial's sections) takes
+  // that much of the top, and the masthead sits that much lower, below it, easing there as the bar pins and back
+  // up as it lets go. The masthead stays a scroll away on every page, and it simply answers to what's pinned
+  // above it (the founder, 2026-11-17: "always dynamically respond to whatever is pinned to the top of the page";
+  // nav is important and shouldn't be conditional).
+  const header = useRef<HTMLElement>(null);
+  const awayNow = useRef(away);
   useEffect(() => {
-    let last = window.scrollY;
+    awayNow.current = away;
+  }, [away]);
+  useEffect(() => {
+    const GO = 24;
+    const RETURN = 48;
+    // where the page last turned: the highest it has been while the masthead shows, the lowest while it's away
+    let turn = window.scrollY;
     let frame = 0;
+    let inset = -1;
+    const flip = (to: boolean, y: number) => {
+      turn = y;
+      if (awayNow.current === to) return;
+      awayNow.current = to;
+      setAway(to);
+    };
+    // how much of the window's top is taken: down to the lowest edge of what's pinned there, below the player
+    // along the top (which the masthead already sits under)
+    const taken = (head: HTMLElement) => {
+      const dock = parseFloat(getComputedStyle(head).getPropertyValue("--top-dock-h")) || 0;
+      let low = dock;
+      document.querySelectorAll<HTMLElement>("[data-pins-top]").forEach((bar) => {
+        const r = bar.getBoundingClientRect();
+        const pin = parseFloat(getComputedStyle(bar).top) || 0;
+        if (r.top <= pin + 0.5 && r.bottom > 0) low = Math.max(low, r.bottom);
+      });
+      return Math.round(low - dock);
+    };
     const onScroll = () => {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        const y = window.scrollY;
-        if (y < 120) {
-          last = y;
-          setAway(false);
-          return;
+        const head = header.current;
+        if (head) {
+          const now = taken(head);
+          if (now !== inset) {
+            inset = now;
+            head.style.setProperty("--mast-inset", `${now}px`);
+          }
         }
-        if (Math.abs(y - last) < 8) return;
-        setAway(y > last);
-        last = y;
+        const y = window.scrollY;
+        if (y < 120) return flip(false, y);
+        if (!awayNow.current) {
+          if (y < turn) turn = y;
+          else if (y - turn >= GO) flip(true, y);
+        } else {
+          if (y > turn) turn = y;
+          else if (turn - y >= RETURN) flip(false, y);
+        }
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
+    // a page opened partway down (Back restores where it was) starts in the right state, not on the first scroll
+    onScroll();
     return () => {
       window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
@@ -494,6 +498,7 @@ export function Masthead({
   return (
     <>
       <header
+        ref={header}
         className={`${t.dark} ${s.mast}`}
         data-cta={showCta || undefined}
         data-search={searching || undefined}

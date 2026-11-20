@@ -3,7 +3,11 @@
  * with the small mark and the name at one end and the links at the other, then the small print in one
  * tight line under it. Two classes on the links, so their colour outweighs the paper's plain `a` rule.
  */
+/* the footer sits beside the page's <main>, not in it, so it is its own `taste` container: its frame then
+   takes the page's gutters (32px from 760, the guide rail's when it shows) instead of a phone's 20px on
+   every window, and its edges are the page's (BUG-1050). It is as wide as the main, rail or not. */
 .foot {
+  container: taste / inline-size;
   padding: 26px 0 22px;
   background: var(--surface);
   color: var(--ink-3);
@@ -61,6 +65,43 @@
   letter-spacing: var(--t-label-track);
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+/* the small print's far end: the line, then Instagram and Bluesky as two small marks in the same ink */
+.end {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+.social {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -8px -6px -8px 0;
+}
+.foot .social a {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  color: var(--ink-3);
+  transition: color 0.2s;
+}
+.foot .social a:hover {
+  color: var(--ink-2);
+}
+.foot .social a:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.social svg {
+  width: 17px;
+  height: 17px;
+}
+.social a:last-child svg {
+  width: 18px;
+  height: 16px;
 }
 
 /* a phone: the four links in two tight columns rather than a line that strands the last one */

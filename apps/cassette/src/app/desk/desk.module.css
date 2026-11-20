@@ -63,7 +63,7 @@
   grid-row: 1;
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain; /* up and down only: a sideways swipe is Safari's Back (globals.css) */
   /* the toolbar's room: the page starts under it and scrolls beneath it */
   --mast-room: 68px;
   /* where a sticky part rests: just under the toolbar (52 tall). A sticky offset counts from the pane's

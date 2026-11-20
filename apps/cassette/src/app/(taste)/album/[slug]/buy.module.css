@@ -21,7 +21,7 @@
   margin-bottom: 6px;
   padding: 3px;
   border-radius: var(--row-r);
-  background: rgba(239, 231, 218, 0.05);
+  background: color-mix(in srgb, var(--ink-e) 5%, transparent); /* either panel's ink (Menu's two tones) */
 }
 .chip {
   flex: 1;
@@ -62,7 +62,7 @@
   min-width: 300px;
   max-height: calc(8 * 48px + 12px);
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain; /* up and down only: a sideways swipe is Safari's Back (globals.css) */
   scrollbar-width: thin;
   scrollbar-color: var(--ink-4) transparent;
   transition: height 0.28s cubic-bezier(0.3, 1.35, 0.5, 1);

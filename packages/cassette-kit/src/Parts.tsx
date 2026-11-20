@@ -151,7 +151,7 @@ export function Tile({
     : undefined;
   const face = (
     <>
-      <span className={s.tileArt} data-shape={shape}>
+      <span className={s.tileArt} data-shape={shape} data-station-glass={shape === "app" ? "" : undefined}>
         {art}
       </span>
       {count && (
@@ -417,7 +417,7 @@ export function StationRow({
     .toUpperCase();
   const body = (
     <>
-      <span className={s.stMark}>{mark ?? <span className={s.stInitials}>{initials}</span>}</span>
+      <span className={s.stMark} data-station-glass="">{mark ?? <span className={s.stInitials}>{initials}</span>}</span>
       <span className={s.stText}>
         <span className={s.stName}>{name}</span>
         <span className={s.stKicker}>{kicker}</span>

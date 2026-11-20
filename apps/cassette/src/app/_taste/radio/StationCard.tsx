@@ -34,12 +34,14 @@ export type StationCardData = Pick<DialStation, "slug" | "name" | "kicker" | "de
 
 export function StationCard({ station, live }: { station: StationCardData; live?: StationLive | null }) {
   const art = live?.art ?? station.image ?? null;
+  // the station's own mark wears the app icon's shape; a show's picture over it keeps a cover's corners
+  const mark = !live?.art;
   const kicker = station.kicker;
   return (
     <article className={styles.card} style={{ ["--station" as string]: station.accent } as CSSProperties}>
       {/* no prefetch: a dial of 60 cards prefetched 60 live station pages, each read from its station (2026-11-15) */}
       <Link href={`/radio/${station.slug}`} className={styles.top} prefetch={false}>
-        <StationArt src={art} name={station.name} size={64} className={styles.art} />
+        <StationArt src={art} name={station.name} size={64} className={mark ? `${styles.art} ${styles.mark}` : styles.art} glass={mark} />
         <span className={styles.titles}>
           <span className={styles.kicker}>{kicker}</span>
           <span className={styles.name}>{station.name}</span>

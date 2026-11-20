@@ -37,6 +37,12 @@ interface AlbumCoverProps {
    */
   loading?: "lazy" | "eager";
   decoding?: "async" | "sync" | "auto";
+  /**
+   * Fill mode: the frame another screen drew this same cover at (its `sizes`, "112px" for the radio dial's On
+   * now card). That size is drawn underneath at once, from the copy the browser already has, and this one
+   * lands over it when it arrives, so a cover just seen on the screen before never starts from blank.
+   */
+  under?: string;
 }
 
 /** Displays album art, or ghost initials if missing or on load error. Every cover it draws is marked `data-lands`:
@@ -53,6 +59,7 @@ export function AlbumCover({
   onError,
   loading,
   decoding,
+  under,
 }: AlbumCoverProps) {
   const [hasError, setHasError] = useState(false);
   useEffect(() => {
@@ -103,6 +110,8 @@ export function AlbumCover({
       <Picture {...common} width={size} height={size} data-lands="" />
     ) : (
       <span className={styles.fillBox}>
+        {/* not marked to land softly: a copy the browser already has shows the moment it's drawn */}
+        {under ? <Picture {...art} sizes={under} fill alt="" aria-hidden="true" className={className || undefined} loading="eager" /> : null}
         <Picture {...common} fill data-lands="" />
       </span>
     );

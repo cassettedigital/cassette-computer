@@ -19,6 +19,7 @@ export function Sleeve({
   sizes,
   className,
   loading = "lazy",
+  under,
 }: {
   src: string | null | undefined;
   title: string;
@@ -27,13 +28,15 @@ export function Sleeve({
   sizes?: string;
   className?: string;
   loading?: "lazy" | "eager";
+  /** The frame the screen before drew this cover at, drawn underneath at once (AlbumCover's `under`). */
+  under?: string;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
   const show = !!src && failed !== src;
   return (
     <span className={className ? `${s.sleeve} ${className}` : s.sleeve} data-small={small || undefined} data-nocover={show ? undefined : ""}>
       {show ? (
-        <AlbumCover bare imageUrl={src} title="" className={s.img} sizes={sizes ?? (small ? "64px" : "(max-width: 760px) 50vw, 320px")} loading={loading} onError={() => setFailed(src)} />
+        <AlbumCover bare imageUrl={src} title="" className={s.img} sizes={sizes ?? (small ? "64px" : "(max-width: 760px) 50vw, 320px")} loading={loading} under={under} onError={() => setFailed(src)} />
       ) : (
         <span className={s.type} aria-hidden="true">
           {small ? title.trim().charAt(0) : title}

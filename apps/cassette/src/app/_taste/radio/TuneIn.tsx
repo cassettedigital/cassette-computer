@@ -1,41 +1,29 @@
 "use client";
 
-/**
- * Tune in: the one key that starts a station, drawn as the kit's play button (the filled pill with the
- * play glyph, as everywhere a page starts music). Its word follows the station: Tune in, then
- * Connecting, then Tuned in with the stop glyph lit in the one orange while it plays (press again to
- * stop), or Try again when the stream would not open.
- */
-
-import { Button } from "@/app/_taste/Button";
-import { Icon } from "@/app/_taste/Icon";
-import b from "@/app/_taste/button.module.css";
+import { PlayButton, type PlayState } from "@/app/_taste/PlayButton";
 import { useRadio } from "@/app/components/radio/RadioProvider";
 
+/**
+ * Tune in: the one key that starts a station. It is the standard play button (PlayButton, data-give="play"), the
+ * one every action row starts music with (the founder, 2026-11-19), so in a row it gives way as theirs does ("Tune
+ * in", then its glyph). Connecting reads as the
+ * button's loading, playing as its Playing with the pause glyph (press again to stop); a stream that would not open
+ * says Try again.
+ */
 export function RadioTuneInKey({ slug }: { slug: string }) {
   const radio = useRadio();
   const current = radio.station?.slug === slug && radio.status !== "idle";
-  const playing = current && radio.status === "playing";
-  const label = !current
-    ? "Tune in"
-    : radio.status === "connecting"
-      ? "Connecting"
-      : radio.status === "error"
-        ? "Try again"
-        : "Tuned in";
+  const state: PlayState = !current || radio.status === "error" ? "idle" : radio.status === "connecting" ? "loading" : radio.status === "playing" ? "playing" : "paused";
   const onClick = () => {
     if (current && radio.status === "error") radio.play(slug);
     else radio.toggle(slug);
   };
   return (
-    <Button
-      look="filled"
-      icon={<Icon name={playing ? "stop" : "play"} size={14} />}
-      data-live={playing || undefined}
+    <PlayButton
+      state={state}
+      verb={current && radio.status === "error" ? "Try again" : "Tune in"}
       aria-pressed={current}
       onClick={onClick}
-    >
-      <span className={b.one}>{label}</span>
-    </Button>
+    />
   );
 }

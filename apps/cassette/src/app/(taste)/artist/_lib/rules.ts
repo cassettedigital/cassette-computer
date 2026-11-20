@@ -403,6 +403,26 @@ export function aboutReissue(e: Pick<PressEntry, "quote" | "headline" | "url">):
   return REISSUE.test([e.quote ?? "", e.headline ?? "", pathWords(e.url)].join(" "));
 }
 
+/** A line that stops mid-thought: on a comma, colon, semicolon, dash or ellipsis, or on a word that needs more after
+ *  it ("and", "the", "with"). */
+const TRAILING_MARK = /[,;:\u2013\u2014-]["'\u201d\u2019)\]]?$/;
+const ELLIPSIS = /(\.\.\.|\u2026)["'\u201d\u2019)\]]?$/;
+const DANGLING_WORD = /\b(and|or|but|nor|so|yet|the|a|an|of|to|with|for|in|on|at|by|from|as|than|that|which|who|whose|whom|its|their|his|her|our|my|your|is|are|was|were|be|been|being|has|have|had|will|would|could|should|not|into|onto|upon|about|over|under|between|while|when|where|because|if|though|although)$/i;
+
+/**
+ * Whether a quote stops mid-thought. A line needs no full stop of its own (the press editor clips a quote at a clause
+ * boundary when the sentence runs long, and short capsule reviews, NME's among them, often print none), but it may
+ * not trail off: "it's a summer essential" is a thought, "an album that sounds like the future and" is not. Short
+ * fragments ("Enough bite to make it on their own") are already held back by LINE_MIN. The founder, 2026-11-17:
+ * Sylvan Esso's self-titled showed no line because its two best cards ended without a full stop.
+ */
+export function unfinished(q: string): boolean {
+  const t = q.trim();
+  if (ELLIPSIS.test(t)) return true;
+  if (SENTENCE_END.test(t)) return false;
+  return TRAILING_MARK.test(t) || DANGLING_WORD.test(t.replace(/["'\u201d\u2019)\]]+$/, ""));
+}
+
 /** Why a card cannot be a record's line on the artist page, one name per condition lineFor holds a card to. */
 export type LineBlocker =
   | "no-quote"
@@ -431,7 +451,7 @@ export const LINE_BLOCKERS: readonly LineBlocker[] = [
 ];
 
 /**
- * Every condition a card fails as a record's line, empty when it passes: a whole sentence of 60 to 240 characters,
+ * Every condition a card fails as a record's line, empty when it passes: a finished thought of 60 to 240 characters,
  * read by the clarity judge as standing alone or with the artist's name ("anywhere" or "artist"), not the artist's
  * own words, a reader review or a dissent, from an outlet we know, and not about a reissue. lineFor takes the first
  * card with none; the audit (scripts/audit-artist-press-line.ts, BUG-733) counts them to see which condition drops
@@ -444,7 +464,7 @@ export function lineBlockers(e: PressEntry): LineBlocker[] {
   else {
     if (q.length < LINE_MIN) out.push("too-short");
     if (q.length > LINE_MAX) out.push("too-long");
-    if (!SENTENCE_END.test(q)) out.push("no-sentence-end");
+    if (unfinished(q)) out.push("no-sentence-end");
   }
   if (e.clarity !== "anywhere" && e.clarity !== "artist") out.push("clarity");
   if (e.voice) out.push("voice");
@@ -457,15 +477,18 @@ export function lineBlockers(e: PressEntry): LineBlocker[] {
 
 /**
  * The one writer's line an open record carries (the shell's P12, tightened): from that album's own
- * cards in the editor's stored order, the first that reads cleanly on an artist page ("anywhere" or
+ * cards in the editor's stored order (then, when none passes, its quotes behind Read all), the first that reads cleanly on an artist page ("anywhere" or
  * "artist", not contested, which buildPress has already enforced), is not the artist's own words, a
- * reader review or a dissent, comes from a known outlet, is a whole sentence of 60 to 240 characters
- * (a fragment like "Enough bite to make it on their own" is not a thought), and is not about a reissue.
+ * reader review or a dissent, comes from a known outlet, is a finished thought of 60 to 240 characters
+ * (a fragment like "Enough bite to make it on their own" is not one, nor a line that trails off), and is not about a reissue.
  * Null when none passes: the record shows its cover, its size and its links, and no empty quote space.
  */
 export function lineFor(set: Pick<PressSet, "top" | "more">): PressEntry | null {
-  const cards = [...set.top, ...set.more].filter((e) => e.tier === "card").sort((a, b) => a.order - b.order);
-  return cards.find((e) => lineBlockers(e).length === 0) ?? null;
+  const all = [...set.top, ...set.more];
+  const tier = (t: "card" | "reveal") => all.filter((e) => e.tier === t).sort((a, b) => a.order - b.order);
+  // the page's own cards first; when none passes, one of the quotes behind Read all (the founder, 2026-11-17:
+  // Sylvan Esso's self-titled had a clean whole sentence there and no line on the artist page)
+  return [...tier("card"), ...tier("reveal")].find((e) => lineBlockers(e).length === 0) ?? null;
 }
 
 /** What the blockers add up to over a set of records' presses: the evidence for which condition to look at. */
@@ -494,7 +517,7 @@ export function tallyLineBlockers(sets: Array<Pick<PressSet, "top" | "more">>): 
     if (cards.length === 0) continue;
     t.recordsWithCards++;
     const blockers = cards.map(lineBlockers);
-    const hasLine = blockers.some((b) => b.length === 0);
+    const hasLine = lineFor(set) !== null;
     if (hasLine) t.recordsWithLine++;
     const gained = new Set<LineBlocker>();
     for (const b of blockers) {

@@ -12,7 +12,10 @@ import { IMAGE_HOST } from "@discovery/cassette-kit/images";
 import { siteUrl } from "@/lib/urls";
 import { ServiceWorkerRegister } from "@/app/components/ServiceWorkerRegister";
 import { ReportProblem } from "@/app/components/ReportProblem";
+import { FeedbackCorner } from "@/app/components/FeedbackCorner";
 import { AppSurface } from "@/app/components/AppSurface";
+import { InPageLinks } from "@/app/components/InPageLinks";
+import { ROW_FIT_SCRIPT } from "@/app/_taste/row-fit";
 import "./globals.css";
 
 /**
@@ -24,6 +27,17 @@ const display = Barlow_Condensed({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+});
+
+/* the display face's leaning cut (800 italic), a headliner where a page wants one (a station's own band, the
+   founder 2026-11-19). Not preloaded: only a page that sets it fetches it. */
+const displayItalic = Barlow_Condensed({
+  weight: ["800"],
+  style: ["italic"],
+  subsets: ["latin"],
+  variable: "--font-display-italic",
+  display: "swap",
+  preload: false,
 });
 
 const mono = DM_Mono({
@@ -48,7 +62,8 @@ export const metadata: Metadata = {
   // Every page passes a bare title and this adds the site's name, one way everywhere. A layout that sets
   // a plain string title drops the template for its pages, so a layout names itself with { default }.
   title: { default: "Cassette", template: "%s · Cassette" },
-  description: "Discover music you actually want to own.",
+  // the homepage's line under the headline (founder, 2026-11-18), for every page without a line of its own
+  description: "Music discovery and playback for anyone who wants to own their music again.",
   // The site's share picture (opengraph-image.tsx) for every page without one of its own; a page with a
   // card of its own goes through shareCard too, so it keeps the picture.
   openGraph: shareCard({ type: "website" }),
@@ -109,7 +124,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
   return (
     // the scripts below set data-theme and data-shell on <html> before React starts: expected, not a mismatch
-    <html lang="en" className={`${display.variable} ${mono.variable} ${serif.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${displayItalic.variable} ${mono.variable} ${serif.variable}`} suppressHydrationWarning>
       <body>
         {/* Desktop app cold-start: the external stylesheet (globals.css, which
             sets body{background}) needs a round trip to fetch + parse before it
@@ -129,11 +144,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             matches no skin block and falls back to Classic — so new skins need
             no change here. The light-or-dark choice ("cs-paper", light or dark;
             Auto stores nothing to stamp) goes on as data-paper the same way, ahead
-            of the iPhone app's script below, whose dark hold wins. */}
+            of the iPhone app's script below, whose dark hold wins. Whether this browser was signed in last
+            time ("cs-who", in or out, kept by the Masthead once the session answers) goes on as data-who the
+            same way, so the masthead draws for the right person from its first frame instead of showing Save a
+            seat until the session answers (the founder, 2026-11-17: "I always see a flash of the 'save a seat'
+            button"). */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'try{var h=document.documentElement,t=localStorage.getItem("cs-theme"),p=localStorage.getItem("cs-paper");if(t&&t!=="classic")h.setAttribute("data-theme",t);if(p==="light"||p==="dark")h.setAttribute("data-paper",p);}catch(e){}',
+              'try{var h=document.documentElement,t=localStorage.getItem("cs-theme"),p=localStorage.getItem("cs-paper"),w=localStorage.getItem("cs-who");if(t&&t!=="classic")h.setAttribute("data-theme",t);if(p==="light"||p==="dark")h.setAttribute("data-paper",p);if(w==="in"||w==="out")h.setAttribute("data-who",w);}catch(e){}',
           }}
         />
         {/* Covers land softly (the founder, 2026-11-11: "a gentle and timed fade in"): a cover marked data-lands
@@ -147,6 +166,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               'try{document.addEventListener("load",function(e){var t=e.target;if(t&&t.tagName==="IMG"&&t.hasAttribute("data-lands"))t.setAttribute("data-landed","")},true);document.documentElement.setAttribute("data-pics-land","")}catch(e){}',
           }}
         />
+        {/* A row of buttons fits itself on one line as the page is read (_taste/row-fit.ts): each row
+            calls this from inside itself, so its buttons are drawn at their step from the first frame. */}
+        <script dangerouslySetInnerHTML={{ __html: ROW_FIT_SCRIPT }} />
         {/* Inside the iPhone app (lib/app-surface): the app is the frame, so the
             site's menus and footer step aside before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: APP_SURFACE_SCRIPT }} />
@@ -180,10 +202,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Every picture comes from the image ladder's host (docs/reference/CASSETTE_IMAGES.md): open that connection early. */}
         <link rel="preconnect" href={IMAGE_HOST} />
         <link rel="dns-prefetch" href={IMAGE_HOST} />
-        <Providers initialSession={desktopSession} tokenMode={desktopMode}>{children}</Providers>
+        <Providers initialSession={desktopSession} tokenMode={desktopMode}>
+          {children}
+          {/* The Feedback key in a corner of every page, for signed-in people (so inside Providers, which knows
+              who is signed in); not in the desktop app's window, whose bottom left is its account menu over the
+              player bar. */}
+          {desktopMode ? null : <FeedbackCorner />}
+        </Providers>
         <ServiceWorkerRegister />
         <ReportProblem />
         <AppSurface />
+        {/* a jump within the page scrolls there without adding a step to Back that the router ignores */}
+        <InPageLinks />
         {/* Vercel Web Analytics is the website's. The desktop app serves its own pages and has no /_vercel/insights script, so loading it there only logs a 404 on every page. */}
         {desktopMode ? null : <Analytics />}
       </body>

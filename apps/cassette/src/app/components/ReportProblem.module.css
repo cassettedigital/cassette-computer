@@ -1,6 +1,6 @@
-/* The note to the founder (ReportProblem.tsx), on the player kit's Dialog. Opened from anywhere by the
-   `cassette:report-problem` event: the account window's Invite friends, the help dock. A screenshot is OPTIONAL
-   and picked by the person (no auto-capture). A note always sends (it ignores the diagnostics opt-out). */
+/* The note to the founder (ReportProblem.tsx), on the player kit's Dialog, dark on every paper. Opened from anywhere
+   through the one Feedback door (feedback-door.ts). A screenshot is OPTIONAL and picked by the person (no
+   auto-capture). A note always sends (it ignores the diagnostics opt-out). */
 
 /* the kit's tokens reach the dialog without the wrapper taking a box of its own */
 .tokens {
@@ -12,16 +12,6 @@
   gap: 18px;
 }
 
-.field {
-  display: grid;
-  gap: 6px;
-}
-.label {
-  font: var(--pk-t-section-label);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--pk-text-tertiary);
-}
 /* the kit's field, several lines tall: its raised fill and hairline, its corner a card's rather than a pill's */
 .area {
   box-sizing: border-box;

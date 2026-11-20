@@ -572,7 +572,7 @@ func (l *mainLink) fetchTo(endpoint string, q url.Values, dst string, want int64
 		err = cerr
 	}
 	if err == nil {
-		err = os.Rename(tmp, dst)
+		err = replaceFile(tmp, dst) // a song playing here may be the one being replaced (BUG-913)
 	}
 	if err != nil {
 		_ = os.Remove(tmp)
@@ -1134,7 +1134,7 @@ func satEnsureCover(folder string, link *mainLink, m *satManifest, j satJob, ver
 	if prev, ok := m.Covers[dir]; ok && prev.File != file {
 		_ = os.Remove(satPath(folder, prev.File))
 	}
-	if err := os.Rename(satPath(folder, tmpRel), satPath(folder, file)); err != nil {
+	if err := replaceFile(satPath(folder, tmpRel), satPath(folder, file)); err != nil {
 		_ = os.Remove(satPath(folder, tmpRel))
 		return
 	}

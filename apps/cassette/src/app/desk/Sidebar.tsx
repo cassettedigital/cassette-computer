@@ -34,6 +34,7 @@ import { useAside, useDesk, useDeskAccount, type Look } from "./DeskShell";
 import { useSavedStations } from "./saved-stations";
 import { useStationMenu } from "./station-menu";
 import { signOut } from "@/lib/sign-out";
+import { feedbackMenuItem } from "@/app/components/feedback-door";
 import { AvatarDisc } from "@/app/components/AvatarDisc";
 import { useDesktopUpdate } from "@/app/components/UpdatePill";
 import type { DeskAccount } from "./DeskShell";
@@ -118,7 +119,8 @@ function LibraryRow({ i, slim, kindWord, onMenu }: { i: Item; slim: boolean; kin
 /**
  * The account, beside the search key: the avatar opens the desk's own menu (the kit's, as every menu
  * here is, kept inside the window), not the old library's pop-up. The same places as every rail's
- * account menu: the other workspaces you can go to, then the desk's settings, then signing out. The artist
+ * account menu: the other workspaces you can go to, then the desk's settings, then Feedback (the one door every
+ * menu shares, components/feedback-door) and signing out. The artist
  * studio lives on the website, so it opens in the browser rather than in a window that can't draw it.
  */
 function AccountKey({ account }: { account: DeskAccount & { studioLabel?: string } }) {
@@ -138,6 +140,7 @@ function AccountKey({ account }: { account: DeskAccount & { studioLabel?: string
     { label: "Purchases", onSelect: () => router.push(`${DESK}/settings/purchases`) },
     { label: "Hidden", onSelect: () => router.push(`${DESK}/settings/hidden`) },
     "separator",
+    feedbackMenuItem(),
     { label: "Sign out", onSelect: signOut },
   ];
   return (

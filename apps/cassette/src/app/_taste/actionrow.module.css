@@ -1,0 +1,100 @@
+/*
+ * A row of buttons (ActionRow.tsx) and the words its buttons give up (Say.tsx). The row is one line at
+ * every width; row-fit.ts picks the step it is on and says it in the row's attributes, and these rules
+ * draw each button for that step:
+ *   data-play   whole | short | glyph   the play button (data-give="play"): "Preview album", "Preview", the glyph
+ *   data-names  whole | short           a name with a short form (data-give="name"): "Buy on Barnes & Noble", "Buy"
+ *   data-words  whole | glyph           a word beside a glyph (data-give="word"): "+ Follow", the plus
+ *   data-squeeze                        nothing fits: the named buttons shrink, their words cut short
+ */
+
+.row {
+  position: relative; /* a menu in the row (Buy) hangs from the row */
+  /* 2px of room above and below the buttons, the row drawn 2px higher and that height given back underneath, so
+     nothing on the page moves (a page's own margin-top on the row stays its own). Safari on a Retina screen cut the
+     pills' bottom edge off flat without it; the founder confirmed this was the fix on 2026-11-19. The cause, somewhere
+     in WebKit's compositor, was never pinned down: neither Chrome nor this Mac's WebKit drew the cut. */
+  top: -2px;
+  padding-block: 2px;
+  margin-bottom: -4px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 12px;
+  /* the row's width is the page's to give, never its buttons' to ask for: the whole of the box it sits in,
+     and none of it asked for by the buttons (without that, a column sized by its content, Discover's top
+     pick, would widen past the screen to hold every button whole) */
+  width: 100%;
+  min-width: 0;
+  contain: inline-size;
+}
+/* each button keeps its natural width, so a row too narrow for them shows as overflow, which the row
+   measures and answers with the next step, instead of squeezing a name into an ellipsis */
+.row > * {
+  flex: none;
+  min-width: 0;
+}
+
+/* a button's words: one line, cut short only when squeezed; the whole name unless the row says otherwise */
+.say {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.short {
+  display: none;
+}
+.row[data-play="short"] [data-give="play"] .whole,
+.row[data-names="short"] [data-give="name"] .whole {
+  display: none;
+}
+.row[data-play="short"] [data-give="play"] .short,
+.row[data-names="short"] [data-give="name"] .short {
+  display: inline;
+}
+
+/* a button down to its glyph: a circle the buttons' height, the glyph in its middle (its words are gone, so
+   there is no gap to close). A step never sets anything a button animates, the gap least of all (the Button
+   springs it): the row measures itself the moment it changes step, so a size still moving reads as the wrong
+   answer, the next frame measures again, and the row flipped "Preview" to its glyph and back on every frame
+   at one width (the album page, 2026-11-18). actionrow-steps.test.ts holds the steps to that */
+.row[data-play="glyph"] [data-give="play"],
+.row[data-words="glyph"] [data-give="word"] {
+  width: var(--control-h);
+  padding: 0;
+}
+.row[data-play="glyph"] [data-give="play"] .say,
+.row[data-words="glyph"] [data-give="word"] .say {
+  display: none;
+}
+
+/* the last resort, a window too narrow for even the shortest names: those buttons shrink, never wrap */
+.row[data-squeeze] > :is([data-give="play"], [data-give="name"], :has([data-give="name"])) {
+  flex-shrink: 1;
+}
+
+/* on a phone the first button with words takes the room the row leaves: the first, or Buy after a play
+   button down to its glyph (a glyph keeps its circle). A centred row (data-centred, under a page top that is
+   centred there) keeps every button at its own width and sits in the middle instead */
+@container taste (width < 760px) {
+  .row:not([data-centred]) > :first-child:not([data-give="play"], [data-give="word"]),
+  .row:not([data-centred], [data-play="glyph"]) > [data-give="play"]:first-child,
+  .row:not([data-centred], [data-words="glyph"]) > [data-give="word"]:first-child,
+  .row[data-play="glyph"]:not([data-centred]) > [data-give="play"]:first-child + :has([data-give="name"]),
+  /* the play glyph, then a word down to its glyph (Save's bookmark, Follow's plus): the named button after them is
+     the first with words, so it takes the room (the radio station header, 2026-11-19) */
+  .row[data-play="glyph"][data-words="glyph"]:not([data-centred]) > [data-give="play"]:first-child + [data-give="word"] + :has([data-give="name"]) {
+    flex-grow: 1;
+  }
+  /* Buy taking the room: its split button fills its box and the main half takes the room, its words centred */
+  .row:not([data-centred]) > * > :has(> [data-give="name"]) {
+    width: 100%;
+  }
+  .row:not([data-centred]) [data-give="name"] {
+    flex-grow: 1;
+    justify-content: center;
+  }
+  .row[data-centred] {
+    justify-content: center;
+  }
+}

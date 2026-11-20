@@ -20,7 +20,8 @@
 /* ── Radio ── */
 .onAirGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  /* never wider than the column (a phone's is under 330) */
+  grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
   gap: 12px;
   margin: 0;
   padding: 0;
@@ -69,6 +70,9 @@
   opacity: 1;
   scale: 1;
 }
+/* the station's mark fills the card's picture square as a cover does, square inside the card (the card's own
+   corners round it), and takes the app icon's shape only as it settles into the corner as a badge (the founder,
+   2026-11-16: the cards read less rounded than the stations inside them) */
 .onAirMark {
   position: absolute;
   top: 0;
@@ -76,13 +80,14 @@
   width: 112px;
   height: 112px;
   overflow: hidden;
-  border-radius: var(--pk-shape-station);
+  border-radius: 0;
   box-shadow: 0 0 0 0 var(--pk-surface-raised);
   transition:
     top 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.2s,
     left 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.2s,
     width 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.2s,
     height 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.2s,
+    border-radius 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.2s,
     box-shadow 0.5s ease 0.7s;
 }
 .onAirArt[data-worn] .onAirMark {
@@ -90,6 +95,7 @@
   left: 8px;
   width: 36px;
   height: 36px;
+  border-radius: var(--pk-shape-station);
   box-shadow:
     0 0 0 2px var(--pk-surface-raised),
     0 4px 10px rgb(0 0 0 / 0.28);
@@ -117,8 +123,9 @@
   display: grid;
   gap: 5px;
   min-width: 0;
-  /* a key: a click looks into the station */
+  /* a key (or, on the website, a link to the station's page): a click looks into the station */
   align-self: stretch;
+  text-decoration: none;
   align-content: center;
   padding: 0;
   border: 0;
@@ -196,11 +203,12 @@
   color: var(--pk-text-primary);
 }
 .dialSection {
-  scroll-margin-top: 110px;
+  /* a jump lands clear of the window's top and the sticky rail (the website's masthead sets its own) */
+  scroll-margin-top: var(--dial-jump, 110px);
 }
 .dialColumns {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
   column-gap: 12px;
   margin: 0;
   padding: 0;

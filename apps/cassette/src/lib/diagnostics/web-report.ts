@@ -1,4 +1,6 @@
 import { isCrawlerUserAgent } from "./crawler";
+import { nowPlayingForReport, type NowPlayingNote } from "./now-playing";
+import { loadPaper } from "@/lib/appearance";
 /**
  * Spine-only web error reporting (Option A: one backbone, no Sentry).
  *
@@ -320,6 +322,59 @@ export function reportWebError(error: unknown, opts: WebReportOptions = {}): voi
   }
 }
 
+/** What a note's writer could see, as the note's context carries it (founder, 2026-11-19). Pure. */
+export function noteSurroundings(raw: {
+  /** the device's own light or dark (prefers-color-scheme) */
+  deviceDark: boolean;
+  /** the person's choice in Appearance on this device: auto (follow the device), light or dark */
+  chosenPaper: "auto" | "light" | "dark";
+  /** html[data-paper]: the paper the page holds, which a review link or the iPhone app's dark hold can set too */
+  pagePaper: string | null;
+  /** html[data-theme]: the look picked in Appearance, absent for the default */
+  look: string | null;
+  width: number;
+  height: number;
+  screenWidth: number;
+  screenHeight: number;
+  pixelRatio: number;
+  playing: NowPlayingNote[];
+}): Record<string, unknown> {
+  const lightDark: Record<string, string> = { device: raw.deviceDark ? "dark" : "light", chosen: raw.chosenPaper };
+  const held = raw.pagePaper === "light" || raw.pagePaper === "dark" ? raw.pagePaper : null;
+  if (held && held !== raw.chosenPaper) lightDark.page = held;
+  return {
+    lightDark,
+    look: raw.look || "default",
+    window: {
+      size: `${Math.round(raw.width)}x${Math.round(raw.height)}`,
+      screen: `${Math.round(raw.screenWidth)}x${Math.round(raw.screenHeight)}`,
+      pixelRatio: Math.round(raw.pixelRatio * 100) / 100,
+    },
+    playing: raw.playing.length ? raw.playing : "nothing",
+  };
+}
+
+/** Read the surroundings off the page; an empty set if any of it can't be read, so a note never waits on them. */
+function readSurroundings(): Record<string, unknown> {
+  try {
+    const html = document.documentElement;
+    return noteSurroundings({
+      deviceDark: window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
+      chosenPaper: loadPaper(),
+      pagePaper: html.getAttribute("data-paper"),
+      look: html.getAttribute("data-theme"),
+      width: window.innerWidth,
+      height: window.innerHeight,
+      screenWidth: window.screen?.width ?? 0,
+      screenHeight: window.screen?.height ?? 0,
+      pixelRatio: window.devicePixelRatio || 1,
+      playing: nowPlayingForReport(),
+    });
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Submit MANUAL user feedback to the SAME spine, as report_type='user_feedback'.
  *
@@ -359,9 +414,11 @@ export async function submitWebFeedback(userMessage: string, opts: FeedbackOptio
       severity: "info",
       title: message.slice(0, 140),
       user_message: message,
+      // where they were and what they could see: the page, light or dark, the window, what was playing
       context: {
         url: window.location.href,
         referrer: document.referrer || undefined,
+        ...readSurroundings(),
       },
       // No crash_summary: feedback is not a crash.
       consent: {

@@ -17,6 +17,7 @@
  *                 on an answer and change in place when it comes
  *   ShelfSection  a shelf's heading with paddles at its end (a mouse has no swipe), disabled at the ends;
  *                 whole tiles only, as many as the width holds, a paddle press a page of them
+ *                 (with `flip`, a shelf of versions of itself: a paddle turns to the next version, one row of each)
  *   QuickCard     a compact card: small art, the name and one line, a play glyph at its end under the
  *                 pointer. Many at once, to get back into something in one click.
  *   Volume        the player's own loudness, a slim line between a quiet and a loud speaker (a Mac's
@@ -378,11 +379,27 @@ export function SongTable({
 
 /* ── a shelf with paddles ── */
 
+/** The tiles in a shelf's view come in one after another (kit.module.css .shelf > li[data-in]): each takes its
+ *  place in the order as --in, and the mark is taken off and put back so a second turn plays it again. */
+function cascade(el: HTMLElement) {
+  const view = el.getBoundingClientRect();
+  let i = 0;
+  for (const li of Array.from(el.children) as HTMLElement[]) {
+    li.removeAttribute("data-in");
+    const r = li.getBoundingClientRect();
+    if (r.width === 0 || r.right <= view.left + 1 || r.left >= view.right - 1) continue;
+    li.style.setProperty("--in", String(i++));
+    void li.offsetWidth;
+    li.setAttribute("data-in", "");
+  }
+}
+
 export function ShelfSection({
   shout,
   answer,
   href,
   head,
+  flip,
   children,
 }: {
   shout: string;
@@ -391,14 +408,34 @@ export function ShelfSection({
   /** A heading of the host's own in place of the kit's (Discover's lanes, with their play key). The
       shout still names the paddles and the list for a screen reader. */
   head?: ReactNode;
+  /** A shelf of several versions of itself (Discover's: one genre heard several ways): the paddles turn to the
+      version before or after instead of paging along the tiles, and a computer shows one whole row of each (a
+      phone still swipes it). `at` is the version on show, so a turn starts its row at the beginning. */
+  flip?: { at: number; back: () => void; next: () => void; backLabel: string; nextLabel: string };
   children: ReactNode;
 }) {
   const list = useRef<HTMLOListElement>(null);
   const [ends, setEnds] = useState({ start: true, end: true });
+  // a new version starts at its beginning and comes in as a page does (never on the shelf's first drawing)
+  const drawn = useRef(false);
   useEffect(() => {
     const el = list.current;
     if (!el) return;
-    const read = () => setEnds({ start: el.scrollLeft <= 2, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 2 });
+    el.scrollTo({ left: 0 });
+    if (drawn.current) cascade(el);
+    drawn.current = true;
+  }, [flip?.at]);
+  // the paddles' ends, set only when they change (a fresh object every read would draw the shelf again for nothing)
+  const readEnds = useRef<() => void>(() => {});
+  useEffect(() => {
+    const el = list.current;
+    if (!el) return;
+    const read = () => {
+      const start = el.scrollLeft <= 2;
+      const end = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2;
+      setEnds((was) => (was.start === start && was.end === end ? was : { start, end }));
+    };
+    readEnds.current = read;
     read();
     el.addEventListener("scroll", read, { passive: true });
     const ro = new ResizeObserver(read);
@@ -408,20 +445,66 @@ export function ShelfSection({
       ro.disconnect();
     };
   }, []);
-  // a page is the tiles in view: the shelf shows whole tiles, so the next page starts on a whole one
+  // a page is the tiles in view: the shelf shows whole tiles, so the next page starts on a whole one. It turns
+  // at once and the new tiles come in one after another, never a slide (the founder, 2026-11-18: every shelf
+  // pages the way a shelf of versions turns, "cascade/fade in, rather than slide")
   const page = (dir: 1 | -1) => {
     const el = list.current;
     if (!el) return;
     const cs = getComputedStyle(el);
     const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    el.scrollBy({ left: dir * (inner + parseFloat(cs.columnGap || "0")), behavior: "smooth" });
+    el.scrollBy({ left: dir * (inner + parseFloat(cs.columnGap || "0")), behavior: "instant" });
+    cascade(el);
   };
+  // whole pages only, on a computer: fewer than two pages' worth shows one page and no paddles; more shows as many
+  // whole pages as it fills. A phone swipes, so it keeps them all. Read again whenever the width (so the columns) or
+  // the tiles change.
+  // (only when the width or the tiles change: a ResizeObserver and a MutationObserver, never every drawing)
+  const isFlip = !!flip;
+  useLayoutEffect(() => {
+    const el = list.current;
+    if (!el || isFlip) return;
+    let cols = -1;
+    let count = -1;
+    const fit = () => {
+      const c = Number(getComputedStyle(el).getPropertyValue("--cols")) || 0;
+      const kids = Array.from(el.children) as HTMLElement[];
+      if (c === cols && kids.length === count) return;
+      cols = c;
+      count = kids.length;
+      const n = kids.length;
+      const pointer = window.matchMedia("(hover: hover)").matches;
+      const keep = !pointer || !c || n <= c ? n : n < 2 * c ? c : Math.floor(n / c) * c;
+      kids.forEach((li, i) => {
+        if (li.hasAttribute("data-cull") !== i >= keep) li.toggleAttribute("data-cull", i >= keep);
+      });
+      readEnds.current();
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    const mo = new MutationObserver(fit);
+    mo.observe(el, { childList: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, [isFlip]);
   const still = ends.start && ends.end;
   return (
-    <section className={s.shelfSection}>
+    <section className={s.shelfSection} data-flip={flip ? "" : undefined}>
       <div className={s.shelfHead}>
         {head ?? <Heading shout={shout} answer={answer} href={href} />}
-        {!still && (
+        {flip ? (
+          <span className={s.paddles}>
+            <button type="button" className={s.paddle} aria-label={flip.backLabel} onClick={flip.back}>
+              <Glyph name="chevronRight" size={13} className={s.paddleBack} />
+            </button>
+            <button type="button" className={s.paddle} aria-label={flip.nextLabel} onClick={flip.next}>
+              <Glyph name="chevronRight" size={13} />
+            </button>
+          </span>
+        ) : !still && (
           <span className={s.paddles}>
             <button type="button" className={s.paddle} aria-label={`Back through ${shout}`} disabled={ends.start} onClick={() => page(-1)}>
               <Glyph name="chevronRight" size={13} className={s.paddleBack} />

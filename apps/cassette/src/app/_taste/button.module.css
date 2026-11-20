@@ -31,8 +31,17 @@
     gap 0.25s var(--spring);
   -webkit-tap-highlight-color: transparent;
 }
+/* a glyph in a button is sized to the button's letters, whatever size its caller drew it at: a leading glyph (play,
+   save's bookmark, follow's plus) a little over the caps, a trailing one (the out arrow, a menu's chevron) at the
+   letters' own size (the founder, 2026-11-19: the glyphs read far too small in the pills) */
 .btn > svg {
   flex: none;
+  width: 1.25em;
+  height: 1.25em;
+}
+.btn > svg:last-child:not(:first-child) {
+  width: 1em;
+  height: 1em;
 }
 /* a trailing arrow's gap opens on the spring */
 .btn:has(> svg:last-child):hover {
@@ -41,6 +50,26 @@
 .btn:focus-visible {
   outline: none;
   box-shadow: var(--ring);
+}
+/* round: the glyph alone, a circle at the button's height, the same size whatever glyph it shows */
+.btn.round {
+  flex: none;
+  width: var(--control-h);
+  padding: 0;
+}
+/* a button waiting on something (aria-busy) turns its glyph, the loading ring */
+.btn[aria-busy="true"] > svg:first-child {
+  animation: btn-turn 0.9s linear infinite;
+}
+@keyframes btn-turn {
+  to {
+    rotate: 1turn;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn[aria-busy="true"] > svg:first-child {
+    animation-duration: 2.4s;
+  }
 }
 
 /* filled: the stock's primary fill (the ink on the dark stock, an espresso on the light one: one primary
@@ -147,4 +176,44 @@
 .inline:focus-visible {
   outline: none;
   box-shadow: var(--ring);
+}
+
+/* an inline link that leaves the site (`out`): underlined only when pointed at, and the out arrow slides in beside it
+   then, so it's plain the link goes elsewhere before it's followed */
+.inline.out {
+  text-decoration-color: transparent;
+}
+.inline.out:hover,
+.inline.out:focus-visible {
+  text-decoration-color: currentColor;
+}
+/* it grows by its max-width, never its width: a row of buttons (ActionRow) sets width in its steps, and nothing a
+   row's step sets may animate (actionrow-steps.test.ts) */
+.outIcon {
+  display: inline-block;
+  max-width: 0;
+  height: 0.8em;
+  margin-left: 0;
+  vertical-align: baseline;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.25s var(--spring),
+    margin-left 0.25s var(--spring),
+    opacity 0.2s;
+}
+.outIcon > svg {
+  width: 0.8em;
+  height: 0.8em;
+}
+.inline.out:hover .outIcon,
+.inline.out:focus-visible .outIcon {
+  max-width: 0.8em;
+  margin-left: 0.2em;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .outIcon {
+    transition: none;
+  }
 }

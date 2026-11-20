@@ -8,7 +8,10 @@
  * face in the masthead's account key when no one is signed in; and share, an arrow out of a tray, for
  * sending a song. The masthead's places and its menu: compass (Discover), radio (Radio), menu (the two
  * lines on the menu key), book (Journal), signpost (Guides), how (How it works, play in a ring), help,
- * devices (Apps), gear (Settings) and leave (Sign out, an arrow out of a door).
+ * devices (Apps), gear (Settings) and leave (Sign out, an arrow out of a door); and note, a speech bubble, for
+ * Feedback wherever its door is (components/feedback-door); sound and muted, a speaker with its waves or crossed out, for
+ * a live stream's mute (the radio night's event page); list, three lines with their dots, for a schedule; and
+ * loading, three quarters of a ring, which a button turns while it waits (button.module.css, aria-busy).
  * Illustrations (the PSA's wireframes, No catch's device drawings, the computer and the desktop app) are
  * pictures, not glyphs, and keep their own drawing.
  */
@@ -48,7 +51,12 @@ export type IconName =
   | "help"
   | "devices"
   | "gear"
-  | "leave";
+  | "leave"
+  | "note"
+  | "sound"
+  | "muted"
+  | "list"
+  | "loading";
 
 const line = {
   fill: "none",
@@ -58,7 +66,7 @@ const line = {
   strokeLinejoin: "round" as const,
 };
 
-export function Icon({ name, size = 16, className }: { name: IconName; size?: number; className?: string }) {
+export function Icon({ name, size = 16, className, filled }: { name: IconName; size?: number; className?: string; filled?: boolean }) {
   let body;
   switch (name) {
     case "arrow":
@@ -154,7 +162,8 @@ export function Icon({ name, size = 16, className }: { name: IconName; size?: nu
       );
       break;
     case "bookmark":
-      body = <path d="M18 21 12 17 6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5Z" {...line} />;
+      // filled when the thing is kept (a saved station), its outline otherwise
+      body = <path d="M18 21 12 17 6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5Z" {...line} fill={filled ? "currentColor" : "none"} />;
       break;
     case "bag":
       body = (
@@ -245,6 +254,21 @@ export function Icon({ name, size = 16, className }: { name: IconName; size?: nu
       break;
     case "leave":
       body = <path d="M14 3.5h4.5a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H14M9.5 16.5 14 12 9.5 7.5M14 12H3.5" {...line} />;
+      break;
+    case "note":
+      body = <path d="M12 3a9 9 0 1 1-4.2 16.96L3 21l1.1-4.6A9 9 0 0 1 12 3z" {...line} />;
+      break;
+    case "sound":
+      body = <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.3a8 8 0 0 1 0 11.4" {...line} />;
+      break;
+    case "muted":
+      body = <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9.5l5 5M20.5 9.5l-5 5" {...line} />;
+      break;
+    case "list":
+      body = <path d="M9 7h11M9 12h11M9 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01" {...line} />;
+      break;
+    case "loading":
+      body = <path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5" {...line} />;
       break;
   }
   return (

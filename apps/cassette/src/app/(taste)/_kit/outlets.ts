@@ -71,6 +71,12 @@ export const HOST_LABELS: Record<string, string> = {
 export const PRINT_OUTLETS = [
   "Q", "Mojo", "Select", "Melody Maker", "Record Collector", "Classic Rock", "Smash Hits", "Music Week", "Vox", "Kerrang!",
   "The Rolling Stone Album Guide", "Encyclopedia of Popular Music",
+  // the music press and papers Rock's Backpages articles first ran in (2026-11-18, read back by name-press-pages.ts)
+  "Sounds", "Creem", "Record Mirror", "Blues & Soul", "Phonograph Record", "Musician", "Let It Rock", "ZigZag", "Circus",
+  "Alternative Press", "Trouser Press", "High Fidelity", "Black Music", "Crawdaddy", "DownBeat", "New York Rocker", "Muzik",
+  "Hit Parader", "Music Connection", "BAM", "The Boston Phoenix", "Who Put The Bomp!", "The Word", "Blues Revue",
+  "International Times", "Zoo World", "Street Life", "Country Music", "The Sunday Times", "L.A. Weekly",
+  "The San Francisco Examiner", "Newsday", "Detroit Free Press", "The Evening Standard",
 ];
 
 /** P8: one key per outlet however it is written ("Consequence of Sound" and "Consequence" are one). */
@@ -215,15 +221,37 @@ const cleanName = (n: string): string =>
  * the outlets the editor could only store as an address, and sorts out the hosts that are not press.
  * The server passes it in, so the table never ships to the browser with this module.
  */
-export type OutletNames = Record<string, { name: string; kind: string; sure?: boolean }>;
+export type OutletNames = Record<string, { name: string; kind: string; sure?: boolean; year?: string }>;
 const PRESS_KINDS = new Set(["publication", "blog"]);
 const NOT_PRESS_KINDS = new Set(["shop", "label", "reader-site", "archive", "artist-site"]);
 
-/** P10 and P12: an outlet we know by name or address, as opposed to a fan site or archive. */
-export function isKnownOutlet(name: string, host: string | null | undefined): boolean {
+/**
+ * P10 and P12: an outlet we know by name or address, as opposed to a fan site or archive. The outlet-name table's
+ * publications it is sure of count too (the founder, 2026-11-17: on the 300 best-documented artists the known list
+ * alone held back 3,570 quotes, most of them from real publications the table already named: All About Jazz,
+ * Trouser Press, Ultimate Classic Rock). A blog is never known, sure or not.
+ */
+export function isKnownOutlet(name: string, host: string | null | undefined, names: OutletNames = {}): boolean {
   const h = (host ?? "").toLowerCase();
   if (h && (HOST_LABELS[h] || HOST_LABELS[registrable(h)])) return true;
+  const row = h ? (names[h] ?? names[registrable(h)]) : undefined;
+  if (row && row.kind === "publication" && row.sure === true) return true;
   return KNOWN_KEYS.has(outletKey(name));
+}
+
+/**
+ * Sites whose reviews are written by readers or members, on the same kind of page as any staff review there, so a
+ * card from one reads "Reader review" and never leads a page or stands as a record's line on an artist page. Read
+ * when a page is drawn, so every page already built follows it, and by the press editor (MEMBER_HOSTS). The
+ * founder, 2026-11-17 (BUG-832): Sputnikmusic's user reviews were shown as critics' press; its fetched pages don't say
+ * which are staff, and it carries 5,100 cards, so it is marked, not refused. Prog Archives and Jazz Music Archives
+ * are community review sites in the same way, and so is Encyclopaedia Metallum (2026-11-18: 2,915 stored quotes, every
+ * review link carrying its member's name).
+ */
+export const READER_REVIEW_HOSTS: ReadonlySet<string> = new Set(["sputnikmusic.com", "progarchives.com", "jazzmusicarchives.com", "metal-archives.com"]);
+export function isReaderReviewHost(host: string | null | undefined): boolean {
+  const h = (host ?? "").toLowerCase();
+  return !!h && (READER_REVIEW_HOSTS.has(h) || READER_REVIEW_HOSTS.has(registrable(h)));
 }
 
 /* ── P2: not a publication ── */
@@ -317,11 +345,97 @@ const CITIZEN_INSANE_PAPERS: Record<string, string> = {
 };
 
 /**
- * A reprint on a fan archive, read back to the paper it ran in: on citizeninsane.eu the outlet comes
- * from the path and the year from its "pt_YYYY-" stamp. `outlet: null` means the archive holds it but
- * we cannot say which paper ran it (refused). Null for any other site.
+ * Libraries and licensed archives that hold a paper's own page: a scan, a clipping or a database copy (2026-11-18).
+ * Not fan archives (those stay refused, BUG-822), and not a critic's own site. A card from one is credited to the paper
+ * the press editor named, or the paper scripts/name-press-pages.ts read from the page; one stored only under the
+ * archive's own name ("Worldradiohistory", "Newspapers.com™") is refused as before.
  */
-export function reprintOf(url: string | null | undefined): { outlet: string | null; year: string | null } | null {
+export const LIBRARY_ARCHIVES: ReadonlySet<string> = new Set([
+  "archive.org", "worldradiohistory.com", "newspapers.com", "highbeam.com", "thefreelibrary.com", "muzines.co.uk",
+  "archive.altweeklies.com", "nebnewspapers.unl.edu", "gahistoricnewspapers.galileo.usg.edu", "scholar.lib.vt.edu",
+]);
+const libraryArchiveOf = (host: string | null | undefined): string | null => {
+  const h = (host ?? "").toLowerCase().replace(/^www\./, "");
+  if (!h) return null;
+  if (LIBRARY_ARCHIVES.has(h)) return h;
+  const r = registrable(h);
+  return LIBRARY_ARCHIVES.has(r) ? r : null;
+};
+
+/**
+ * The outlet table's key for one page whose credit or kind can only be read from the page itself, written by
+ * scripts/name-press-pages.ts: a Rock's Backpages article ("rocksbackpages.com/library/article/stereolab-dots-and-loops-",
+ * kind "reprint"), a page in a library archive ("newspapers.com/image/259585002", kind "reprint"), or a Metal Storm
+ * review ("metalstorm.net/pub/review.php?review_id=19295", kind "reader-review" when its page calls it a guest review).
+ * A host never has a slash, so the two kinds of key never meet. Null for any other page, and for an artist or album
+ * page that holds many pieces.
+ */
+export function pageKey(url: string | null | undefined): string | null {
+  const host = hostOf(url);
+  if (!host) return null;
+  const library = libraryArchiveOf(host);
+  if (library) {
+    try {
+      const u = new URL(url as string);
+      const path = u.pathname.toLowerCase().replace(/\/+$/, "");
+      return path ? `${library}${path}${u.search.toLowerCase()}` : null;
+    } catch {
+      return null;
+    }
+  }
+  const site = registrable(host);
+  if (site !== "rocksbackpages.com" && site !== "metalstorm.net") return null;
+  let u: URL;
+  try {
+    u = new URL(url as string);
+  } catch {
+    return null;
+  }
+  const path = u.pathname.toLowerCase().replace(/\/+$/, "");
+  if (site === "rocksbackpages.com") return path.startsWith("/library/article/") ? `rocksbackpages.com${path}` : null;
+  const id = u.searchParams.get("review_id") ?? "";
+  return path === "/pub/review.php" && /^\d+$/.test(id) ? `metalstorm.net/pub/review.php?review_id=${id}` : null;
+}
+
+/** A review page the outlet table marks as a reader's (Metal Storm's guest reviews, 2026-11-18). */
+export function isReaderReviewPage(url: string | null | undefined, names: OutletNames = {}): boolean {
+  const k = pageKey(url);
+  return !!k && names[k]?.kind === "reader-review";
+}
+
+/**
+ * Is a stored card a reader's or member's words? Its own flag (the editor's, BUG-403), a reader-review site
+ * (READER_REVIEW_HOSTS), or a single page the outlet table marks. The album and artist pages, the discover hero and the
+ * homepage's press room all ask this, so a member's quote is never a critic's on one surface and a reader's on another.
+ */
+export function isMemberSource(source: { member?: unknown; host?: unknown; url?: unknown }, names: OutletNames = {}): boolean {
+  const url = typeof source.url === "string" ? source.url : null;
+  const host = (typeof source.host === "string" && source.host) || hostOf(url);
+  return source.member === true || isReaderReviewHost(host) || isReaderReviewPage(url, names);
+}
+
+/**
+ * A reprint on an archive, read back to the paper it ran in. On citizeninsane.eu (a fan archive) the outlet comes from
+ * the path and the year from its "pt_YYYY-" stamp; `outlet: null` means the archive holds it but we cannot say which
+ * paper ran it (refused). On Rock's Backpages (a licensed archive of the music press) the article's own header names
+ * the writer, the paper and the date, which scripts/name-press-pages.ts reads into the outlet table under the
+ * article's key (kind "reprint", 2026-11-18: 806 stored quotes had been credited to the archive, none known by name);
+ * an article not in the table yet keeps the archive's own name. In a library archive (LIBRARY_ARCHIVES) a page's own
+ * row comes first, then the paper or book the press editor stored as the card's name (`name`): "The Rolling Stone Album
+ * Guide" on archive.org, "Music Week" on World Radio History, "Chicago Sun-Times" on HighBeam; a name that is only the
+ * archive's own gives null, and the page refuses the archive as before. Null for any other site.
+ */
+export function reprintOf(url: string | null | undefined, names: OutletNames = {}, name = ""): { outlet: string | null; year: string | null } | null {
+  const key = pageKey(url);
+  if (key) {
+    const row = names[key];
+    if (row && row.kind === "reprint") return { outlet: row.name, year: row.year ?? null };
+    const library = libraryArchiveOf(hostOf(url));
+    if (!library) return null;
+    const stored = name.replace(/[™®]/g, "").replace(/\s*\((?:19|20)\d\d\)$/, "").trim();
+    const own = outletKey(stored);
+    return stored && own && !library.replace(/[^a-z0-9]/g, "").includes(own) ? { outlet: stored, year: null } : null;
+  }
   const host = hostOf(url);
   if (!host || registrable(host) !== "citizeninsane.eu") return null;
   let path = "";

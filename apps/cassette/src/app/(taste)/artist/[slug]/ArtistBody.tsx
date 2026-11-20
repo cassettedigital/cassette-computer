@@ -24,6 +24,9 @@ import { Songs } from "./Songs";
 import type { ArtistPayload, PhotoCredit } from "../_lib/types";
 import { cleanPhotoCredit } from "@/lib/photo-credit";
 import s from "./artist.module.css";
+import { ArtistRowsSkeleton } from "@/app/_taste/ArtistRows";
+import { SectionHead } from "@/app/_taste/SectionHead";
+import { Skeleton } from "@/app/_taste/Skeleton";
 
 /** "Photo: Gruesome Gary · CC BY-SA 4.0 · Wikimedia Commons" (artist-taste/a/[slug]/Opener.tsx:135-159). */
 function Credit({ c }: { c: PhotoCredit }) {
@@ -86,6 +89,22 @@ function LikeShelf({ name, like, band }: { name: string; like: Promise<Like>; ba
   return band ? <div className={`${k.own} ${s.ownRun}`}>{shelf}</div> : shelf;
 }
 
+/** Artists like while the server works it out: its head and its rows as the shared skeleton's bones, in the
+ *  shelf's own section, so the shelf lands where they stood instead of appearing from nothing under the page. */
+function LikeShelfWaiting({ band }: { band: boolean }) {
+  const shelf = (
+    <section className={s.ownSec} aria-busy="true" aria-label="Artists like them, on their way">
+      <div className={k.wrap}>
+        <SectionHead id="like-waiting" size="small">
+          <Skeleton shape="text" w="min(15em, 70%)" />
+        </SectionHead>
+        <ArtistRowsSkeleton big />
+      </div>
+    </section>
+  );
+  return band ? <div className={`${k.own} ${s.ownRun}`}>{shelf}</div> : shelf;
+}
+
 export function ArtistBody({ p, like, surface = "web" }: { p: ArtistPayload; like?: Promise<Like>; surface?: Surface }) {
   // colours are read for the lead record, then for each record a person points at or opens
   const [wanted, setWanted] = useState<string[]>([]);
@@ -103,7 +122,7 @@ export function ArtistBody({ p, like, surface = "web" }: { p: ArtistPayload; lik
   const onPhotoGone = useCallback(() => setPhotoGone(true), []);
   const ours = p.songs.length + p.known.length + (like ? 0 : p.similar.length) > 0;
   const shelf = like ? (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LikeShelfWaiting band={!ours} />}>
       <LikeShelf name={p.name} like={like} band={!ours} />
     </Suspense>
   ) : p.similar.length > 0 ? (

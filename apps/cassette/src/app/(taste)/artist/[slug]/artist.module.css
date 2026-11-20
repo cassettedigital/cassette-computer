@@ -264,11 +264,8 @@
   margin-top: 12px;
 }
 
+/* Preview and Follow: the shared ActionRow, one line at every width */
 .acts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 12px;
   margin-top: 24px;
 }
 /* a claimed artist's own links, under the buttons: the label type, the way-out arrow */
@@ -301,10 +298,6 @@
   margin-top: 4px;
 }
 
-/* Preview names the band on one line; a long name is cut short rather than pushing Follow off */
-.acts .listen {
-  max-width: min(100%, 420px);
-}
 
 /* ═════════════════════════════ 2. the records ═════════════════════════════ */
 .records {
@@ -523,14 +516,9 @@
 .view .viewMeta {
   margin-top: 18px;
 }
-/* Preview album and the way into its reviews: two buttons side by side while they fit, and when they
-   don't, each the row's full width, so a wrapped pair still reads as a pair */
+/* Preview album and Buy: the shared ActionRow (one line; Buy's menu hangs from it), no wider than the
+   two at their whole names */
 .viewActs {
-  position: relative; /* Buy's menu hangs from the start of this row (the shared Menu's "row") */
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 12px;
   max-width: 440px;
 }
 /* the way into the record's reviews, a plain arrow line under its quote (the founder, 2026-11-06: Buy took
@@ -541,12 +529,6 @@
 }
 .view .viewActs {
   margin-top: 14px;
-}
-.act {
-  flex: 1 1 auto;
-}
-.act:only-child {
-  flex-grow: 0;
 }
 .view .line {
   margin-top: 24px;
@@ -620,6 +602,56 @@
 .exemplars a:focus-visible {
   translate: 0 var(--cover-lift);
 }
+/* a cover's name, above it when pointed at a moment: the masthead's key label (masthead.module.css
+   .key[data-tip]), never on a touch screen. The row's last cover sits at the column's edge, so its label
+   hangs from its right side instead of its middle and never leaves the window. */
+.ex {
+  position: relative;
+  display: block;
+}
+.ex::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 3;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  translate: -50% 4px;
+  max-width: 260px;
+  overflow: hidden;
+  padding: 7px 10px;
+  border-radius: var(--r-small);
+  background: var(--raised);
+  color: var(--ink-e);
+  font: var(--t-label);
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    translate 0.15s;
+}
+.ex:last-child::after {
+  left: auto;
+  right: 0;
+  translate: 0 4px;
+}
+@media (hover: hover) {
+  .ex:hover::after,
+  .ex:has(a:focus-visible)::after {
+    opacity: 1;
+    translate: -50% 0;
+    transition-delay: 0.2s;
+  }
+  .ex:last-child:hover::after,
+  .ex:last-child:has(a:focus-visible)::after {
+    translate: 0 0;
+  }
+}
 .weight {
   grid-column: 1 / -1;
 }
@@ -641,18 +673,32 @@
 }
 
 /* ═════════════════════════════ phone ═════════════════════════════ */
+/* the text under the covers: the whole top centred on the covers' line, as the album page's is (the founder,
+   2026-11-17): the photo and facts as one group, each label over its value, the name, the lead (balanced, so
+   its lines rag evenly both sides) and its credit, the buttons (a centred ActionRow, Intro.tsx) and the links */
 @container taste (width < 760px) {
-  /* Listen fills the row; Follow beside it is its glyph alone */
-  .listen {
-    flex: 1;
+  .factsRow,
+  .factsRow dl,
+  .links {
+    justify-content: center;
   }
-  .follow:not([data-alone]) {
-    width: 48px;
-    padding: 0;
-    gap: 0;
+  .factsRow dl > div {
+    justify-items: center;
+    text-align: center;
   }
-  .follow:not([data-alone]) .followWord {
-    display: none;
+  /* facts too long to sit beside the photo on one line go under it, rather than folding beside it off-centre */
+  .factsRow {
+    flex-wrap: wrap;
+    row-gap: 14px;
+  }
+  .name,
+  .lead,
+  .leadBy {
+    text-align: center;
+  }
+  .lead {
+    margin-inline: auto;
+    text-wrap: balance;
   }
 }
 

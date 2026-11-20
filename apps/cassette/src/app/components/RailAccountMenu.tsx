@@ -11,7 +11,8 @@
  * `context` decides which workspace jumps show: every jump except the one
  * matching your current context appears (so library shows Studio/Admin,
  * admin shows Library/Studio, etc). Studio shows for anyone with a room in it
- * (an artist, a writer) and every site admin. Everything else (Account / Appearance / Purchases / Sign out) is
+ * (an artist, a writer) and every site admin. Everything else (Account / Appearance / Purchases / Feedback /
+ * Sign out) is
  * the same everywhere.
  *
  * The desk (/desk, the desktop library, beta) is a fourth context. It has
@@ -30,6 +31,7 @@ import { AvatarDisc } from "@/app/components/AvatarDisc";
 import { UpdatePill } from "@/app/components/UpdatePill";
 import { inDesktopApp, openOutside } from "@/lib/open-outside";
 import { PUBLIC_SITE_URL } from "@/lib/urls";
+import { FEEDBACK, openFeedback } from "@/app/components/feedback-door";
 import styles from "./RailAccountMenu.module.css";
 
 export type RailAccountUser = {
@@ -164,6 +166,17 @@ export function RailAccountMenu({
           >
             Invite friends
           </Link>
+          {/* the one Feedback door every menu shares (components/feedback-door) */}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              openFeedback();
+            }}
+            className={styles.item}
+          >
+            {FEEDBACK.label}
+          </button>
           <button type="button" onClick={() => signOut()} className={styles.item}>
             Sign out
           </button>

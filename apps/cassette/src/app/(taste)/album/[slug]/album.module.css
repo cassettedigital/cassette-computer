@@ -11,6 +11,9 @@
  * colours a link carries a second class.
  */
 
+/* The page keeps the site's one frame (1200 at most), so Discover, an artist, an album and Search share a
+   silhouette (the founder, 2026-11-18, after a 1000px album frame was tried and taken back). On a wide page
+   the press is laid like a wall rather than stretched: see .leadRow and .tile in section 3. */
 .page {
   position: relative;
 }
@@ -127,12 +130,8 @@
   color: var(--ink-2);
 }
 
-/* the row of buttons is the box the Buy menu hangs from (its start, at every width) */
+/* the row of buttons: the shared ActionRow (one line at every width; the Buy menu hangs from it) */
 .actions {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   margin-top: 30px;
 }
 
@@ -170,6 +169,23 @@
 }
 .tl[data-solo] .list:not([data-cols]) {
   max-width: 640px;
+}
+/* in two columns with nothing beside it the list takes the whole frame, as the artist's best-known songs
+   do. From 760 a dotted leader runs from each title to its length (.tLine), so a row reads as one line
+   across its column however wide the window (the founder, 2026-11-18) */
+@container taste (width >= 760px) {
+  .tLine {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .tLine::after {
+    content: "";
+    flex: 1;
+    min-width: 20px;
+    border-bottom: 1px dotted var(--ink-4);
+    transform: translateY(-5px);
+  }
 }
 .disc {
   margin: 28px 0 8px;
@@ -302,7 +318,7 @@ button.row:focus-visible .n > b,
   gap: 4px;
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain; /* up and down only: a sideways swipe is Safari's Back (globals.css) */
   scrollbar-width: thin;
   scrollbar-color: var(--ink-4) transparent;
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
@@ -437,18 +453,58 @@ button.row:focus-visible .n > b,
   width: 1px;
   height: 1px;
 }
+/* the cards under the lead: one column, or two (data-two) that stretch to one height, so they start and end
+   level; the shorter column's cards share out the difference (each card's byline sits at its foot), which
+   the server keeps small (shape.ts arrange, settle). An odd card goes across their foot (.wide) */
 .cols {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   margin-top: 18px;
 }
+.cols[data-two] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .col {
-  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+.col > * {
+  flex-grow: 1;
+}
+.wide {
+  grid-column: 1 / -1;
+  display: grid;
+}
+/* On a wide page the press is laid like a wall, not stretched (the founder, 2026-11-18: full-width boxes
+   "sprawl"; past a point "a new tile with a kind of fun color... quirky and asymmetric"). A card that would
+   run the whole width (the lead, or the one alone across the columns' foot) takes two thirds of its row and
+   a tile in the record's colour takes the rest: on the lead's right, on the foot's left, and behind Read all
+   on the right again, so the rows step 8|4, 6|6, 4|8. The tile is the colour and the paper's grain, nothing
+   else (the founder: no quotation marks in it), and is hidden from screen readers. Narrower, the card has
+   its row to itself and no tile is drawn. */
+.leadRow {
+  display: grid;
+}
+.tile {
+  display: none;
+}
+@container taste (width >= 1100px) {
+  .leadRow,
+  .wide[data-tile] {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 18px;
+  }
+  .wide[data-tile="start"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
+  .tile {
+    display: block;
+    border-radius: var(--r-card);
+    background: var(--accent-c) var(--grain-paper, var(--grain-press));
+  }
 }
 /* the cards themselves are the shared QuoteCard (src/app/_taste/quote.module.css) */
 
@@ -746,29 +802,39 @@ button.row:focus-visible .n > b,
     grid-column: 1 / -1;
     padding-left: 0;
   }
+  /* the lockup under the cover: the whole top centred on the cover's line (the founder, 2026-11-17: once it
+     stacks, left-aligned leaves the right half of the page empty). The buttons are a centred ActionRow
+     (Opener.tsx); the Buy menu hanging from it keeps its own alignment, so the centring is set per piece */
   .coverCol {
     width: min(100%, 300px);
+    justify-self: center;
   }
   .title {
     font-size: clamp(36px, min(calc(100cqi / (var(--word) * 0.5)), calc(100cqi * 3.6 / var(--len, 12))), min(calc(var(--max) * 0.6), 76px));
+    text-align: center;
+  }
+  .artist,
+  .factLine {
+    text-align: center;
   }
   .artist {
     margin-top: 12px;
     font-size: 24px;
   }
-  /* Preview album takes the row, Buy keeps to its word, Want it (the website's alone) to its square */
-  .actions {
-    display: grid;
-    grid-auto-flow: column;
-    grid-template-columns: minmax(0, 1fr);
-    grid-auto-columns: auto;
-    gap: 10px;
+  .lockup .facts {
+    justify-content: center;
   }
-  /* one of Preview and Buy (no previews in an iPhone app older than CassetteApp/2): the buttons sit together */
-  .actions[data-single] {
+  .lockup .facts > div {
+    justify-items: center;
+    text-align: center;
+  }
+  .strip {
     display: flex;
+    justify-content: center;
+    width: fit-content;
+    max-width: 100%;
+    margin: 22px auto 0;
   }
-
   .tl {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -842,14 +908,18 @@ button.row:focus-visible .n > b,
     align-items: center;
   }
 
-  .cols {
+  .cols,
+  .cols[data-two] {
+    display: flex;
     flex-direction: column;
   }
-  .col {
+  .col,
+  .wide {
     display: contents;
   }
-  /* the cards keep the server's phone order (--o on each card) */
-  .col > * {
+  /* the cards keep the server's phone order (--o on each card), the one across the foot among them */
+  .col > *,
+  .wide > * {
     order: var(--o);
   }
   .grades {
@@ -935,7 +1005,6 @@ button.row:focus-visible .n > b,
   }
   :global(html[data-surface="app"]) .coverCol {
     width: min(100%, 240px);
-    justify-self: center;
   }
   :global(html[data-surface="app"]) .title {
     font-size: clamp(26px, min(calc(100cqi / (var(--word) * 0.5)), calc(100cqi * 2.4 / var(--len, 12))), 34px);
@@ -951,12 +1020,10 @@ button.row:focus-visible .n > b,
   /* the iPhone app's two keys share the row in halves; the account window's side panel (data-frame="panel",
      lib/app-surface) keeps the website's one row, Want it included, since it has room */
   :global(html[data-surface="app"]:not([data-frame="panel"])) .actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-flow: row;
-    margin-top: 22px;
-  }
-  :global(html[data-surface="app"]:not([data-frame="panel"])) .actions[data-single] {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 22px;
   }
   :global(html[data-surface="app"]:not([data-frame="panel"])) .actions > *,
   :global(html[data-surface="app"]:not([data-frame="panel"])) .actions > div > button {

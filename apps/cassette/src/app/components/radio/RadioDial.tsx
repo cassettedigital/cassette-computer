@@ -2,25 +2,33 @@
 
 /**
  * The Radio page's body: what's on now across your stations, a section rail to jump with, and the whole dial in
- * two columns. One page for both windows that draw it, so they stay the same page (the founder, 2026-11-09:
- * "kept the radio tab in the web view, exactly as it is in desktop view"): the Mac app's library window
- * (desk/radio, desk/Shelves Radio) and the website's account window (account/radio).
+ * two columns. One page for every window that draws it, so they stay the same page (the founder, 2026-11-09:
+ * "kept the radio tab in the web view, exactly as it is in desktop view"; 2026-11-16: the website's own /radio
+ * too): the Mac app's library window (desk/radio, desk/Shelves Radio), the website's account window
+ * (account/radio) and the public website (radio/WebDial).
  *
  * The window says how a station is looked into (the desk's side view; the account window's panel, where the
- * station's own page opens beside the dial), what its right click offers, and its play disc. A click on a
- * station looks into it; only the play disc tunes in, so a click never changes what's on.
+ * station's own page opens beside the dial; the public website's own page for it, a real link), what its right
+ * click offers, and its play disc. A click on a station looks into it; only the play disc tunes in, so a click
+ * never changes what's on.
+ *
+ * On now fills in card by card in reading order (the founder, 2026-11-07: "load sequentially"), but a card
+ * that's slow to answer no longer holds the ones after it: each gets a short wait, then the next goes ahead
+ * and the slow one settles whenever it's ready (2026-11-16: The Current's dead feed held the whole row 2s).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { Heading, PlayDisc, StationRow, WordArt, type TilePlay } from "@discovery/cassette-kit";
+import { Heading, PlayDisc, StationRow, WordArt, useKitLink, type TilePlay } from "@discovery/cassette-kit";
 import { Art } from "@/app/desk/Art";
 import { dailyTurn } from "@/lib/radio/daily-turn";
 import type { DialStation, RadioNowPlaying } from "@/lib/radio/types";
+import { ON_NOW_FRAME, recallOnAir, rememberOnAir } from "./on-air-memory";
 import { useRadio } from "./RadioProvider";
 import r from "./RadioDial.module.css";
 
-/** A station looked into: whether it's the one shown beside the dial, and the click that shows it. */
-export type StationLook = { selected: boolean; onSelect: (e: MouseEvent) => void };
+/** A station looked into: whether it's the one shown beside the dial, and the click that shows it, or (the public
+    website) the station's own page to go to, a real link. */
+export type StationLook = { selected: boolean; onSelect?: (e: MouseEvent) => void; href?: string };
 
 export type RadioDialProps = {
   stations: DialStation[];
@@ -31,18 +39,26 @@ export type RadioDialProps = {
   look: (slug: string) => StationLook;
   /** a station's right-click menu */
   menuFor?: (slug: string) => (e: MouseEvent) => void;
+  /** the website's: the section rail, pinned, takes the top of the window and the masthead sits below it
+      (data-pins-top, Masthead.tsx) */
+  pinsTop?: boolean;
 };
 
 /** What's on a station now, read once when its card shows (the route caches it 15 seconds): undefined
-    while asking, null when the station said nothing. */
+    while asking, null when the station said nothing. A card shown again on this visit (back from a station's
+    page) starts from what was last seen (on-air-memory) while it asks again. */
 function useOnAir(slug: string, on: boolean) {
-  const [np, setNp] = useState<RadioNowPlaying | null | undefined>(on ? undefined : null);
+  const [np, setNp] = useState<RadioNowPlaying | null | undefined>(() => (on ? (recallOnAir(slug) ?? undefined) : null));
   useEffect(() => {
     if (!on) return;
     let gone = false;
     fetch(`/api/radio/now-playing?station=${encodeURIComponent(slug)}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((j) => !gone && setNp(j))
+      .then((j: RadioNowPlaying | null) => {
+        if (gone) return;
+        rememberOnAir(slug, j);
+        setNp(j);
+      })
       .catch(() => !gone && setNp(null));
     return () => {
       gone = true;
@@ -51,10 +67,13 @@ function useOnAir(slug: string, on: boolean) {
   return np;
 }
 
-/** How long a cover gets to arrive before the card settles without it (its mark stays whole). */
-const COVER_WAIT_MS = 6000;
+/** How long a cover gets to arrive before the card settles without it (its mark stays whole; the cover still
+    takes its place when it lands). */
+const COVER_WAIT_MS = 1500;
 /** The beat between one On now card settling and the next (the founder, 2026-11-07: "load sequentially"). */
-const TURN_MS = 260;
+const TURN_MS = 160;
+/** How long a card's turn waits for it before the next card goes ahead anyway. */
+const TURN_WAIT_MS = 450;
 
 /**
  * On now's cards change one after another, in reading order: a card settles once what it's playing is
@@ -67,17 +86,25 @@ function useTurns(order: string[]) {
   const [turn, setTurn] = useState<{ key: string; at: number }>({ key, at: 0 });
   const slugs = ready.key === key ? ready.slugs : new Set<string>();
   const at = turn.key === key ? turn.at : 0;
+  const advance = useCallback((from: number) => setTurn((x) => (x.key === key && x.at === from ? { key, at: from + 1 } : x)), [key]);
+  // the card whose turn it is goes a beat after it's ready...
   useEffect(() => {
     const next = order[at];
     if (!next || !slugs.has(next)) return;
-    const t = window.setTimeout(() => setTurn({ key, at: at + 1 }), TURN_MS);
+    const t = window.setTimeout(() => advance(at), TURN_MS);
     return () => window.clearTimeout(t);
-  }, [key, at, slugs, order]);
+  }, [at, slugs, order, advance]);
+  // ...or, slow to answer, after a short wait from when its turn began (not from the last card that got ready)
+  useEffect(() => {
+    if (!order[at]) return;
+    const t = window.setTimeout(() => advance(at), TURN_WAIT_MS);
+    return () => window.clearTimeout(t);
+  }, [at, order, advance]);
   const markReady = useCallback(
     (slug: string) => setReady((x) => (x.key === key && x.slugs.has(slug) ? x : { key, slugs: new Set([...(x.key === key ? x.slugs : []), slug]) })),
     [key],
   );
-  // a card has settled when its turn has come and it's ready
+  // a card has settled when its turn has come (or gone by) and it's ready
   const settled = (slug: string) => {
     const i = order.indexOf(slug);
     return i >= 0 && slugs.has(slug) && i <= at;
@@ -101,28 +128,43 @@ function OnAirCard({
   onReady: (slug: string) => void;
 }) {
   const radio = useRadio();
+  const Link = useKitLink();
   const np = useOnAir(s.slug, s.live);
   // what it's playing, when that has a picture of its own (a record's cover, the show's): the record
   // then wears the station's mark on its corner (the founder, 2026-11-07: "both feel relevant")
   const cover = np ? (np.match?.coverUrl ?? np.track?.coverUrl ?? np.show?.image ?? null) : null;
   const wear = cover && cover !== s.image ? cover : null;
-  // the cover is drawn unseen under the mark until its picture has fully arrived
-  const art = useRef<HTMLSpanElement>(null);
+  // the cover is drawn unseen under the mark until its own picture has fully arrived and been decoded, so
+  // the first frame it shows in is the whole picture. Only the cover's picture counts: the mark's, nearly
+  // always there already, once counted too, and slid the mark into the corner over an empty square (the
+  // founder, 2026-11-16, KEXP)
+  const coverBox = useRef<HTMLSpanElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [waited, setWaited] = useState(false);
   useEffect(() => {
     setLoaded(false);
     setWaited(false);
-    const el = art.current;
+    const el = coverBox.current;
     if (!wear || !el) return;
-    const done = () => setLoaded(true);
-    const seen = () => [...el.querySelectorAll("img")].some((i) => i.complete && i.naturalWidth > 0);
-    if (seen()) done();
+    let gone = false;
+    const take = (img: HTMLImageElement) => {
+      void img
+        .decode()
+        .catch(() => undefined)
+        .then(() => {
+          if (!gone && img.complete && img.naturalWidth > 0) setLoaded(true);
+        });
+    };
+    const there = [...el.querySelectorAll("img")].find((i) => i.complete && i.naturalWidth > 0);
+    if (there) take(there);
     // a picture's load doesn't bubble, but an ancestor hears it on the way down
-    const on = (e: Event) => (e.target as Element).tagName === "IMG" && done();
+    const on = (e: Event) => {
+      if (e.target instanceof HTMLImageElement) take(e.target);
+    };
     el.addEventListener("load", on, true);
     const t = window.setTimeout(() => setWaited(true), COVER_WAIT_MS);
     return () => {
+      gone = true;
       el.removeEventListener("load", on, true);
       window.clearTimeout(t);
     };
@@ -136,29 +178,41 @@ function OnAirCard({
   const until = show && np?.show?.until ? new Date(np.show.until) : null;
   const now = show && np ? (np.track ? `${np.track.artist} · ${np.track.title}` : (np.show?.name ?? s.description)) : s.description;
   const on = radio.isCurrent(s.slug) && radio.status !== "idle";
+  const words = (
+    <>
+      {/* no live dot: "On now" already says it, and the dot beside the name read as noise (the founder,
+          2026-11-07) */}
+      <span className={r.onAirStation}>{s.name}</span>
+      {/* the words change with the picture, and fade in as they do */}
+      <span key={now} className={r.onAirNow} data-fresh={(show && now !== s.description) || undefined}>
+        {now}
+      </span>
+      <span className={r.onAirMeta}>{[s.network !== s.name ? s.network : null, until && !Number.isNaN(until.getTime()) ? `until ${until.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : null].filter(Boolean).join(" · ")}</span>
+    </>
+  );
   return (
     <li className={r.onAir} data-on={on || undefined} data-selected={look.selected || undefined} onContextMenu={onMenu}>
       {/* the station's mark, shaped like an app icon, until what it's playing has a cover that has fully
           arrived; then the cover fades up under it and the mark settles into the corner */}
-      <span ref={art} className={r.onAirArt} data-worn={worn || undefined}>
+      <span className={r.onAirArt} data-worn={worn || undefined}>
         {wear && (
-          <span className={r.onAirCover}>
-            <Art src={wear} sizes="112px" />
+          <span ref={coverBox} className={r.onAirCover}>
+            <Art src={wear} sizes={ON_NOW_FRAME} />
           </span>
         )}
-        <span className={r.onAirMark}>{s.image ? <Art src={s.image} sizes="112px" /> : <WordArt name={s.name} accent={s.accent} />}</span>
+        <span className={r.onAirMark} data-station-glass="">{s.image ? <Art src={s.image} sizes="112px" /> : <WordArt name={s.name} accent={s.accent} />}</span>
       </span>
-      {/* a click selects the station (the window shows it beside the dial); its play disc tunes in */}
-      <button type="button" className={r.onAirText} onClick={look.onSelect}>
-        {/* no live dot: "On now" already says it, and the dot beside the name read as noise (the founder,
-            2026-11-07) */}
-        <span className={r.onAirStation}>{s.name}</span>
-        {/* the words change with the picture, and fade in as they do */}
-        <span key={now} className={r.onAirNow} data-fresh={(show && now !== s.description) || undefined}>
-          {now}
-        </span>
-        <span className={r.onAirMeta}>{[s.network !== s.name ? s.network : null, until && !Number.isNaN(until.getTime()) ? `until ${until.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : null].filter(Boolean).join(" · ")}</span>
-      </button>
+      {/* a click looks into the station (the window shows it beside the dial, or the website opens its page); its
+          play disc tunes in */}
+      {look.href ? (
+        <Link href={look.href} className={r.onAirText}>
+          {words}
+        </Link>
+      ) : (
+        <button type="button" className={r.onAirText} onClick={look.onSelect}>
+          {words}
+        </button>
+      )}
       <span className={r.onAirPlay}>
         <PlayDisc {...disc} />
       </span>
@@ -167,7 +221,7 @@ function OnAirCard({
 }
 
 /** On now, the section rail and the dial. The window draws the page's title above it. */
-export function RadioDial({ stations, saved, disc, look, menuFor }: RadioDialProps) {
+export function RadioDial({ stations, saved, disc, look, menuFor, pinsTop }: RadioDialProps) {
   const radio = useRadio();
   // on now: your stations, then the live ones that publish what's on, in a different order each day so
   // the same few don't lead for weeks (the founder, 2026-11-07), six at most
@@ -197,7 +251,7 @@ export function RadioDial({ stations, saved, disc, look, menuFor }: RadioDialPro
           ))}
         </ol>
       </section>
-      <nav className={r.dialRail} aria-label="Sections of the dial">
+      <nav className={r.dialRail} aria-label="Sections of the dial" data-pins-top={pinsTop || undefined}>
         {sections.map(([name]) => (
           <a key={name} href={`#${idOf(name)}`} className={r.dialChip}>
             {name}

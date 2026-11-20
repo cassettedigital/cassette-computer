@@ -491,8 +491,14 @@
    the document, and on Tauri's WKWebView that triggers native elastic
    rubber-band bounce — the "bottom rail gets taller" report (BUG-121 looked
    like a layout/remount bug and was; this is a separate scroll-physics one
-   the grid-row pinning fix never touched). */
-html, body { overscroll-behavior: none; }
+   the grid-row pinning fix never touched).
+   Up and down only on the website: blocking sideways as well swallowed Safari's two-finger swipe back. WebKit
+   lets a swipe pass an element that blocks both ways only while it moves perfectly sideways, and a hand on a
+   trackpad never quite does (the founder, 2026-11-17: "swiping backwards like I normally do has no response").
+   Every scroller's own rule is up and down only for the same reason. The Mac app's window has no swipe back,
+   so it holds still both ways, as it always has. */
+html, body { overscroll-behavior-y: none; }
+html[data-shell="mac"], html[data-shell="mac"] body { overscroll-behavior: none; }
 html { scroll-behavior: smooth; }
 a { text-decoration: none; color: inherit; }
 button { font-family: inherit; cursor: pointer; }
@@ -1811,5 +1817,38 @@ html[data-shell="mac"]:not(:has([data-titlebar="own"])) body {
 @media (prefers-reduced-motion: reduce) {
   :root[data-pics-land] img[data-lands][data-landed] {
     animation: none;
+  }
+}
+
+/* ── a station's mark, under glass ──
+   Every radio station's own mark (an app icon, as the Mac app and the phones draw it) wears a sliver of
+   liquid glass: a bright rim along its top edge that follows the rounded corners and thins away down the
+   sides, a fainter glint along its foot, a hairline all round, and a soft sheen over its upper half. One rule for every place a mark is
+   drawn (the station page, the Radio page's cards and rows, Discover's Radio shelf, the side rail, the
+   corner player): the place puts data-station-glass on the box that clips the mark, and may set
+   --glass-rim (the rim's thickness, 1px; the station page's big mark takes 1.5px). The founder, 2026-11-17:
+   "a touch of that liquid glass-style rimlight at the tops"; softened the same day, the first top edge read
+   "a smidge too far". */
+:where([data-station-glass]) {
+  position: relative;
+  isolation: isolate;
+}
+[data-station-glass]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 var(--glass-rim, 1px) 0 rgb(255 255 255 / 0.42),
+    inset 0 calc(var(--glass-rim, 1px) * 6) calc(var(--glass-rim, 1px) * 10) calc(var(--glass-rim, 1px) * -6) rgb(255 255 255 / 0.18),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.14),
+    inset 0 calc(var(--glass-rim, 1px) * -1) 0 rgb(255 255 255 / 0.1);
+  background: radial-gradient(130% 70% at 50% -18%, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.04) 55%, transparent 72%);
+}
+@media (prefers-contrast: more) {
+  [data-station-glass]::before {
+    display: none;
   }
 }

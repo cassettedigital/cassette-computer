@@ -5,8 +5,17 @@
  *
  * LOOK (founder, 2026-11-09): the player kit's own Dialog, in the founder's voice, asking for ideas as much as
  * bugs, since a first note is what opens a member's friend invites (account/invites). Wrapped in the kit's tokens
- * (`kit.kit kit.follow`, a `display: contents` box) because it is mounted once in the root layout, outside any
- * window, and the kit's dialog draws from those tokens; it follows the reader's light or dark as the windows do.
+ * (`kit.kit`, a `display: contents` box) because it is mounted once in the root layout, outside any window, and
+ * the kit's dialog draws from those tokens.
+ *
+ * DARK ON EVERY PAPER (founder, 2026-11-20): the masthead and its menus are near-black on light and dark pages
+ * alike, and most pages stay dark, so a box that followed the device opened cream over a dark page. It is the
+ * site's chrome, so it takes the kit's dark everywhere (no `kit.follow`), as the corner key does.
+ *
+ * WORDS (founder, 2026-11-20): only what a person needs to read. People know how to fill in a feedback form, and
+ * every extra line asks them to read it. So: the title, the placeholder ("A bug, a gripe or an idea"), and the
+ * screenshot key, whose "Something look wrong?" is a tooltip, not a line. No subtitle, no field label (the
+ * textarea is named for screen readers), and errors say what happened, not what is obvious.
  *
  * A free-text message POSTed to the diagnostics spine as report_type='user_feedback'
  * via submitWebFeedback (NOT as a synthetic error — so it never shows the admin a
@@ -19,8 +28,9 @@
  * the user picks is reliable and rides the two-step presigned R2 attachment flow.
  *
  * TRIGGER: renders no launcher of its own. It opens INSTANTLY on the global
- * `cassette:report-problem` event (dispatched by the help dock). Mounted once in the
- * root layout so the event reaches it from anywhere.
+ * Feedback door's event (components/feedback-door: the corner key, every account
+ * menu, the help dock and Invite friends all open it through openFeedback).
+ * Mounted once in the root layout so the event reaches it from anywhere.
  *
  * SENDING: it waits for the note to be stored before saying thanks, and says so
  * plainly if it didn't get there, keeping what they wrote. Closing without
@@ -28,13 +38,12 @@
  * away a paragraph); only a sent note starts the box over.
  */
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, Key, Note, tokens as kit } from "@discovery/cassette-kit";
 import { submitWebFeedback } from "@/lib/diagnostics/web-report";
+import { OPEN_FEEDBACK_EVENT } from "./feedback-door";
 import styles from "./ReportProblem.module.css";
 
-/** Any surface can open the feedback modal by dispatching this on `window`. */
-export const OPEN_REPORT_PROBLEM_EVENT = "cassette:report-problem";
 
 /** Dispatched on `window` once a note has been stored, so a surface waiting on a first note (the account window's
  *  Invite friends) can look again. */
@@ -43,7 +52,6 @@ export const REPORT_SENT_EVENT = "cassette:report-sent";
 const MAX_SHOT_BYTES = 8 * 1024 * 1024; // 8 MB — a screenshot, not a video.
 
 export function ReportProblem() {
-  const messageId = useId();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [shot, setShot] = useState<File | null>(null);
@@ -89,9 +97,9 @@ export function ReportProblem() {
       setError("");
       setOpen(true);
     };
-    window.addEventListener(OPEN_REPORT_PROBLEM_EVENT, onOpenEvent);
+    window.addEventListener(OPEN_FEEDBACK_EVENT, onOpenEvent);
     return () => {
-      window.removeEventListener(OPEN_REPORT_PROBLEM_EVENT, onOpenEvent);
+      window.removeEventListener(OPEN_FEEDBACK_EVENT, onOpenEvent);
       stopClosing();
     };
     // reset/clearShot are stable enough here; deps intentionally [].
@@ -114,7 +122,7 @@ export function ReportProblem() {
       return;
     }
     if (file.size > MAX_SHOT_BYTES) {
-      setError("That image is over 8 MB. Try a smaller screenshot.");
+      setError("That image is over 8 MB.");
       return;
     }
     setError("");
@@ -128,7 +136,7 @@ export function ReportProblem() {
   async function submit(close: () => void) {
     const trimmed = message.trim();
     if (!trimmed) {
-      setError("Add a short description first.");
+      setError("Write something first.");
       return;
     }
     setSending(true);
@@ -136,7 +144,7 @@ export function ReportProblem() {
     const stored = await submitWebFeedback(trimmed, { source: "feedback-form", screenshot: shot });
     if (!stored) {
       setSending(false);
-      setError("That didn’t send. Check your connection and try again. Your note is still here.");
+      setError("That didn’t send. Try again.");
       return;
     }
     sentRef.current = true;
@@ -153,32 +161,27 @@ export function ReportProblem() {
   const close = () => onOpenChange(false);
 
   return (
-    <div className={`${kit.kit} ${kit.follow} ${styles.tokens}`}>
-      <Dialog open={open} onClose={close} title="Send me a note" line="A bug, a gripe or an idea. It comes straight to me." width={480}>
+    <div className={`${kit.kit} ${styles.tokens}`}>
+      <Dialog open={open} onClose={close} title="Send me a note" width={480}>
         {sent ? (
           <p className={styles.sent} role="status">
             Thanks. Got it.
           </p>
         ) : (
           <div className={styles.form}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor={messageId}>
-                What&apos;s on your mind?
-              </label>
-              <textarea
-                id={messageId}
-                className={styles.area}
-                rows={4}
-                maxLength={4000}
-                autoFocus
-                placeholder="The album page went blank after I hit play. Or: I wish I could mark a record as lent out."
-                value={message}
-                onChange={(e) => {
-                  setMessage(e.target.value);
-                  if (error) setError("");
-                }}
-              />
-            </div>
+            <textarea
+              className={styles.area}
+              aria-label="Your note"
+              rows={4}
+              maxLength={4000}
+              autoFocus
+              placeholder="A bug, a gripe or an idea"
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                if (error) setError("");
+              }}
+            />
 
             <div className={styles.shotRow}>
               {shotUrl ? (
@@ -191,10 +194,9 @@ export function ReportProblem() {
                   </Key>
                 </>
               ) : (
-                <>
-                  <Key onClick={() => fileRef.current?.click()}>Add a screenshot</Key>
-                  <Note as="span">Optional, and handy for anything that looks wrong.</Note>
-                </>
+                <Key onClick={() => fileRef.current?.click()} title="Something look wrong?">
+                  Add a screenshot
+                </Key>
               )}
               <input ref={fileRef} type="file" accept="image/png,image/jpeg" onChange={onPickFile} hidden />
             </div>

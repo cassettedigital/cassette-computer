@@ -41,6 +41,7 @@ import {
 } from "@/lib/playback-remote";
 import { spaceIsTheFocus, watchFocusArrival } from "@/lib/keys";
 import { reconcileQueueMirror } from "./queue-mirror";
+import { useNoteNowPlaying } from "@/lib/diagnostics/now-playing";
 import type {
   LibraryAlbumCard,
   LibraryArtistCard,
@@ -708,6 +709,13 @@ export function ShellProvider({
   // below, so the transport reflects REAL playback (SPEC §6).
   const nowPlaying = queueIndex >= 0 ? queue[queueIndex] ?? null : null;
   const upNext = queueIndex >= 0 ? queue.slice(queueIndex + 1) : queue;
+  // a note to the founder says which song the library's player had on (lib/diagnostics/now-playing)
+  useNoteNowPlaying(
+    "library",
+    nowPlaying
+      ? { state: playing ? "playing" : "paused", title: nowPlaying.title, artist: nowPlaying.artist, album: nowPlaying.album ?? null }
+      : null,
+  );
 
   // Poll the native engine ~1s and reflect its truth. queueIndex reconciles to
   // the engine's current track BY ID (see the tick), so nowPlaying tracks real

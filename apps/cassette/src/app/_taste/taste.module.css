@@ -212,6 +212,11 @@
   --rail-w: clamp(400px, 34vw, 480px);
   padding-right: var(--rail-w);
 }
+/* the radio's rail holds no video: it is the Mac app's side column, as wide as the app draws it (desk.module.css
+   --aside), not the preview player's 400 (_taste/radio/RadioRail.tsx) */
+.root[data-rail="radio"] {
+  --rail-w: clamp(300px, 26vw, 380px);
+}
 .root[data-topdock] .body {
   padding-top: calc(var(--mast-room) + var(--top-dock-h));
 }

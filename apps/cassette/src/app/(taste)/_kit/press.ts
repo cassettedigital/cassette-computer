@@ -23,6 +23,7 @@ import {
   iconFor,
   isAggregator,
   isCarrierHost,
+  isMemberSource,
   isKnownOutlet,
   isNonPublicationHost,
   isShopPage,
@@ -95,8 +96,9 @@ export function creditFor(source: { name?: unknown; url?: unknown; host?: unknow
   const url = str(source.url) || null;
   const host = (str(source.host) || hostOf(url) || "").toLowerCase() || null;
   const name = str(source.name).trim();
-  if (isAggregator(name, host) || isNonPublicationHost(host, names) || isShopPage(url) || isDeniedPiece(url)) return null;
-  const reprint = reprintOf(url);
+  // an archive's copy read back to its paper is credited to the paper, though the archive itself is not press
+  const reprint = reprintOf(url, names, name);
+  if (isAggregator(name, host) || (isNonPublicationHost(host, names) && !reprint?.outlet) || isShopPage(url) || isDeniedPiece(url)) return null;
   return reprint ? reprint.outlet : outletName(name, host ?? "", names, url);
 }
 
@@ -110,7 +112,7 @@ export function rowMeta(rowLabel: string): string | null {
 }
 
 /** Every host whose icon the page may need: each row's hosts, each entry's own, and each outlet's home. */
-export function pressHosts(rows: PressRowData[]): string[] {
+export function pressHosts(rows: PressRowData[], names: OutletNames = {}): string[] {
   const out = new Set<string>();
   const add = (h: string | null | undefined) => {
     const v = (h ?? "").trim().toLowerCase();
@@ -125,7 +127,7 @@ export function pressHosts(rows: PressRowData[]): string[] {
       const s = srcOf(c);
       const host = str(s.host) || hostOf(str(s.url) || null);
       add(host);
-      const reprint = reprintOf(str(s.url) || null);
+      const reprint = reprintOf(str(s.url) || null, names, str(s.name));
       const name = reprint?.outlet ?? outletName(str(s.name), host ?? "") ?? "";
       if (name) add(homeOf(name));
     }
@@ -221,12 +223,12 @@ export function buildPress(row: PressRowData | null, facts: RecordFacts, icons: 
     const name = str(s.name).trim();
     const refuse = (rule: string, outlet = name) => refused.push({ order, outlet, url, rule });
 
+    // P3, with an archive's reprint read back to the paper it ran in: a library archive is not press, but the paper
+    // it holds a page of is
+    const reprint = reprintOf(url, names, name);
     if (isAggregator(name, host)) return refuse("P1");
-    if (isNonPublicationHost(host, names) || isShopPage(url)) return refuse("P2");
+    if ((isNonPublicationHost(host, names) && !reprint?.outlet) || isShopPage(url)) return refuse("P2");
     if (isDeniedPiece(url)) return refuse("denied");
-
-    // P3, with a fan archive's reprint read back to the paper it ran in
-    const reprint = reprintOf(url);
     if (reprint && !reprint.outlet) return refuse("P3-carrier");
     const outlet = reprint?.outlet ?? outletName(name, host ?? "", names, url);
     if (!outlet) return refuse("P3");
@@ -252,7 +254,11 @@ export function buildPress(row: PressRowData | null, facts: RecordFacts, icons: 
     const year =
       /^(\d{4})/.exec(str(s.date))?.[1] ?? reprint?.year ?? /\b(1[89]\d\d|20\d\d)\b/.exec(rowLabel)?.[1] ?? null;
     const gradeIn = str(s.grade).trim() || null;
-    const carrier = host && isCarrierHost(registrable(host)) ? registrable(host) : null;
+    const carrier = host && (reprint || isCarrierHost(registrable(host))) ? registrable(host) : null;
+    // A reader-review site marked after its cards were stored (READER_REVIEW_HOSTS) reads "Reader review" as a new
+    // build would label it, not the label stored before (a Sputnikmusic card still read "Looking back · 2016").
+    const member = isMemberSource(s, names);
+    const label = member && !voice && !/^reader review/i.test(rowLabel) ? `Reader review${year ? ` · ${year}` : ""}` : rowLabel;
 
     drafts.push({
       order,
@@ -266,13 +272,13 @@ export function buildPress(row: PressRowData | null, facts: RecordFacts, icons: 
       speaker: str(c.speaker).trim() || null,
       slot,
       stance: str(c.stance) || "none",
-      rowLabel,
-      meta: rowMeta(rowLabel),
+      rowLabel: label,
+      meta: rowMeta(label),
       pieceType: str(c.pieceType),
       clarity,
       outlet,
       outletKey: outletKey(outlet),
-      known: isKnownOutlet(outlet, reprint ? null : host),
+      known: isKnownOutlet(outlet, reprint ? null : host, names),
       url,
       host,
       carrier,
@@ -282,7 +288,7 @@ export function buildPress(row: PressRowData | null, facts: RecordFacts, icons: 
       glyph: null,
       pct: null,
       kind,
-      member: s.member === true,
+      member,
       gradeIn,
     });
   });

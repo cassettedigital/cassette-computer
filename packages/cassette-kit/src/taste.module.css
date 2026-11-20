@@ -10,6 +10,7 @@
   --r-cover: 2px;
   --r-area: 24px;
   --r-pill: 999px;
+  --r-station: 18%;
   --t-display: 800 clamp(52px, 7.6vw, 108px) / 0.86 var(--f-display);
   --t-display-track: -0.01em;
   --t-head: 800 clamp(30px, 4.6cqi, 68px) / 0.9 var(--f-display);

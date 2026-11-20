@@ -6,9 +6,14 @@
  * square, as covers are) and their name, names only (founder, 2026-11-02). Every one is a door to their page in
  * the click-through. The rows, and the rule that the grid never ends on a short row (the founder, 2026-10-21),
  * are the kit's ArtistRows (promoted from here).
+ *
+ * Picking another side or kind of fan swaps the list in place, and the list holds its height through the swap
+ * (the founder, 2026-11-17: "the page kicks me up before loading a new list"). React takes the old artists out
+ * before it puts the new ones in, and Safari, seeing a page that is for a moment that much shorter, pulls the
+ * window up to fit; this shelf is near the page's foot, so a person reading it lost their place every time.
  */
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ArtistRows } from "@/app/_taste/ArtistRows";
 import { Menu, MenuRadio } from "@/app/_taste/Menu";
 import { SectionHead } from "@/app/_taste/SectionHead";
@@ -43,6 +48,17 @@ export function ArtistsLike({
 }) {
   const ALL = "all their fans";
   const [pick, setPick] = useState(fans ? (fans.lead ?? ALL) : "sound");
+  // the list's height, held from the pick until the new artists are in (the comment above)
+  const list = useRef<HTMLDivElement>(null);
+  const choose = (label: string) => {
+    if (label === pick) return;
+    const el = list.current;
+    if (el) el.style.minHeight = `${el.offsetHeight}px`;
+    setPick(label);
+  };
+  useLayoutEffect(() => {
+    if (list.current) list.current.style.minHeight = "";
+  }, [pick]);
   const shown = by.find((b) => b.label === pick)?.rows ?? rows;
   const options = fans ? [...(fans.lead ? [] : [{ label: ALL }]), ...by] : [];
   return (
@@ -57,7 +73,7 @@ export function ArtistsLike({
               <span className={s.likeWord}>
                 <Menu trigger="word" align="start" label={`Which of ${name}'s fans`} title={pick}>
                   {options.map((b) => (
-                    <MenuRadio key={b.label} checked={b.label === pick} onPick={() => setPick(b.label)}>
+                    <MenuRadio key={b.label} checked={b.label === pick} onPick={() => choose(b.label)}>
                       {b.label}
                     </MenuRadio>
                   ))}
@@ -76,7 +92,7 @@ export function ArtistsLike({
               <span className={s.likeWord}>
                 <Menu trigger="word" align="start" label={`What you like ${name} for`} title={pick}>
                   {[{ label: "sound" }, ...by].map((b) => (
-                    <MenuRadio key={b.label} checked={b.label === pick} onPick={() => setPick(b.label)}>
+                    <MenuRadio key={b.label} checked={b.label === pick} onPick={() => choose(b.label)}>
                       {b.label === "sound" ? "their sound" : b.label}
                     </MenuRadio>
                   ))}
@@ -92,7 +108,9 @@ export function ArtistsLike({
             {/[.!?]$/.test(name) ? "" : "."}
           </SectionHead>
         )}
-        <ArtistRows rows={shown.map((n) => ({ slug: n.slug, name: n.name, photo: n.photo, cover: n.cover, line: n.shares.join(" · ") }))} twoLines={twoLines} big />
+        <div ref={list}>
+          <ArtistRows rows={shown.map((n) => ({ slug: n.slug, name: n.name, photo: n.photo, cover: n.cover, line: n.shares.join(" · ") }))} twoLines={twoLines} big />
+        </div>
       </div>
     </section>
   );

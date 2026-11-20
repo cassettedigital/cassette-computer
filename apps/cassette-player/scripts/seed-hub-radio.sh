@@ -8,7 +8,7 @@
 # hub, while Cassette.app is open, from the repo root:
 #
 #     bash apps/cassette-player/scripts/seed-hub-radio.sh            # add / rename / upload logos
-#     bash apps/cassette-player/scripts/seed-hub-radio.sh --prune    # ...and remove stations not in the set
+#     bash apps/cassette-player/scripts/seed-hub-radio.sh --prune    # ...and remove stations not in the set (hand-added ones too)
 #     bash apps/cassette-player/scripts/seed-hub-radio.sh --list
 #     bash apps/cassette-player/scripts/seed-hub-radio.sh --delete <id>
 #
@@ -26,7 +26,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 CATALOG="$ROOT/apps/cassette-player/scripts/radio-catalog.json"
-ND="${NAVIDROME_BASE_URL:-http://localhost:4533}"
+# the installed hub's own address (its bundle's cassette.env: Navidrome moved to 4534), else the dev default
+ND_ENV="$(grep -E '^NAVIDROME_BASE_URL=' /Applications/Cassette.app/Contents/Resources/cassette.env 2>/dev/null | cut -d= -f2- || true)"
+ND="${NAVIDROME_BASE_URL:-${ND_ENV:-http://localhost:4533}}"
 
 # The phone set: the whole registry by default (the phone groups it into
 # sections). Narrow it with RADIO_STARTER="slug slug ..." in the environment.
@@ -46,6 +48,10 @@ if [ -z "$PW" ] || [ -z "$USER_" ]; then
   [ -n "$PW" ] || PW="$(printf '%s\n' "$ENV_" | grep '^NAVIDROME_ADMIN_PW=' | cut -d= -f2- || true)"
 fi
 USER_="${USER_:-cassette}"
+# The bundled hub mints its own password once and keeps it in its data folder (sidecar/admin_setup.go), so the
+# sidecar's environment no longer carries it: read the file, never print it.
+PW_FILE="${CASSETTE_DATA_DIR:-$HOME/Library/Application Support/Cassette Player}/navidrome-admin-password"
+[ -n "$PW" ] || { [ -r "$PW_FILE" ] && PW="$(head -1 "$PW_FILE" | tr -d '\r\n')"; } || true
 [ -n "$PW" ] || { echo "Could not find the music server's admin password in the sidecar's environment." >&2; exit 1; }
 
 echo "Signing in to the hub's music server as '$USER_'."
@@ -68,12 +74,16 @@ api() { curl -s --max-time 15 "${AUTH[@]}" "$@"; }
 list_json() { api "$ND/api/radio?_start=0&_end=500"; }
 
 if [ "${1:-}" = "--list" ]; then
-  list_json | python3 -c 'import sys,json; L=json.load(sys.stdin); [print(f"{s[\"id\"]}  {s[\"name\"]}  {s[\"streamUrl\"]}  {\"logo\" if s.get(\"uploadedImage\") else \"-\"}") for s in L]; print(len(L), "station(s)")'
+  list_json | python3 -c 'import sys,json
+L=json.load(sys.stdin)
+for s in L: print(s["id"], " ", s["name"], " ", s["streamUrl"], " ", "logo" if s.get("uploadedImage") else "-")
+print(len(L), "station(s)")'
   exit 0
 fi
 if [ "${1:-}" = "--delete" ]; then
-  [ -n "${2:-}" ] || { echo "usage: --delete <id>" >&2; exit 1; }
-  api -X DELETE "$ND/api/radio/$2" -o /dev/null -w "delete $2 → HTTP %{http_code}\n"
+  [ -n "${2:-}" ] || { echo "usage: --delete <id> [<id>...]" >&2; exit 1; }
+  # several ids on one sign-in: the music server refuses sign-ins after a few in a row
+  for id in "${@:2}"; do api -X DELETE "$ND/api/radio/$id" -o /dev/null -w "delete $id → HTTP %{http_code}\n"; done
   exit 0
 fi
 PRUNE=0; [ "${1:-}" = "--prune" ] && PRUNE=1

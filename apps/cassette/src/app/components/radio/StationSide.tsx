@@ -6,11 +6,13 @@
  * drift (the founder, 2026-11-16: "we should make an effort to unify these"). It draws in the player kit's
  * look, so its host puts it inside the kit's scope (the desk is; the website wraps it).
  *
- * The founder's calls it keeps (2026-10-27, 10-29): its art, its name and where it's from, Tune in and Save
- * side by side (the phone's way), a few quiet chips (what kind of station, what it plays), then what's on
- * the air as a log down a thread: the show on now with its picture, the song on now, the songs before it at
- * their times with their covers, the shows coming up; then the stations like it. No about text: its website
- * and where to support it are in the station's "…" menu, as on the phone.
+ * The founder's calls it keeps (2026-10-27, 10-29, 11-16): its art, its name and where it's from, Tune in and
+ * Save side by side (the phone's way), then what's on the air as a log down a thread: the show on now with its
+ * picture, the song on now, the songs before it at their times with their covers, the shows coming up; then
+ * the stations like it. No chips (11-16: what it plays is no news on a station you're already looking at) and
+ * no about text: its website and where to support it are in the station's "…" menu, as on the phone. Once the
+ * head scrolls out of the column, a slim bar at its top says which station this is and what's on (11-16: "why
+ * do I just see 'station', instead of the actual name of the station").
  *
  * It only draws. Each host passes what differs: its own pictures (the desk's come through its hub-aware Art,
  * the website's through the image ladder), its keys, what a click on a song does (the desk opens the record
@@ -20,9 +22,10 @@
  */
 
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { WordArt } from "@discovery/cassette-kit";
 import type { RadioMatch, RadioNowPlaying, RadioStationPage } from "@/lib/radio/types";
+import { rememberOnAir } from "./on-air-memory";
 import s from "./station-side.module.css";
 
 /** How often a station looked into is read again while it stays in view. */
@@ -41,10 +44,14 @@ export type SideStation = { slug: string; name: string; image: string | null; ac
  * The station's page (lib/radio/station-page, the route the phones read too): what's on, where it's from and
  * what it plays, its latest songs each matched to its record on Cassette, the stations like it. Read when it's
  * looked into, again every half minute while it stays there, and as soon as the radio hears the song change
- * (`song`); the last answer stays up meanwhile. Null until the first answers.
+ * (`song`); the last answer stays up meanwhile. Null until the first answers. `primed`: the caller already
+ * holds a fresh read (a station page the server just drew), so the first read waits the half minute rather
+ * than asking again the moment the page appears. Each read also tells the dial what's on (on-air-memory), so
+ * its card is current when you go back to it.
  */
-export function useStationPage(slug: string | null, song: string | null): RadioStationPage | null {
+export function useStationPage(slug: string | null, song: string | null, primed = false): RadioStationPage | null {
   const [got, setGot] = useState<{ slug: string; page: RadioStationPage | null } | null>(null);
+  const skipFirst = useRef(primed);
   useEffect(() => {
     if (!slug) return;
     let gone = false;
@@ -53,11 +60,16 @@ export function useStationPage(slug: string | null, song: string | null): RadioS
       fetch(`/api/radio/station/${encodeURIComponent(slug)}`)
         .then((r) => (r.ok ? (r.json() as Promise<RadioStationPage>) : null))
         .then(
-          (page) => !gone && setGot((was) => (page || was?.slug !== slug ? { slug, page } : was)),
+          (page) => {
+            if (gone) return;
+            if (page) rememberOnAir(slug, page.live);
+            setGot((was) => (page || was?.slug !== slug ? { slug, page } : was));
+          },
           () => {},
         );
     };
-    read();
+    if (skipFirst.current) skipFirst.current = false;
+    else read();
     const id = window.setInterval(read, STATION_PAGE_MS);
     return () => {
       gone = true;
@@ -72,6 +84,15 @@ const clock = (iso: string | null | undefined) => {
   const t = new Date(iso);
   return Number.isNaN(t.getTime()) ? null : t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 };
+
+/** The nearest box around `el` that scrolls (the side view's column), or null for the window. */
+function scroller(el: HTMLElement): HTMLElement | null {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const y = getComputedStyle(p).overflowY;
+    if (y === "auto" || y === "scroll") return p;
+  }
+  return null;
+}
 
 const same = (a: { artist: string; title: string }, b: { artist: string; title: string }) =>
   a.artist.trim().toLowerCase() === b.artist.trim().toLowerCase() && a.title.trim().toLowerCase() === b.title.trim().toLowerCase();
@@ -120,9 +141,18 @@ export function StationSide({
   classNames?: Partial<Record<"look" | "art" | "text" | "title", string>>;
 }) {
   const cx = (mine: string, theirs?: string) => (theirs ? `${mine} ${theirs}` : mine);
-  const st = page?.station ?? null;
-  // the line under the name already says where it's from, so the chips say only what it plays
-  const chips = st ? [st.kind === "station" ? "Live shows" : "One sound, all day", ...st.genres.slice(0, 3)] : [];
+  // the head scrolled out of the column: the bar at its top takes over saying what station this is and what's on
+  const headRef = useRef<HTMLDivElement>(null);
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    const el = headRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    // measured against the column that scrolls (not the window: the website's rail slides in from off-screen, so
+    // against the window its head read as scrolled away until something moved)
+    const io = new IntersectionObserver(([e]) => setAway(!e.isIntersecting), { root: scroller(el) });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const show = live?.show ?? null;
   const track = live?.track ?? null;
   // a song wears the record we carry, else the station's cover for it, else the station's own mark
@@ -130,26 +160,34 @@ export function StationSide({
   const later = (page?.live?.next ?? []).slice(0, 2);
   // the radio can hear a new song before the page catches up: never the song on now twice
   const recent = (page?.recent ?? []).filter((p) => !track || !same(p, track)).slice(0, 6);
+  const nowLine = track ? `${track.title} · ${track.artist}` : show ? [show.name, show.host ? `with ${show.host}` : null].filter(Boolean).join(" ") : null;
   const like: SideStation[] =
     similar ?? (page?.similar ?? []).map((x) => ({ slug: x.slug, name: x.name, image: x.image, accent: x.accent, line: [x.sourceLabel, x.cityLabels[0]].filter(Boolean).join(" · ") }));
 
   return (
     <div className={cx(s.look, classNames?.look)} style={style}>
-      <span className={cx(s.lookArt, classNames?.art)} data-app="">
+      <div className={s.peekAt} aria-hidden={!away || undefined}>
+        <div className={s.peek} data-on={away || undefined}>
+          <span className={s.peekArt} data-station-glass="">{station.image ? picture(station.image, 32) : <WordArt name={station.name} accent={station.accent} />}</span>
+          <span className={s.peekText}>
+            <span className={s.peekName}>{station.name}</span>
+            {nowLine && (
+              <span className={s.peekNow}>
+                <i className={s.liveDot} aria-hidden="true" />
+                <span className={s.peekNowText}>{nowLine}</span>
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+      <span className={cx(s.lookArt, classNames?.art)} data-app="" data-station-glass="">
         {station.image ? picture(station.image, 380, { priority: true }) : <WordArt name={station.name} accent={station.accent} />}
       </span>
-      <div className={cx(s.lookText, classNames?.text)}>
+      <div ref={headRef} className={cx(s.lookText, classNames?.text)}>
         <h2 className={cx(s.lookTitle, classNames?.title)}>{titleHref ? <Link href={titleHref}>{station.name}</Link> : station.name}</h2>
         {station.kicker && <p className={s.lookBy}>{station.kicker}</p>}
       </div>
       {keys}
-      {chips.length > 0 && (
-        <ul className={s.stChips} aria-label="About the station">
-          {chips.map((c) => (
-            <li key={c}>{c}</li>
-          ))}
-        </ul>
-      )}
 
       {(show || track || recent.length > 0) && (
         <section className={s.stSection} aria-label="On the air">
@@ -220,7 +258,7 @@ export function StationSide({
               const hit = stationHit(x);
               const face = (
                 <>
-                  <span className={s.stLikeArt}>{x.image ? picture(x.image, 40) : <WordArt name={x.name} accent={x.accent} />}</span>
+                  <span className={s.stLikeArt} data-station-glass="">{x.image ? picture(x.image, 40) : <WordArt name={x.name} accent={x.accent} />}</span>
                   <span className={s.stLikeText}>
                     <span className={s.stLikeName}>{x.name}</span>
                     <span className={s.stLikeLine}>{x.line}</span>

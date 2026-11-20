@@ -30,6 +30,7 @@ import { ArrowLink } from "@/app/_taste/Button";
 import { BuyMenu } from "@/app/(taste)/album/[slug]/BuyMenu";
 import type { Surface } from "@/lib/app-surface";
 import Link from "next/link";
+import { ActionRow } from "@/app/_taste/ActionRow";
 import { buttonClass } from "@/app/_taste/Button";
 import { accentVars } from "@/app/_taste/colour";
 import { CoverArt } from "@/app/_taste/Cover";
@@ -68,6 +69,7 @@ function Line({ l }: { l: RecordLine }) {
  * Preview album: the shared play button on one line (the founder, 2026-10-21: the song's name beside
  * "Read all reviews" was more than the row could hold). It plays the record from its start song and
  * round, as Hear it does on the album page, and says Playing or Paused while a song of it is docked.
+ * Beside a long store name it gives way, to "Preview" and then to the play glyph alone (Acts' row).
  */
 function Preview({ r }: { r: RecordItem }) {
   const { track, status, playList, toggle } = usePlayer();
@@ -76,9 +78,9 @@ function Preview({ r }: { r: RecordItem }) {
   const mine = !!track && queue.some((x) => x.trackId === track.trackId);
   return (
     <PlayButton
-      className={s.act}
       state={mine ? status : "idle"}
       verb="Preview album"
+      short="Preview"
       aria-pressed={mine && status === "playing"}
       aria-label={!mine ? `Preview ${r.title}, from ${queue[start].title}` : status === "paused" ? `Resume ${r.title}` : `Pause ${r.title}`}
       onClick={() => (mine ? toggle() : playList(queue, start, { wrap: true }))}
@@ -103,19 +105,22 @@ function Buy({ r, surface }: { r: RecordItem; surface: Surface }) {
   return <BuyMenu slug={r.slug} options={r.buy.options} pick={r.buy.pick} apple={r.buy.apple} signedIn={status === "authenticated"} surface={surface} />;
 }
 
-/** The record's two buttons, Preview album and Buy, side by side while they fit, each its own row on a
- *  phone; with neither (no preview, nowhere sells it), the way into the album stands in. */
+/** The record's two buttons, Preview album and Buy, always side by side on one row (the founder,
+ *  2026-11-17: wrapped onto two rows of different widths they "look crazy broken"), the shared ActionRow:
+ *  Buy's own name runs long ("Buy on Barnes & Noble"), so when the row can't hold both, Preview gives way
+ *  first, to "Preview", then to the play glyph alone. With neither (no preview, nowhere sells it), the way
+ *  into the album stands in. */
 function Acts({ r, surface }: { r: RecordItem; surface: Surface }) {
   return (
-    <div className={s.viewActs}>
+    <ActionRow className={s.viewActs}>
       <Preview r={r} />
       <Buy r={r} surface={surface} />
       {!r.hear && !r.buy && (
-        <Link href={albumHref(r.slug)} className={buttonClass("outlined", s.act)}>
+        <Link href={albumHref(r.slug)} className={buttonClass("outlined")}>
           Open the album
         </Link>
       )}
-    </div>
+    </ActionRow>
   );
 }
 

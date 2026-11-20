@@ -6,14 +6,15 @@
  * honest status light (the one orange while live), whatever the station's adapter can tell us about what
  * is on (the song's cover or the show's own picture over the station's square, when the show ends and
  * what comes next), and, when the record matched our catalog, a quiet link to it. The foot sends people
- * to the station. RadioDockView draws it from plain data; RadioDock wires it to the radio lane.
+ * to the station: its website, then its ways to support it or buy from its shop (lib/radio/give). RadioDockView draws it from plain data; RadioDock wires it to the radio lane.
  */
 
 import Link from "next/link";
 import { AlbumCover } from "@/app/components/AlbumCover";
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Button } from "@/app/_taste/Button";
 import { Icon } from "@/app/_taste/Icon";
+import { giveItems, keepUsualGive, readUsualGive } from "@/lib/radio/give";
 import { liveArt } from "@/lib/radio/live-art";
 import type { RadioCatalogStation, RadioNowPlaying } from "@/lib/radio/types";
 import { useRadioNow, type RadioStatus } from "./RadioProvider";
@@ -59,6 +60,10 @@ export function RadioDockView({
   const track = nowPlaying?.track ?? null;
   const show = nowPlaying?.show ?? null;
   const match = nowPlaying?.match ?? null;
+  // the ways to back it, in the order every station surface uses (lib/radio/give): the usual one first
+  const [usual, setUsual] = useState<string | null>(null);
+  useEffect(() => setUsual(readUsualGive()), [station.slug]);
+  const gives = giveItems(station, usual);
 
   const statusLabel = status === "playing" ? "Live" : status === "connecting" ? "Connecting" : "Couldn't connect";
   const primary = track ? track.title : show ? show.name : station.description;
@@ -67,8 +72,9 @@ export function RadioDockView({
     : show
       ? [show.host, show.genres?.join(", ")].filter(Boolean).join(" · ") || station.sourceLabel
       : station.sourceLabel;
-  const comment = track?.comment ? (track.comment.length > 160 ? `${track.comment.slice(0, 157)}…` : track.comment) : null;
   const art = liveArt(nowPlaying) ?? station.image ?? null;
+  // the station's own mark wears the app icon's shape; a song's cover or a show's picture keeps a cover's corners
+  const mark = !liveArt(nowPlaying);
 
   // When: the show's end, then the next show (or, on a station that publishes
   // its running order, the next song).
@@ -112,7 +118,7 @@ export function RadioDockView({
       </div>
 
       <div className={styles.body}>
-        <StationArt key={art ?? "tile"} src={art} name={station.name} size={56} className={styles.art} />
+        <StationArt key={art ?? "tile"} src={art} name={station.name} size={56} className={mark ? `${styles.art} ${styles.mark}` : styles.art} glass={mark} />
         <div className={styles.meta}>
           <span className={styles.status} data-state={status}>
             <span className={styles.dot} aria-hidden="true" />
@@ -130,7 +136,6 @@ export function RadioDockView({
               {when}
             </span>
           )}
-          {comment && <span className={styles.comment}>&ldquo;{comment}&rdquo;</span>}
         </div>
       </div>
 
@@ -165,12 +170,15 @@ export function RadioDockView({
             <Icon name="out" size={11} />
           </a>
         )}
-        {station.supportUrl && (
-          <a className={styles.footLink} href={station.supportUrl} target="_blank" rel="noopener">
-            Support
+        {gives.map((g) => (
+          <a key={g.give} className={styles.footLink} href={g.href} target="_blank" rel="noopener" onClick={() => {
+              keepUsualGive(g.give);
+              setUsual(g.give);
+            }}>
+            {g.word}
             <Icon name="out" size={11} />
           </a>
-        )}
+        ))}
         <span className={styles.kind}>{station.kind === "station" ? "Live radio" : "Channel"}</span>
       </div>
     </div>

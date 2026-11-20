@@ -17,6 +17,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Skeleton } from "./Skeleton";
 import { ArtistPhoto } from "@/app/components/ArtistPhoto";
 import { Sleeve } from "./Sleeve";
 import { artistHref } from "./links";
@@ -67,6 +68,31 @@ export function ArtistRows({
               {r.line ? <span className={a.line} data-two={twoLines || undefined}>{r.line}</span> : null}
             </span>
           </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The rows on their way (an artist's Artists like while the server works it out): the same grid, each row its
+ *  face and name as the shared skeleton's bones, so the list lands where they stood. */
+export function ArtistRowsSkeleton({ count = 12, big = false }: { count?: number; big?: boolean }) {
+  const in2 = fullRows(count, 2);
+  const in3 = fullRows(count, 3);
+  return (
+    <ul className={[a.rows, big && a.big].filter(Boolean).join(" ")} aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => (
+        <li key={i} data-past2={i >= in2 || undefined} data-past3={i >= in3 || undefined}>
+          <span className={a.link}>
+            <span className={a.face} data-kind="photo" style={{ background: "transparent" }}>
+              <Skeleton shape="circle" w="100%" />
+            </span>
+            <span className={a.text}>
+              <span className={a.name}>
+                <Skeleton shape="text" w={`${[62, 48, 70, 55, 66, 44][i % 6]}%`} />
+              </span>
+            </span>
+          </span>
         </li>
       ))}
     </ul>

@@ -44,6 +44,11 @@
 .withAfter[data-inline][data-small] {
   font: var(--t-head-small);
 }
+/* a small head keeps a small head's room under it, with a control after it or not, so its shelf or section sits the
+   same distance under it either way */
+.withAfter[data-small] {
+  margin-bottom: clamp(12px, 1.6cqi, 20px);
+}
 
 /* a control at the head's far end */
 .withTrail {

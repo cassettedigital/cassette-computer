@@ -33,13 +33,46 @@
     animation: none;
   }
 }
-/* the head: the kit's switch, then "…" and Close */
+/* the head: what the radio is doing (the app's orange "Now" marker: Live, Tuning in, No signal), then "…" and
+   Close */
 .head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 12px 12px 6px clamp(16px, 1.8vw, 24px);
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font: 700 11px/1 var(--pk-f-mono); /* floor: not in app (the rail shows only on a window 1100 wide or more, which the iPhone app's pages never are) */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pk-accent-text);
+}
+.status[data-state="error"] {
+  color: var(--pk-text-tertiary);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status[data-state="connecting"] .dot {
+  animation: tuning 1.2s ease-in-out infinite;
+}
+@keyframes tuning {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status[data-state="connecting"] .dot {
+    animation: none;
+  }
 }
 .keys {
   display: flex;

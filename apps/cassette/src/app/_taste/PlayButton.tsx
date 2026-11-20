@@ -5,13 +5,14 @@
  * Android" was copy over copy). Playing (or loading) shows the pause glyph and "Playing"; paused shows
  * the play glyph and "Paused". It only draws: the page wires it to its player and says what state that
  * player is in for this button's music. Lists keep the playing Bars instead (a row is an indicator, a
- * button is a control).
+ * button is a control). In a row of buttons (ActionRow) it is the first to give way when the row is short
+ * of room: its `short` word ("Preview"), then its glyph alone (row-fit.ts); its label still says what it does.
  */
 
 import type { ComponentPropsWithRef } from "react";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
-import b from "./button.module.css";
+import { Say } from "./Say";
 
 /** This button's music, as the player sees it: not docked, or docked and loading, playing or paused. */
 export type PlayState = "idle" | "loading" | "playing" | "paused";
@@ -19,17 +20,20 @@ export type PlayState = "idle" | "loading" | "playing" | "paused";
 export function PlayButton({
   state,
   verb,
+  short,
   ...rest
 }: Omit<ComponentPropsWithRef<"button">, "children"> & {
   state: PlayState;
   /** The words while nothing of this is docked: "Preview album", "Preview Radiohead". */
   verb: string;
+  /** The verb's short form for a row with little room: "Preview". */
+  short?: string;
 }) {
   const moving = state === "playing" || state === "loading";
   const word = state === "idle" ? verb : state === "paused" ? "Paused" : "Playing";
   return (
-    <Button look="filled" icon={<Icon name={moving ? "pause" : "play"} size={14} />} data-live={state === "playing" || undefined} {...rest}>
-      <span className={b.one}>{word}</span>
+    <Button look="filled" icon={<Icon name={moving ? "pause" : "play"} size={14} />} data-live={state === "playing" || undefined} data-give="play" {...rest}>
+      <Say whole={word} short={state === "idle" ? short : undefined} />
     </Button>
   );
 }

@@ -1,0 +1,109 @@
+/* The Feedback key in the corner of every page (FeedbackCorner.tsx). Drawn from the player kit's tokens, the
+   same as the note box it opens, and like it dark on every paper, as the masthead is. 38px tall: the help dock's "?" it
+   sits beside on the dashboard is 38px, and keys side by side share one height. */
+
+/* the kit's tokens reach the key without the wrapper taking a box of its own */
+.tokens {
+  display: contents;
+}
+
+.corner {
+  position: fixed;
+  left: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: var(--cs-z-nav); /* above the page, under the players (320+), menus and the note box itself */
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 15px 0 13px;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-elevated);
+  box-shadow:
+    inset 0 0 0 1px var(--pk-hairline),
+    0 6px 18px rgb(0 0 0 / 0.18);
+  color: var(--pk-text-primary);
+  font: var(--pk-t-section-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.corner:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 45%, transparent),
+    0 8px 22px rgb(0 0 0 / 0.22);
+}
+.corner:active {
+  transform: none;
+}
+.corner:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.corner svg {
+  flex: none;
+}
+
+/* a phone: the glyph alone, a round key */
+@media (max-width: 600px) {
+  .corner {
+    left: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* the radio dock spans a phone's width at the bottom (RadioDock.module.css): sit above it */
+  :global(html[data-radio="open"]) .corner {
+    bottom: calc(220px + var(--cs-space-4) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* The dashboard (its shell marks html[data-transport]): beside the help dock's "?" in the bottom right, at its
+   height and lifted with it (HelpDock.module.css), since the shell's bottom left is the account menu. */
+:global(html[data-transport]) .corner {
+  left: auto;
+  right: calc(var(--cs-space-5) + 38px + var(--cs-space-3));
+  bottom: var(--cs-space-5);
+}
+:global(html[data-transport="transport"]) .corner,
+:global(html[data-transport="offline"]) .corner {
+  bottom: calc(72px + var(--cs-space-4));
+}
+:global(html[data-transport][data-radio="open"]) .corner {
+  bottom: calc(220px + var(--cs-space-4));
+}
+:global(html[data-transport="transport"][data-radio="open"]) .corner,
+:global(html[data-transport="offline"][data-radio="open"]) .corner {
+  bottom: calc(72px + 220px + var(--cs-space-4));
+}
+
+/* inside the iPhone app's web view, or the account window's panel: the app is the frame */
+:global(html[data-surface="app"]) .corner {
+  display: none;
+}
+
+@media print {
+  .corner {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corner {
+    transition: none;
+  }
+}

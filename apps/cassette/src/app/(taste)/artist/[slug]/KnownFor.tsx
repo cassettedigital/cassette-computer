@@ -1,6 +1,8 @@
 /**
  * 4. Known for: what their sound is made of, by weight, as the Known For picker ranks it, with up to
- * three of the records that show each trait most; every cover is a door into that record's page here.
+ * three of the records that show each trait most; every cover is a door into that record's page here, and
+ * pointed at, names its record in a small label above it (the masthead's own key label; the founder,
+ * 2026-11-17: "so I can see what album I'm hovering on").
  * The weight is the shared measured bar (the album meter's own), in the lead record's colour. The bars
  * are the page's one focal motion: they fill once when the list scrolls in (the shell marks it
  * data-shown), and stand full at once for anyone who asks for less motion.
@@ -33,9 +35,11 @@ export function KnownFor({ rows }: { rows: KnownRow[] }) {
               {row.exemplars.length > 0 && (
                 <span className={s.exemplars}>
                   {row.exemplars.map((e) => (
-                    <Link key={e.slug} href={albumHref(e.slug)} title={e.title} aria-label={e.title}>
-                      <Sleeve src={e.cover} title={e.title} small />
-                    </Link>
+                    <span key={e.slug} className={s.ex} data-tip={e.title}>
+                      <Link href={albumHref(e.slug)} aria-label={e.title}>
+                        <Sleeve src={e.cover} title={e.title} small />
+                      </Link>
+                    </span>
                   ))}
                 </span>
               )}

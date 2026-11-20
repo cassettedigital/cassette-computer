@@ -18,14 +18,26 @@ export function initials(s: string): string {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || s.slice(0, 2).toUpperCase();
 }
 
-export function StationArt({ src, name, size, className }: { src: string | null; name: string; size: number; className: string }) {
+/**
+ * `glass`: the station's own mark (not a show's picture or a song's cover worn in its place) under the
+ * station glass (globals.css, data-station-glass); the picture then sits in a box of `className` that
+ * clips it, since a picture can't draw over itself.
+ */
+export function StationArt({ src, name, size, className, glass }: { src: string | null; name: string; size: number; className: string; glass?: boolean }) {
   const [gone, setGone] = useState(false);
   const pic = src && !gone ? picture(src, "station") : null;
   if (pic && (pic.image || pic.original)) {
+    if (glass) {
+      return (
+        <span className={className} data-station-glass="" style={{ overflow: "hidden" }}>
+          <Picture {...pic} frame={size} fill width={size} height={size} alt="" style={{ objectFit: "cover" }} onError={() => setGone(true)} />
+        </span>
+      );
+    }
     return <Picture {...pic} frame={size} className={className} width={size} height={size} alt="" onError={() => setGone(true)} />;
   }
   return (
-    <span className={className} data-tile="" aria-hidden="true">
+    <span className={className} data-tile="" data-station-glass={glass ? "" : undefined} aria-hidden="true">
       {initials(name)}
     </span>
   );

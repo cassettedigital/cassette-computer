@@ -33,6 +33,7 @@ import {
 import type { RadioCatalog, RadioCatalogStation, RadioNowPlaying } from "@/lib/radio/types";
 import { announceAudioLane, onOtherAudioLane } from "@/lib/audio-lane";
 import { inPanelFrame, type PanelHears, type PanelSays } from "@/lib/app-surface";
+import { useNoteNowPlaying } from "@/lib/diagnostics/now-playing";
 
 export type RadioStatus = "idle" | "connecting" | "playing" | "error";
 
@@ -332,6 +333,19 @@ export function RadioProvider({ children }: { children: ReactNode }) {
       window.clearInterval(id);
     };
   }, [station, status]);
+
+  // a note to the founder says which station was on and what it was playing (lib/diagnostics/now-playing)
+  useNoteNowPlaying(
+    "radio",
+    station && status !== "idle"
+      ? {
+          state: status,
+          station: station.name,
+          title: nowPlaying?.track?.title ?? nowPlaying?.show?.name ?? null,
+          artist: nowPlaying?.track?.artist ?? nowPlaying?.show?.host ?? null,
+        }
+      : null,
+  );
 
   // Media Session: lock screen / media keys name the station and what's on.
   useEffect(() => {

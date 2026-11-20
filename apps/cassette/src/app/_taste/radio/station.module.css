@@ -67,6 +67,10 @@
 .art[data-tile] {
   background: color-mix(in srgb, var(--station, var(--sleeve)) 50%, var(--raised));
 }
+/* the station's own mark (not a show's picture worn over it): rounded like the app icon it is */
+.mark {
+  border-radius: var(--r-station);
+}
 .titles {
   display: grid;
   gap: 6px;

@@ -3,11 +3,15 @@
  * classes, so the page arrives where its skeleton stood. The bones are the paper's own track ink, so one
  * skeleton reads right on the light paper and the dark, and inside the desk's window.
  *
- *   SkeletonPage   the set: "Loading" for a screen reader; nothing at all for a quick load, then the bones,
- *                  then one slow breath for the whole set (none when the reader asks for less motion)
- *   Skeleton       one bone: a line (the default), a pill (a button's height and corners), a cover (a
- *                  square), a circle. `w` and `h` size it; anything else (a page's class, a data attribute
- *                  its CSS keys on) passes through
+ * The look and the motion are skeleton.module.css's, the site's one (nothing for a quick load, then one
+ * band of light across every bone at once); every loading state on the site is drawn with these parts.
+ *
+ *   SkeletonPage   the set: "Loading" for a screen reader, and nothing in it answers a pointer
+ *   Skeleton       one bone: a line (the default, sized by `w` and `h`), text (a line of type as tall as
+ *                  the letters of the class around it), a pill (a button's height and corners), a cover (a
+ *                  square), a circle. Anything else (a page's class, a data attribute its CSS keys on)
+ *                  passes through
+ *   SkeletonText   a paragraph: its lines in the type of the class around it, the last one short
  *   SkeletonFacts  the facts row (P11): small labels over their values
  *   SkeletonRows   a list's rows: the number, the title (its width varies, so it reads as a list), the
  *                  length; laid out by the page's own row class when it passes one
@@ -29,7 +33,7 @@ export function Skeleton({
   style,
   ...rest
 }: Omit<HTMLAttributes<HTMLSpanElement>, "children"> & {
-  shape?: "line" | "pill" | "cover" | "circle";
+  shape?: "line" | "text" | "pill" | "cover" | "circle";
   w?: Size;
   h?: Size;
 }) {
@@ -53,6 +57,19 @@ export function SkeletonPage({ label, className, children }: { label: string; cl
       {/* the bones and the page's empty boxes around them say nothing to a screen reader */}
       <div aria-hidden="true">{children}</div>
     </div>
+  );
+}
+
+// a paragraph's line ends, so it reads as text and not as a ruled pad
+const ENDS = [100, 96, 98, 93, 97];
+
+export function SkeletonText({ lines = 3, last = "62%", className }: { lines?: number; last?: string; className?: string }) {
+  return (
+    <span className={className ? `${sk.text} ${className}` : sk.text} aria-hidden="true">
+      {Array.from({ length: lines }, (_, i) => (
+        <Skeleton key={i} shape="text" w={i === lines - 1 && lines > 1 ? last : `${ENDS[i % ENDS.length]}%`} />
+      ))}
+    </span>
   );
 }
 

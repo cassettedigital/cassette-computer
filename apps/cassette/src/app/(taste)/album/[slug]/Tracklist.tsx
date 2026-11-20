@@ -102,8 +102,11 @@ export function Tracklist({ p, share = true }: { p: AlbumPage; share?: boolean }
           {cur ? <Bars live={status === "playing"} className={a.nMark} /> : (i >= 0 || own != null) && <PlayOver bare size={14} />}
         </span>
         <span className={a.t}>
-          {t.title}
-          {t.featured.length > 0 && <span className={a.feat}> feat. {t.featured.join(", ")}</span>}
+          {/* the title's own line, which carries the leader to the length on a wide page */}
+          <span className={a.tLine}>
+            <span>{t.title}</span>
+            {t.featured.length > 0 && <span className={a.feat}> feat. {t.featured.join(", ")}</span>}
+          </span>
           {p.songWords[String(t.id)] && <span className={a.songWords}>{p.songWords[String(t.id)].join(" · ")}</span>}
         </span>
         <span className={a.len}>{fmtTime(t.seconds)}</span>

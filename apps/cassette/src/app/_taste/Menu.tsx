@@ -7,6 +7,12 @@
  * store it leads with) or the first; the arrow keys move and wrap, Home and End jump, Escape closes and
  * gives the focus back to the button, Tab closes, and a click or tap outside closes. Picking closes it.
  *
+ * The panel takes the colour of the button it came out of, not the site's (the founder, 2026-11-18): the
+ * masthead's dark pill opens a dark panel, the near-black glass; a button on the paper (Buy, a head's word, the
+ * records' sort) opens a panel of the paper, its raised stock in the same ink. And it stays attached to that
+ * button: it hangs from the button's own edge, never from the row it sits in, opening inward (from its right
+ * edge when the button is in the window's right half), and only slides along to stay inside the window.
+ *
  * One panel (the founder, 2026-11-16): made of the masthead's pill, its near-black glass on either paper,
  * with concentric corners (menu.module.css). Group heads in the label type, items in the masthead's
  * typewriter caps; the current choice is the masthead's lift: no dot, no tick. It grows out of its
@@ -35,7 +41,7 @@
  * menu), MenuLine (a line between kinds of rows).
  */
 
-import { createContext, useContext, useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { Button } from "./Button";
 import { Icon, type IconName } from "./Icon";
 import b from "./button.module.css";
@@ -82,6 +88,9 @@ export function Menu({
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
+  // which edge it hangs from, worked out as it opens: inward, toward the middle of the window, so a menu at the
+  // page's right (Buy, at the end of a row) opens leftward and never runs off (the founder, 2026-11-18)
+  const [side, setSide] = useState<"start" | "end">(align === "end" ? "end" : "start");
   const wrap = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -106,6 +115,23 @@ export function Menu({
     document.addEventListener("pointerdown", away);
     return () => document.removeEventListener("pointerdown", away);
   }, [open]);
+
+  // attached: the panel hangs from its button's edge and only slides along it to stay inside the window
+  useLayoutEffect(() => {
+    const el = panel.current;
+    if (!open || !el) return;
+    el.style.removeProperty("--menu-slide");
+    // its laid-out box, not its drawn one: it opens from a slightly smaller scale, which a bounding box would read
+    const box = wrap.current?.getBoundingClientRect();
+    if (!box) return;
+    const left = box.left + el.offsetLeft;
+    const right = left + el.offsetWidth;
+    const room = 12;
+    let dx = 0;
+    if (right > window.innerWidth - room) dx = window.innerWidth - room - right;
+    if (left + dx < room) dx = room - left;
+    if (dx) el.style.setProperty("--menu-slide", `${Math.round(dx)}px`);
+  }, [open, side]);
 
   const onMenuKey = (e: KeyboardEvent<HTMLDivElement>) => {
     const list = items();
@@ -133,6 +159,8 @@ export function Menu({
   };
 
   const menuId = `${id}-menu`;
+  // the masthead's keys are on its dark pill, so their panel is the dark glass; every other trigger sits on the paper
+  const ink = trigger === "avatar" || trigger === "menu";
   const buttonProps = {
     ref: button,
     "aria-haspopup": "menu" as const,
@@ -141,6 +169,10 @@ export function Menu({
     "aria-label": buttonLabel,
     onClick: () => {
       onWarm?.();
+      if (!open && align !== "end") {
+        const r = wrap.current?.getBoundingClientRect();
+        if (r) setSide(r.left + r.width / 2 > window.innerWidth / 2 ? "end" : "start");
+      }
       setOpen((o) => !o);
     },
     onKeyDown: onButtonKey,
@@ -154,7 +186,7 @@ export function Menu({
 
   return (
     <Ctx.Provider value={{ close }}>
-      <div ref={wrap} className={m.wrap} data-align={align} data-open={open || undefined}>
+      <div ref={wrap} className={m.wrap} data-align={align} data-side={side} data-open={open || undefined}>
         {trigger === "text" ? (
           <button type="button" className={m.text} data-open={open || undefined} {...buttonProps}>
             {title}
@@ -191,7 +223,16 @@ export function Menu({
             {title}
           </Button>
         )}
-        <div ref={panel} id={menuId} role="menu" aria-label={label} className={`${t.dark} ${m.panel}`} hidden={!open} onKeyDown={onMenuKey}>
+        <div
+          ref={panel}
+          id={menuId}
+          role="menu"
+          aria-label={label}
+          className={ink ? `${t.dark} ${m.panel}` : m.panel}
+          data-tone={ink ? "ink" : "paper"}
+          hidden={!open}
+          onKeyDown={onMenuKey}
+        >
           {children}
         </div>
       </div>

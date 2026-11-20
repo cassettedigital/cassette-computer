@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Save for a station, drawn as the kit's save key: the outlined pill with a plus, latched on with a
- * check while saved (the artist page's Follow is the same key). Storage is the site's general follow
+ * Save for a station, drawn as the kit's save key: the outlined pill with a bookmark, filled in while saved (the
+ * founder, 2026-11-19: never swapped for a check). In a row short of room it gives up its word and keeps the
+ * bookmark, as the artist page's Follow keeps its plus (ActionRow's "word" step). Storage is the site's general follow
  * edge (the same table that holds followed artists and labels), under the word people use for music
  * they keep: Save. Saved stations are what the hub mirrors down to the phones.
  *
@@ -13,6 +14,7 @@
 
 import { Button } from "@/app/_taste/Button";
 import { Icon } from "@/app/_taste/Icon";
+import { Say } from "@/app/_taste/Say";
 import { useRadio } from "@/app/components/radio/RadioProvider";
 
 export function SaveStationKey({ station }: { station: { slug: string; name: string } }) {
@@ -27,14 +29,17 @@ export function SaveStationKey({ station }: { station: { slug: string; name: str
   }
 
   return (
+    // the bookmark beside the word, filled once saved (never swapped for a check); in a row short of
+    // room the word goes and the bookmark stays (ActionRow's "word" step, as Follow gives up its word for its plus)
     <Button
       look="outlined"
-      icon={<Icon name={isSaved ? "check" : "plus"} size={14} />}
+      data-give="word"
+      icon={<Icon name="bookmark" filled={isSaved} size={14} />}
       aria-pressed={isSaved}
       aria-label={isSaved ? `Saved ${station.name}` : `Save ${station.name}`}
       onClick={() => void toggle()}
     >
-      {isSaved ? "Saved" : "Save"}
+      <Say whole={isSaved ? "Saved" : "Save"} />
     </Button>
   );
 }

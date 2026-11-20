@@ -37,14 +37,15 @@ function MarkGradient({ id }: { id: string }) {
   );
 }
 
-export function LogoMark({ className }: { className?: string }) {
+/** The mark: in its gradient, or (`tone="white"`) plain white, for a dark ground the gradient wouldn't read on. */
+export function LogoMark({ className, tone = "gradient" }: { className?: string; tone?: "gradient" | "white" }) {
   const id = `${useId().replace(/[^a-zA-Z0-9]/g, "")}mark`;
   return (
     <svg
       viewBox="0 0 32 32"
       className={className}
       fill="none"
-      stroke={`url(#${id})`}
+      stroke={tone === "white" ? "#fff" : `url(#${id})`}
       strokeWidth="2.2"
       strokeLinejoin="round"
       strokeLinecap="round"

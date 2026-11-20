@@ -33,6 +33,7 @@ export function Button({
   look,
   icon,
   trail,
+  round,
   className,
   children,
   type = "button",
@@ -43,9 +44,14 @@ export function Button({
   icon?: ReactNode;
   /** A trailing piece after the label. */
   trail?: ReactNode;
+  /**
+   * The glyph alone in a round key at the button's height, for a key whose glyph says it all and which must not
+   * change size as its state changes (a live stream's mute: turning, mute, unmute). It still needs an aria-label.
+   */
+  round?: boolean;
 }) {
   return (
-    <button type={type} className={buttonClass(look, className)} {...rest}>
+    <button type={type} className={buttonClass(look, round ? [b.round, className].filter(Boolean).join(" ") : className)} {...rest}>
       {icon}
       {children}
       {trail}
@@ -90,9 +96,19 @@ export function ArrowButton({ className, children, type = "button", ...rest }: O
   );
 }
 
-/** A link inside a sentence: the sentence's own letter and colour, underlined. */
-export function InlineLink({ href, plain, className, children, ...rest }: LinkProps) {
-  const cls = className ? `${b.inline} ${className}` : b.inline;
+/** A link inside a sentence: the sentence's own letter and colour, underlined. With `out` (a link that leaves the
+ *  site, in a line of details: a station's own site), underlined only when pointed at, the out arrow sliding in. */
+export function InlineLink({ href, plain, className, children, out, ...rest }: LinkProps & { out?: boolean }) {
+  const cls = [b.inline, out ? b.out : null, className].filter(Boolean).join(" ");
+  if (out)
+    return (
+      <a className={cls} href={href} target="_blank" rel="noopener noreferrer" {...rest}>
+        {children}
+        <span className={b.outIcon} aria-hidden="true">
+          <Icon name="out" size={12} />
+        </span>
+      </a>
+    );
   return plain || plainHref(href) ? (
     <a className={cls} href={href} {...rest}>
       {children}

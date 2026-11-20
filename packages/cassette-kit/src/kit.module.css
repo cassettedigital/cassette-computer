@@ -1787,6 +1787,84 @@ a.hub:focus-visible {
     --cols: 8;
   }
 }
+/* a shelf holds its height. Inside a tile the line always sits right under its name ("It should always be next to
+   it"), and the row is its tallest tile. A shelf that pages holds every tile at once, so its tallest never changes. A
+   shelf of versions (flip) swaps its tiles, so its row keeps room for the tallest tile any version could bring (a
+   cover, its name on two lines, the line under it) and a turn to shorter names never pulls the page up under the
+   reader (the founder, 2026-11-18: "I care more about a stabilized page"). Only that shelf keeps the room: on any
+   other it would be empty space under the tiles, a shelf further from the next than its neighbours ("I care a lot
+   about even padding"). A tile is its column's width tall; the type is --pk-t-row-title (18px / 1.05, two lines)
+   and --pk-t-card-subtitle (13px / 1.3, one line, 2px under). */
+.shelfSection .shelf {
+  align-items: start;
+}
+.shelfSection[data-flip] .shelf {
+  --tile-w: calc((100cqi - (var(--cols) - 1) * var(--pk-tile-gap)) / var(--cols));
+  min-height: calc(var(--ring-room) + var(--tile-w) + var(--pk-tile-title-gap) + 2 * 18px * 1.05 + 2px + 13px * 1.3 + 6px);
+}
+/* a shelf on a computer shows whole pages only: a page the tiles can't fill is left off (Desktop.tsx cull), so a turn
+   never moves by a tile or two (the founder, 2026-11-18: "Don't make carousels with so little extra to show") */
+.shelf > li[data-cull] {
+  display: none;
+}
+/* a page or a turn: the tiles now in view come in one after another, a fade, nothing sliding (Desktop.tsx
+   cascade) */
+.shelf > li[data-in] {
+  animation: shelf-tile-in 0.36s var(--pk-ease-out, ease-out) both;
+  animation-delay: calc(var(--in, 0) * 40ms);
+}
+@keyframes shelf-tile-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shelf > li[data-in] {
+    animation: none;
+  }
+}
+/* a shelf of versions (flip): a computer shows one whole row of each, and the paddles turn the version; the
+   tiles past the row wait for the version's own page. A phone swipes it as any shelf. */
+@media (hover: hover) {
+  .shelfSection[data-flip] .shelf {
+    overflow: hidden;
+  }
+  @container shelf (width < 350px) {
+    .shelfSection[data-flip] .shelf > li:nth-child(n + 3) {
+      display: none;
+    }
+  }
+  @container shelf (350px <= width < 530px) {
+    .shelfSection[data-flip] .shelf > li:nth-child(n + 4) {
+      display: none;
+    }
+  }
+  @container shelf (530px <= width < 710px) {
+    .shelfSection[data-flip] .shelf > li:nth-child(n + 5) {
+      display: none;
+    }
+  }
+  @container shelf (710px <= width < 890px) {
+    .shelfSection[data-flip] .shelf > li:nth-child(n + 6) {
+      display: none;
+    }
+  }
+  @container shelf (890px <= width < 1070px) {
+    .shelfSection[data-flip] .shelf > li:nth-child(n + 7) {
+      display: none;
+    }
+  }
+  @container shelf (1070px <= width < 1250px) {
+    .shelfSection[data-flip] .shelf > li:nth-child(n + 8) {
+      display: none;
+    }
+  }
+  @container shelf (width >= 1250px) {
+    .shelfSection[data-flip] .shelf > li:nth-child(n + 9) {
+      display: none;
+    }
+  }
+}
 .shelfHead {
   display: flex;
   align-items: baseline;

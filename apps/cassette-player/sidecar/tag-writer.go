@@ -335,7 +335,7 @@ func writeViaTemp(path string, mode os.FileMode, fill func(io.Writer) error, fin
 		cleanup()
 		return fmt.Errorf("close temp: %w", err)
 	}
-	if err := os.Rename(tmpName, path); err != nil {
+	if err := replaceFile(tmpName, path); err != nil {
 		cleanup()
 		return fmt.Errorf("rename temp over original: %w", err)
 	}

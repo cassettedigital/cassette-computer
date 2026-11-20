@@ -2,8 +2,8 @@
 
 /**
  * The radio in the website's right rail: the Mac app's side view with a station in it (the founder,
- * 2026-11-16: "we should make an effort to unify these"). The column itself is the desk's (its head with the
- * kit's switch, "…" and Close; the station under it, scrolling in itself), and what's in it is the one shared
+ * 2026-11-16: "we should make an effort to unify these"). The column itself is the desk's, as wide (its head
+ * saying Live, then "…" and Close; the station under it, scrolling in itself), and what's in it is the one shared
  * station view (components/radio/StationSide), the desk's own drawing. It shows on any page in the taste
  * frame while a station is tuned, on a window wide enough for the rail; the page steps aside for it as it
  * does for the preview player's, and a preview takes the rail over (one sound at a time: starting one stops
@@ -18,7 +18,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { forwardRef, useEffect, type AnchorHTMLAttributes, type CSSProperties, type RefObject } from "react";
-import { Glyph, KitProvider, Pills, PlayPill, SavePill, Segmented, tokens as kit, useContextMenu, type KitLinkProps, type MenuItem } from "@discovery/cassette-kit";
+import { Glyph, KitProvider, Pills, PlayPill, SavePill, tokens as kit, useContextMenu, type KitLinkProps, type MenuItem } from "@discovery/cassette-kit";
 import { useRailWide } from "@/app/_taste/PlayerDock";
 import { usePlayerMaybe } from "@/app/_taste/player";
 import { accentVars, useCoverAccent } from "@/app/_taste/colour";
@@ -29,6 +29,7 @@ import { setRadioInRail } from "@/app/components/radio/rail-claim";
 import { StationSide, useStationPage, type SideSong } from "@/app/components/radio/StationSide";
 import { inPanelFrame } from "@/lib/app-surface";
 import r from "./rail.module.css";
+import { giveMenu } from "@/lib/radio/give";
 
 const KitLink = forwardRef<HTMLAnchorElement, KitLinkProps>(function KitLink({ href, ...rest }, ref) {
   return <Link ref={ref} href={href} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)} />;
@@ -62,7 +63,8 @@ export function RadioRail({ rootRef }: { rootRef: RefObject<HTMLDivElement | nul
   useEffect(() => {
     const root = rootRef.current;
     if (!on || !root) return;
-    root.setAttribute("data-rail", "");
+    // "radio": the rail as wide as the Mac app's side column, not the video player's (taste.module.css)
+    root.setAttribute("data-rail", "radio");
     return () => root.removeAttribute("data-rail");
   }, [on, rootRef]);
 
@@ -83,7 +85,7 @@ export function RadioRail({ rootRef }: { rootRef: RefObject<HTMLDivElement | nul
   const menu: MenuItem[] = [
     { label: `Go to ${station.name}'s page`, onSelect: () => router.push(`/radio/${station.slug}`) },
     ...(station.homepage ? [{ label: `${station.name}'s website`, onSelect: () => outside(station.homepage!) }] : []),
-    ...(station.supportUrl ? [{ label: `Support ${station.name}`, onSelect: () => outside(station.supportUrl!) }] : []),
+    ...giveMenu(station, outside),
     "separator",
     { label: "Stop", onSelect: radio.stop },
   ];
@@ -92,7 +94,12 @@ export function RadioRail({ rootRef }: { rootRef: RefObject<HTMLDivElement | nul
     <KitProvider link={KitLink}>
       <aside className={`${kit.kit} ${kit.follow} ${r.aside}`} aria-label="Radio">
         <div className={r.head}>
-          <Segmented<"station"> label="Show" value="station" onChange={() => {}} options={[["station", "Station"]]} />
+          {/* what the radio is doing, in the Mac app's own "Now" marker (the station's name and what's on take
+              the column's top bar once its head scrolls away: components/radio/StationSide) */}
+          <p className={r.status} data-state={status}>
+            <i className={r.dot} aria-hidden="true" />
+            {status === "playing" ? "Live" : status === "connecting" ? "Tuning in" : "No signal"}
+          </p>
           <span className={r.keys}>
             <button type="button" className={r.key} aria-label="More" title="More" onClick={(e) => cm.open(e, menu)}>
               <Glyph name="more" size={16} />

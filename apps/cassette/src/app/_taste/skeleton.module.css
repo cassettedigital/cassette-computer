@@ -1,38 +1,25 @@
 /*
- * A page still on its way (Skeleton.tsx): bones in the paper's own inks, so one skeleton sits right on
- * the light paper and the dark, and in the desk's window. The page's own classes lay the bones out; this
- * sheet draws them, and the default rows for a page that has no row class to lend.
+ * The site's one way of showing something on its way (Skeleton.tsx; the dashboard's SkeletonBlock draws the
+ * same bone). The founder, 2026-11-17: "one really great placeholder/skeleton animation and layout system,
+ * implemented universally". The rules:
+ *
+ *   - Its shape is the page's: a skeleton is laid out by the real page's own classes, its lines as tall as the
+ *     letters they stand for, so what arrives lands where its bones stood. Nothing jumps.
+ *   - Nothing for a quick load: every bone waits 150ms before it shows, so a page that is nearly there never
+ *     flashes grey. Then the bones settle in over 200ms.
+ *   - One light, not twenty: a single soft band of light crosses the whole window, every bone at once (the
+ *     gradient is pinned to the window, so each bone shows its own slice of the same band). No bone pulses or
+ *     flickers on its own, and none is staggered.
+ *   - The paper's own ink: the track ink on the taste paper (light, dark, the desk's window), and anywhere
+ *     else a tenth of the text colour around it. Never a colour of its own.
+ *   - Still for anyone who asks for less motion.
+ *   - Nothing in it answers a pointer.
  */
 
-/* the set: nothing for a quick load, then the bones come up, then one slow breath for the whole set (one
-   surface, never each bone on its own). Nothing in it answers a pointer, so a row lent by the page shows
-   no hand */
+/* a set of bones: "Loading" for a screen reader; nothing in it takes a pointer, so a row lent by the page
+   shows no hand */
 .page {
   pointer-events: none;
-  animation:
-    arrive 0.24s var(--fade, ease-in-out) 0.12s both,
-    breathe 1.6s var(--fade, ease-in-out) 0.36s infinite alternate;
-}
-@keyframes arrive {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes breathe {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0.55;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .page {
-    animation: none;
-  }
 }
 
 /* "Loading", for a screen reader only */
@@ -45,29 +32,74 @@
   white-space: nowrap;
 }
 
-/* one bone, in the track's ink on any stock; never a pointer's or a selection's. A cover or a face is the
-   same ink laid solid on the paper, so the fanned covers on an artist's page overlap as covers do */
+/* one bone */
 .bone {
+  /* the paper's track ink; anywhere without it, a tenth of the text colour around the bone, which always
+     reads against its own background */
+  --bone: var(--track, color-mix(in srgb, currentColor 10%, transparent));
+  /* the light: white, as strong as the paper lets it read. Its strength comes from the ink's lightness: a dark
+     ink (light paper) takes a clear glint (about 0.38), a light ink (dark paper) a softer one (about 0.10), so the
+     band is light passing over the bones on either paper, never a shadow */
+  --bone-light: oklch(from var(--ink-e, currentColor) 1 0 0 / calc(0.44 - l * 0.37));
   display: block;
   max-width: 100%;
-  border-radius: var(--r-small);
-  background: var(--track);
+  border-radius: var(--r-small, 4px);
+  background-color: var(--bone);
+  background-image: linear-gradient(100deg, transparent 30%, var(--bone-light) 50%, transparent 70%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: 150vw 100%;
   pointer-events: none;
   user-select: none;
+  animation:
+    bone-arrive 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.15s both,
+    bone-light 2.6s cubic-bezier(0.45, 0, 0.55, 1) 0.15s infinite;
+}
+@keyframes bone-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes bone-light {
+  from {
+    background-position: 100vw 0;
+  }
+  to {
+    background-position: -150vw 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    background-image: none;
+    animation: bone-arrive 0.01s linear 0.15s both;
+  }
+}
+
+/* a line of type: as tall as the letters it stands for (its font comes from the page's own class around it),
+   with the line's breathing room above and below */
+.bone[data-shape="text"] {
+  height: 0.72em;
+  margin: 0.21em 0;
 }
 .bone[data-shape="pill"] {
-  height: var(--control-h);
-  border-radius: var(--r-pill);
+  height: var(--control-h, 44px);
+  border-radius: var(--r-pill, 999px);
 }
 .bone[data-shape="cover"] {
   aspect-ratio: 1;
-  border-radius: var(--r-cover);
-  background: color-mix(in srgb, var(--ink-e) 12%, var(--bg));
+  border-radius: var(--r-cover, 3px);
 }
 .bone[data-shape="circle"] {
   aspect-ratio: 1;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--ink-e) 12%, var(--bg));
+}
+
+/* a paragraph's lines, ragged at the end as text is */
+.text {
+  display: grid;
 }
 
 /* the default rows: a table's (the desk's song table), the number, the title, the length at the far end */

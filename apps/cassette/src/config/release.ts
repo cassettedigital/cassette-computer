@@ -41,7 +41,7 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "macos",
     label: "macOS",
     status: "available",
-    version: "0.5.47", // the release whose disk image /api/desktop/download serves; bump with each published DMG
+    version: "0.5.48", // the release whose disk image /api/desktop/download serves; bump with each published DMG
     sizeLabel: null, // filled from the published disk image
     // Apple silicon only (only darwin-aarch64 is built); 13.5 is the bundled Node 24's floor.
     requirement: "Apple silicon · macOS 13.5 or later",
@@ -73,14 +73,15 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "windows",
     label: "Windows",
     status: "available",
-    version: "0.5.36", // the build scripts/publish-windows-download.mts placed; a download only, no update feed yet
+    version: "0.5.48", // the signed installer publish-desktop-release.mts --target windows placed; it is also the update
     sizeLabel: null,
     requirement: "Windows 10 or 11, 64-bit",
     // Signed-in only, like macOS; redirects to the installer in the private desktop bucket.
     downloadUrl: "/api/desktop/download/windows/x86_64",
     setupGuide: null, // the Windows guide, once it's written
-    // Unsigned until the Windows signing call (docs/CASSETTE_WINDOWS_PORT_PLAN_2026-11-07.md, call 2).
-    note: "The Windows app is an early build, so Windows warns the first time you open it: choose More info, then Run anyway.",
+    // Signed from 0.5.48 (Microsoft Artifact Signing), but Windows keeps warning about a new publisher until enough
+    // people have installed it cleanly, a few weeks. Drop this line once a fresh download opens without the warning.
+    note: "The Windows app is new, so Windows may warn the first time you open it: choose More info, then Run anyway.",
   },
   linux: {
     platform: "linux",

@@ -8,12 +8,15 @@
  * one (its count of photos shows when it is pointed at), the name huge and fitted to its column, the
  * first sentence or two of their Wikipedia article credited under it the way a press quote is, then
  * Preview (their best-known songs, then every album, most popular first) and Follow, which is the website's alone (`follow`).
- * Where previews come from is the dock's to say. Nothing moves on load.
+ * Where previews come from is the dock's to say. Nothing moves on load. Below 760 (phones included), with the
+ * covers on top, everything under them is centred on their line, as the album page's top is (the founder,
+ * 2026-11-17), the buttons a centred ActionRow.
  */
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { ActionRow } from "@/app/_taste/ActionRow";
 import { ArtistGallery } from "@/app/_taste/ArtistGallery";
 import { AlbumCover } from "@/app/components/AlbumCover";
 import { ArtistPhoto } from "@/app/components/ArtistPhoto";
@@ -24,6 +27,7 @@ import { Facts } from "@/app/_taste/Facts";
 import { Icon } from "@/app/_taste/Icon";
 import { PlayButton } from "@/app/_taste/PlayButton";
 import { Byline } from "@/app/_taste/Quote";
+import { Say } from "@/app/_taste/Say";
 import k from "@/app/_taste/taste.module.css";
 import { albumHref } from "@/app/_taste/links";
 import type { Playable } from "@/app/_taste/play";
@@ -48,9 +52,9 @@ function Preview({ name, hear }: { name: string; hear: PreviewQueue<Playable> })
   const what = more ? `${start}, then ${hear.first ? "their other albums" : "their albums"}` : start;
   return (
     <PlayButton
-      className={s.listen}
       state={mine ? status : "idle"}
       verb={`Preview ${name}`}
+      short="Preview"
       aria-pressed={mine && status === "playing"}
       aria-label={!mine ? `Preview ${name}: ${what}, from YouTube` : status === "paused" ? `Resume ${name}` : `Pause ${name}`}
       onClick={() => (mine ? toggle() : playList(hear.queue, 0))}
@@ -61,10 +65,10 @@ function Preview({ name, hear }: { name: string; hear: PreviewQueue<Playable> })
 /**
  * Follow, the shared outlined Button, on the site's one follows list (/api/follows, the same edge the
  * label pages use). Signed in, it reads whether you follow them once mounted, flips at once and puts it back if the
- * save fails; signed out, the save answers 401 and the page goes to sign-in and back. On a phone beside
- * Preview it is the glyph alone.
+ * save fails; signed out, the save answers 401 and the page goes to sign-in and back. In a row short of room
+ * (beside a long name in Preview) it is its glyph alone (the shared ActionRow).
  */
-function Follow({ slug, name, alone }: { slug: string; name: string; alone: boolean }) {
+function Follow({ slug, name }: { slug: string; name: string }) {
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const { status } = useSession();
@@ -108,14 +112,13 @@ function Follow({ slug, name, alone }: { slug: string; name: string; alone: bool
   return (
     <Button
       look="outlined"
-      className={s.follow}
-      data-alone={alone || undefined}
+      data-give="word"
       icon={<Icon name={on ? "check" : "plus"} size={14} />}
       aria-pressed={on}
       aria-label={on ? `Following ${name}` : `Follow ${name}`}
       onClick={toggle}
     >
-      <span className={s.followWord}>{on ? "Following" : "Follow"}</span>
+      <Say whole={on ? "Following" : "Follow"} />
     </Button>
   );
 }
@@ -255,10 +258,10 @@ export function Intro({ p, onPhotoGone, follow }: { p: ArtistPayload; onPhotoGon
               </>
             )}
             {(hear || follow) && (
-              <div className={s.acts}>
+              <ActionRow className={s.acts} centred>
                 {hear && <Preview name={p.name} hear={hear} />}
-                {follow && <Follow slug={p.slug} name={p.name} alone={!hear} />}
-              </div>
+                {follow && <Follow slug={p.slug} name={p.name} />}
+              </ActionRow>
             )}
             {/* a claimed artist's own places: their site, their socials */}
             {p.creator.links.length > 0 && (

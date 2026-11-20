@@ -142,7 +142,7 @@
   grid-column: 2;
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain; /* up and down only: a sideways swipe is Safari's Back (globals.css) */
   padding: var(--pane-top) 0 var(--pane-bottom);
   scrollbar-width: thin;
   scrollbar-color: var(--pk-hairline) transparent;

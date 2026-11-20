@@ -57,15 +57,17 @@ export function pressSearchLine(quote: string, outlet: string): string {
 
 const KIND: Record<string, string> = { album: "album", ep: "EP", single: "single", compilation: "compilation", live: "live album", soundtrack: "soundtrack" };
 
-/** Facts we hold about a record, for a page without press. "25 is a 1992 album by Harry Connick, Jr.: 13 songs, 66 minutes." */
-export function albumFactLine(r: {
+type RecordFacts = {
   title: string;
   artist: string;
   releaseDate: string | null;
   releaseType: string | null;
   trackCount: number | null;
   runtimeSeconds: number | null;
-}): string {
+};
+
+/** The record's facts as one sentence. "25 is a 1992 album by Harry Connick, Jr.: 13 songs, 66 minutes." */
+function albumFacts(r: RecordFacts): string {
   const year = r.releaseDate?.slice(0, 4);
   const kind = KIND[(r.releaseType ?? "").toLowerCase()] ?? "record";
   const what = year ? `${year} ${kind}` : kind;
@@ -75,19 +77,60 @@ export function albumFactLine(r: {
   const parts: string[] = [];
   if (songs) parts.push(`${songs} ${songs === 1 ? "song" : "songs"}`);
   if (r.runtimeSeconds && r.runtimeSeconds >= 60) parts.push(`${Math.round(r.runtimeSeconds / 60)} minutes`);
-  const line = `${head}${parts.length ? `: ${parts.join(", ")}` : ""}.`;
+  return `${head}${parts.length ? `: ${parts.join(", ")}` : ""}.`;
+}
+
+/** Facts we hold about a record, for a page without press. "25 is a 1992 album by Harry Connick, Jr.: 13 songs, 66 minutes." */
+export function albumFactLine(r: RecordFacts): string {
+  const line = albumFacts(r);
   const more = " Tracklist and previews on Cassette.";
-  return songs && line.length + more.length <= ROOM ? line + more : line;
+  return r.trackCount && r.trackCount > 0 && line.length + more.length <= ROOM ? line + more : line;
 }
 
 /**
  * An album page's line: a critic's verdict when the page shows press (the page's lead, unless that is an
- * interview line or a reader review and a critic's quote is also on show), else the record's facts.
+ * interview line or a reader review and a critic's quote is also on show), else the record's facts. A short
+ * verdict is followed by the record's year, kind and songs when they fit (Bing's short-description note,
+ * founder 2026-11-18). Never its length here: the stored length can undercount a record (BUG-832), and the
+ * page's structured data reads this same line.
+ *   “A warm, witty record.” (The Guardian) Dual is a 2008 EP by Somebody: 5 songs.
  */
-export function albumSearchLine(press: PressSet | null | undefined, facts: Parameters<typeof albumFactLine>[0]): string {
+export function albumSearchLine(press: PressSet | null | undefined, facts: RecordFacts): string {
   const top = press?.top ?? [];
   const lead = top.find((e) => e.quote && !e.voice && !e.member) ?? top.find((e) => e.quote) ?? null;
-  return lead ? pressSearchLine(lead.quote!, lead.outlet) : albumFactLine(facts);
+  if (!lead) return albumFactLine(facts);
+  const line = pressSearchLine(lead.quote!, lead.outlet);
+  const after = albumFacts({ ...facts, runtimeSeconds: null });
+  return line.length + 1 + after.length <= ROOM ? `${line} ${after}` : line;
+}
+
+/** The longest title we write, " · Cassette" included: about what Bing and Google show before they cut one. */
+const TITLE_ROOM = 65;
+/** What the root layout's title template adds. */
+const TITLE_TAIL = " · Cassette";
+
+/**
+ * An artist page's title (Bing's short-title note, founder 2026-11-18): the name and what the page holds, in the
+ * words people search with. "Radiohead: albums, reviews and best-known songs". The parts the page lacks are left
+ * out, and the songs and then the reviews go when a long name would run past the room. `reviews`: the page
+ * quotes critics on a record that clears the search bar (the search line's own test). `songs`: the page lists
+ * best-known songs.
+ */
+export function artistTitle(name: string, has: { records: boolean; reviews: boolean; songs: boolean }): string {
+  const n = name.trim();
+  if (!has.records) return n;
+  const sets = [
+    [has.reviews && "reviews", has.songs && "best-known songs"],
+    [has.reviews && "reviews"],
+    [],
+  ].map((more) => ["albums", ...more.filter((p): p is string => !!p)]);
+  const said = (parts: string[]) =>
+    `${n}: ${parts.length < 3 ? parts.join(" and ") : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`}`;
+  for (const parts of sets) {
+    const t = said(parts);
+    if (t.length + TITLE_TAIL.length <= TITLE_ROOM) return t;
+  }
+  return n;
 }
 
 /**
