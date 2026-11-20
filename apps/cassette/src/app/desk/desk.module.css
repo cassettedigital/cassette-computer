@@ -3167,6 +3167,218 @@ button.addWords {
   background: var(--pk-text-primary);
   transition: width 0.3s ease;
 }
+/* nothing to count yet (the computer is reading the new songs, or saving): a short stretch runs across instead
+   of the bar sitting full and still. Shared by the card, the note at the window's foot and the sidebar line */
+.addBar[data-run] > i,
+.importBar[data-run] > i,
+.liveBar[data-run] > i {
+  width: 34% !important;
+  animation: importRun 1.3s ease-in-out infinite;
+}
+@keyframes importRun {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+/* the records the add brings in, as the computer finds them: dim until MusicBrainz knows them */
+.addFound {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.addFoundArt {
+  display: block;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  border-radius: var(--pk-r-artwork-tile);
+  background: color-mix(in srgb, var(--pk-text-primary) 10%, transparent);
+  opacity: 0.45;
+  transition: opacity 0.4s ease;
+  animation: foundIn 0.35s ease-out;
+}
+.addFoundArt[data-found] {
+  opacity: 1;
+}
+@keyframes foundIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+/* ── music going in, at the window's foot on the left (DeskDrop ImportNote): one note that stays up and
+   changes in place, out of the music's way; × tucks it and the sidebar's Devices line keeps counting ── */
+.importNote {
+  position: fixed;
+  left: 12px;
+  bottom: calc(var(--bar) + 12px);
+  z-index: 55;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  width: min(320px, calc(100vw - 24px));
+  padding: 10px 10px 12px 10px;
+  overflow: hidden;
+  border-radius: var(--pk-r-control);
+  background: var(--pk-surface-elevated);
+  box-shadow: 0 0 0 1px var(--pk-hairline), 0 12px 32px rgb(0 0 0 / 0.45);
+  color: var(--pk-text-primary);
+  animation: importIn 0.25s ease-out;
+}
+@keyframes importIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.importNoteBody {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.importArt {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: var(--pk-r-artwork-tile);
+  background: color-mix(in srgb, var(--pk-text-primary) 8%, transparent);
+}
+.importArt > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* before there's a cover: a reel turning, the add's own little machine */
+.importReels {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--pk-r-pill);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--pk-text-primary) 70%, transparent),
+    inset 0 0 0 6px color-mix(in srgb, var(--pk-text-primary) 12%, transparent);
+  background: conic-gradient(from 0deg, transparent 0 20%, color-mix(in srgb, var(--pk-text-primary) 55%, transparent) 20% 26%, transparent 26% 53%, color-mix(in srgb, var(--pk-text-primary) 55%, transparent) 53% 59%, transparent 59% 86%, color-mix(in srgb, var(--pk-text-primary) 55%, transparent) 86% 92%, transparent 92%);
+}
+.importReels[data-run] {
+  animation: reelTurn 1.6s linear infinite;
+}
+@keyframes reelTurn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.importDone {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-elevated);
+  color: var(--pk-text-primary);
+}
+.importWords {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.importTitle {
+  overflow: hidden;
+  font: var(--pk-t-metadata);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.importTitle em {
+  font-style: normal;
+}
+.importLine {
+  overflow: hidden;
+  font: var(--pk-t-metadata);
+  color: var(--pk-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.importTuck {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: transparent;
+  color: var(--pk-text-secondary);
+  cursor: pointer;
+}
+.importTuck:hover {
+  background: color-mix(in srgb, var(--pk-text-primary) 10%, transparent);
+  color: var(--pk-text-primary);
+}
+.importTuck:focus-visible,
+.importNoteBody:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+.importBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--pk-text-primary) 10%, transparent);
+}
+.importBar > i {
+  display: block;
+  height: 100%;
+  background: var(--pk-text-primary);
+  transition: width 0.4s ease;
+}
+.importNote[data-done] .importBar {
+  display: none;
+}
+/* the sidebar's Devices line while music goes in: a small bar before the count */
+.liveBar {
+  display: inline-block;
+  width: 28px;
+  height: 3px;
+  margin-right: 6px;
+  overflow: hidden;
+  vertical-align: middle;
+  border-radius: var(--pk-r-pill);
+  background: color-mix(in srgb, currentColor 20%, transparent);
+}
+.liveBar > i {
+  display: block;
+  height: 100%;
+  background: currentColor;
+  transition: width 0.4s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .addBar[data-run] > i,
+  .importBar[data-run] > i,
+  .liveBar[data-run] > i,
+  .importReels[data-run] {
+    animation: none;
+  }
+}
 .addDiscArt {
   position: relative;
   display: grid;

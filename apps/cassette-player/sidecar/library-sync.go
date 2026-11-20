@@ -158,6 +158,13 @@ func runLibrarySync(state *SidecarState, syncMode string) (int, error) {
 // identified". runLibrarySync delegates here so its (int, error) contract — used
 // by the heartbeat/startup/rip callers — is unchanged.
 func runLibrarySyncWithCounts(state *SidecarState, syncMode string) (total int, identified int, err error) {
+	return runLibrarySyncReporting(state, syncMode, nil)
+}
+
+// runLibrarySyncReporting is runLibrarySyncWithCounts whose resolver run reports
+// each lookup to progress as it goes (nil: no one is listening). The ingest uses
+// it for the window's live report (ingest-progress.go).
+func runLibrarySyncReporting(state *SidecarState, syncMode string, progress resolverProgress) (total int, identified int, err error) {
 	librarySyncMu.Lock()
 	defer librarySyncMu.Unlock()
 
@@ -198,7 +205,7 @@ func runLibrarySyncWithCounts(state *SidecarState, syncMode string) (total int, 
 	// wall-clock time to complete.
 	_, resolverTimeout := passBudgetFor(state)
 	resolverCtx, cancel := context.WithTimeout(context.Background(), resolverTimeout)
-	_, resolverDirty, resolverErr := resolveMBIDsOnce(resolverCtx, state)
+	_, resolverDirty, resolverErr := resolveMBIDsOnce(resolverCtx, state, progress)
 	cancel()
 	if resolverErr != nil {
 		log.Printf("MBID resolver pass error (continuing with sync): %v", resolverErr)
@@ -366,7 +373,34 @@ func syncLibraryInventory(token string, syncMode string, state *SidecarState) (t
 	if err := postLibrarySync(token, payload); err != nil {
 		return 0, 0, err
 	}
+	rememberSyncedTracks(tracks)
 	return len(tracks), identified, nil
+}
+
+// syncedTrackIDs is every song id the last successful sync reported to the
+// cloud: nil until one has, this run of the hub. The ingest report reads it to
+// tell the songs an ingest brings in from the ones already there
+// (ingestNewSongs). Each sync swaps in a fresh map and never changes one it
+// has handed out, so a reader may keep it.
+var (
+	syncedTrackIDsMu sync.Mutex
+	syncedTrackIDs   map[string]struct{}
+)
+
+func rememberSyncedTracks(tracks []librarySyncTrack) {
+	ids := make(map[string]struct{}, len(tracks))
+	for _, t := range tracks {
+		ids[t.SubsonicTrackID] = struct{}{}
+	}
+	syncedTrackIDsMu.Lock()
+	syncedTrackIDs = ids
+	syncedTrackIDsMu.Unlock()
+}
+
+func lastSyncedTrackIDs() map[string]struct{} {
+	syncedTrackIDsMu.Lock()
+	defer syncedTrackIDsMu.Unlock()
+	return syncedTrackIDs
 }
 
 func fetchAllSubsonicSongs() ([]librarySyncTrack, error) {

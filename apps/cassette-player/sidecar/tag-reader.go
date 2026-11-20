@@ -62,6 +62,16 @@ func readTags(path string) (*trackTags, error) {
 
 var errUnsupportedFormat = errors.New("unsupported audio format for Layer 1 resolver")
 
+// canReadTags reports whether readTags has a reader for path's format: the
+// resolver leaves the rest out of the songs it plans to check.
+func canReadTags(path string) bool {
+	switch strings.ToLower(extOf(path)) {
+	case ".flac", ".mp3", ".m4a":
+		return true
+	}
+	return false
+}
+
 func extOf(path string) string {
 	i := strings.LastIndex(path, ".")
 	if i < 0 {

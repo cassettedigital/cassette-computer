@@ -37,6 +37,8 @@ import { signOut } from "@/lib/sign-out";
 import { feedbackMenuItem } from "@/app/components/feedback-door";
 import { AvatarDisc } from "@/app/components/AvatarDisc";
 import { useDesktopUpdate } from "@/app/components/UpdatePill";
+import { useLibraryIngest } from "@/lib/library-ingest";
+import { importStatus, type ImportStatus } from "@/lib/import-status";
 import type { DeskAccount } from "./DeskShell";
 import { usePlaylistDrop } from "./Rail";
 import { useStartRecord } from "./Player";
@@ -50,6 +52,19 @@ import { DiscRow } from "./disc";
 import d from "./desk.module.css";
 
 /** A place on the rail (the kit's), lit while you're on its page, or one under it unless it's exact. */
+/** Devices' line while music goes in: a small bar and the count ("12 of 58"), or what it's doing. */
+function ImportLive({ s }: { s: ImportStatus }) {
+  const count = /(\d+) of (\d+)/.exec(s.line);
+  return (
+    <>
+      <span className={d.liveBar} data-run={s.progress === null || undefined} aria-hidden="true">
+        <i style={{ width: `${Math.round((s.progress ?? 0) * 100)}%` }} />
+      </span>
+      {count ? `${count[1]} of ${count[2]}` : s.verb}
+    </>
+  );
+}
+
 function RailPlace({ href, label, glyph, live, exact }: { href: string; label: string; glyph: Concept; live?: ReactNode; exact?: boolean }) {
   const path = usePathname();
   const on = exact ? path === href : path === href || path.startsWith(`${href}/`);
@@ -335,6 +350,10 @@ export function Sidebar({ slim, onSlim }: { slim: boolean; onSlim: (v: boolean) 
   }, [router]);
 
   const tuned = radio.station && radio.status !== "idle" ? radio.station : null;
+  // music going in: Devices says how far, quietly, wherever you are (the note at the window's foot can be tucked)
+  const ingest = useLibraryIngest();
+  const imported = importStatus(ingest);
+  const importing = imported?.busy ? imported : null;
 
   return (
     <nav className={d.side} aria-label="Library" data-slim={slim || undefined}>
@@ -399,7 +418,7 @@ export function Sidebar({ slim, onSlim }: { slim: boolean; onSlim: (v: boolean) 
             ) : undefined
           }
         />
-        <RailPlace href={`${DESK}/devices`} label="Devices" glyph="laptop" />
+        <RailPlace href={`${DESK}/devices`} label="Devices" glyph="laptop" live={importing ? <ImportLive s={importing} /> : undefined} />
       </Places>
 
       {/* a disc in the drive: one row, only while it's in (desk/disc.tsx) */}

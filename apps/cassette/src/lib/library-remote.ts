@@ -182,7 +182,16 @@ export type SidecarIngest = {
   identified?: number;
   count?: number;
   at?: string;
+  /** The live report (hubs from 0.5.51): reading the new files, looking each song up, saving. */
+  stage?: "scanning" | "lookingUp" | "saving" | "done" | "error";
+  /** songs looked up so far in this pass (found or not), out of `total` */
+  checked?: number;
+  /** the records this add brings in, first seen first, with one song's id for its cover */
+  albums?: IngestAlbum[];
 };
+
+/** A record an add is bringing in, as the hub saw it: `found` once MusicBrainz knew one of its songs. */
+export type IngestAlbum = { album: string; artist: string; trackId: string; found: boolean };
 
 /** Poll the local Player's ingest progress (the `ingest` field on the rip status).
  *  Null if unreachable or not yet exposed — callers degrade to a working spinner. */

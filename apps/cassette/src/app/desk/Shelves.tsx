@@ -74,6 +74,10 @@ import { PageBar, usePageBar } from "./PageBar";
 import { useAbout } from "./Artist";
 import { DiscArt, reading, useDisc } from "./disc";
 import { useNotMain } from "./ThisComputer";
+import { FIRST_ROW } from "./first-run";
+import { importStatus } from "@/lib/import-status";
+import { coverArtURL } from "@/lib/playback-remote";
+import { HubPicture } from "@/app/components/HubPicture";
 import d from "./desk.module.css";
 
 /** The playlist with no cover of its own: the neutral record tint (CoverTint's fallback). */
@@ -445,8 +449,6 @@ function QuickRecord({ a, on, live, onPlay, onMenu }: { a: DeskAlbum; on: boolea
   );
 }
 
-/** Records the first-run Home holds before the full Home takes over: one whole row. */
-const FIRST_ROW = 6;
 /** What the music pickers offer (the first-run Home's and the add card's). */
 const MUSIC_FILES = ".flac,.mp3,audio/flac,audio/mpeg";
 
@@ -1667,7 +1669,9 @@ function AddMusicRow() {
   const pick = useRef<HTMLInputElement>(null);
   const s = disc.status;
   const busy = ingest.phase === "uploading" || ingest.phase === "identifying";
-  const pct = ingest.phase === "uploading" ? (ingest.total ? Math.round((ingest.uploaded / ingest.total) * 100) : 0) : 100;
+  // the same words as the note at the window's foot and the sidebar's Devices line (lib/import-status)
+  const imp = importStatus(ingest);
+  const pct = imp?.progress === null || !imp ? null : Math.round(imp.progress * 100);
   const total = s?.trackCount ?? s?.tracks?.length ?? 0;
   const done = s ? ripDoneCount(s) : 0;
   return (
@@ -1685,14 +1689,27 @@ function AddMusicRow() {
         ) : (
           <span className={d.addWords}>
             <span className={d.addTitle}>
-              {ingest.phase === "done" ? "Added" : ingest.phase === "queued" ? "Waiting for your computer" : ingest.phase === "error" ? "Couldn't add those" : "Adding"} {ingest.album ? `“${ingest.album}”` : "music"}
+              {imp?.verb ?? "Adding"} {imp && imp.what !== "your music" ? `“${imp.what}”` : "music"}
             </span>
-            <span className={d.addLine}>
-              {ingest.phase === "uploading" ? `${ingest.uploaded} of ${ingest.total} songs` : ingest.phase === "identifying" ? "Finding what it is" : ingest.phase === "queued" ? `${ingest.queued} songs go in when it's back` : ingest.phase === "done" ? `${ingest.total} songs` : ""}
-            </span>
+            <span className={d.addLine}>{imp?.line ?? ""}</span>
+            {/* one bar from the first song to the last lookup: it counts the copy, then the lookups, and runs
+                while there's nothing to count yet; never sits full while the work goes on */}
             {busy && (
-              <span className={d.addBar} aria-hidden="true">
-                <i style={{ width: `${pct}%` }} />
+              <span className={d.addBar} data-run={pct === null || undefined} aria-hidden="true">
+                <i style={{ width: `${pct ?? 0}%` }} />
+              </span>
+            )}
+            {/* the records as the computer finds them, each lit once MusicBrainz knows it */}
+            {!!imp?.albums.length && (
+              <span className={d.addFound} aria-label={`Found ${imp.albums.map((a) => a.album).join(", ")}`}>
+                {imp.albums.map((a) => {
+                  const src = a.trackId ? coverArtURL(a.trackId, 80) : null;
+                  return (
+                    <span key={`${a.artist}|${a.album}`} className={d.addFoundArt} data-found={a.found || undefined} title={`${a.album} · ${a.artist}`}>
+                      {src && <HubPicture src={src} alt="" />}
+                    </span>
+                  );
+                })}
               </span>
             )}
           </span>

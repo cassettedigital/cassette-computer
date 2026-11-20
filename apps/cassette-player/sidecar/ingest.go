@@ -28,7 +28,6 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -77,61 +76,9 @@ func signalIngest() {
 }
 
 // ─── Progress (so a drop isn't met with silence) ─────────────────────────────
-
-type ingestProgress struct {
-	State string `json:"state"`           // idle | scanning | working | done | error
-	Count int    `json:"count,omitempty"` // tracks synced on the last completed ingest
-	// Total and Identified describe the CURRENT (in-progress or just-finished)
-	// ingest pass so the web dashboard can show "Adding [album] — N tracks · M
-	// identified" live. Both are sourced from the inventory that runLibrarySync
-	// actually pushed to the cloud (syncLibraryInventory), NOT from the resolver's
-	// whole-cache stats:
-	//   - Total      = every track in the Subsonic inventory this pass synced
-	//                  (== Count on a completed pass; the library total, which is
-	//                  the denominator the panel shows).
-	//   - Identified = the subset of those tracks that carry a MusicBrainz
-	//                  recording MBID (mapSubsonicSong set MusicBrainzRecordingID
-	//                  non-nil), i.e. tracks resolved to a MusicBrainz identity.
-	// Both are 0 during scanning and reset to 0 on error.
-	Total      int       `json:"total,omitempty"`
-	Identified int       `json:"identified,omitempty"`
-	At         time.Time `json:"at,omitempty"`
-}
-
-var (
-	ingestProgMu sync.RWMutex
-	ingestProg   = ingestProgress{State: "idle"}
-)
-
-// setIngestState updates state + the last-synced count, leaving Total/Identified
-// at their zero defaults. Kept for callers that only know the lifecycle state
-// (scanning/working/error); setIngestProgress is the richer setter that also
-// carries the current pass's per-track counts.
-func setIngestState(state string, count int) {
-	setIngestProgress(state, count, 0, 0)
-}
-
-// setIngestProgress publishes the full ingest progress, including the current
-// pass's Total/Identified track counts.
-func setIngestProgress(state string, count, total, identified int) {
-	ingestProgMu.Lock()
-	ingestProg = ingestProgress{
-		State:      state,
-		Count:      count,
-		Total:      total,
-		Identified: identified,
-		At:         nowFn().UTC(),
-	}
-	ingestProgMu.Unlock()
-}
-
-// ingestSnapshot is the value the status snapshot embeds (read by /status.json
-// and, via that, the web devices panel that already polls it).
-func ingestSnapshot() ingestProgress {
-	ingestProgMu.RLock()
-	defer ingestProgMu.RUnlock()
-	return ingestProg
-}
+//
+// The report the window reads, and the bookkeeping behind it, live in
+// ingest-progress.go.
 
 // ─── The ingest itself ───────────────────────────────────────────────────────
 
@@ -160,30 +107,64 @@ func ingestNow(state *SidecarState) {
 	if state == nil || state.BearerToken == "" {
 		return // unpaired → nothing to push
 	}
-	setIngestState("scanning", 0)
+	// What the cloud already has, as the last sync left it: whatever the scan
+	// shows beyond it is what this ingest brings in. Taken before the scan, so a
+	// sync that runs meanwhile can't hide the new songs from the report.
+	prev := lastSyncedTrackIDs()
+	updateIngest(func(p *ingestPass) { p.begin() })
 	if err := triggerNavidromeScan(); err != nil {
 		log.Printf("ingest: scan trigger failed (continuing): %v", err)
 	}
 	waitForScanIdle(scanIdleMaxWait)
 
-	setIngestState("working", 0)
-	count, identified, err := runLibrarySyncWithCounts(state, "full") // resolve (+ tag-write + rescan) + sync
+	updateIngest(func(p *ingestPass) { p.setStage(ingestStageLookingUp) })
+	seedIngestAlbums(state, prev)
+	// The resolver reports each lookup into the live report as it goes; it moves
+	// the stage on to saving when its run ends.
+	report := liveIngestProgress{}
+	count, identified, err := runLibrarySyncReporting(state, "full", report) // resolve (+ tag-write + rescan) + sync
 	if err != nil {
 		log.Printf("ingest: first sync failed: %v", err)
-		setIngestState("error", 0)
+		updateIngest(func(p *ingestPass) { p.fail() })
 		return
 	}
 	// Surface the first pass's counts while the second pass runs, so the panel
 	// shows live "N tracks · M identified" instead of sitting at zero.
-	setIngestProgress("working", count, count, identified)
+	updateIngest(func(p *ingestPass) {
+		p.noteSynced(count, identified)
+		p.setStage(ingestStageSaving)
+	})
 	// Second pass: pick up MBIDs the resolver just wrote into the files (its
 	// re-scan is settling now). Cheap — the resolver is cached, the sync is fast.
+	// Songs the first run's budget didn't reach are looked up here, and reported.
 	waitForScanIdle(scanIdleMaxWait)
-	if c2, id2, err2 := runLibrarySyncWithCounts(state, "full"); err2 == nil {
+	if c2, id2, err2 := runLibrarySyncReporting(state, "full", report); err2 == nil {
 		count, identified = c2, id2
 	}
 	log.Printf("ingest: complete — %d tracks (%d identified)", count, identified)
-	setIngestProgress("done", count, count, identified)
+	updateIngest(func(p *ingestPass) { p.finish(count, identified) })
+}
+
+// seedIngestAlbums reads the library as the scan left it and puts the records
+// this ingest brings in on the card, before the first lookup, so their covers
+// can show while the lookups run. One read of Navidrome's song list, local and
+// quick; on failure the card just has no records.
+func seedIngestAlbums(state *SidecarState, prev map[string]struct{}) {
+	if asSpare() || navidromeAdmin == "" {
+		return // no lookups and no sync on this computer: nothing comes in
+	}
+	tracks, err := fetchAllSubsonicSongs()
+	if err != nil {
+		log.Printf("ingest: could not read the new songs for the report: %v", err)
+		return
+	}
+	songs := ingestNewSongs(tracks, prev, func(path string) (seen, hasID bool) {
+		stateMu.Lock()
+		e := state.MBIDResolutionState[filepath.Clean(path)]
+		stateMu.Unlock()
+		return e != nil, e != nil && e.Resolved && e.MBID != ""
+	})
+	updateIngest(func(p *ingestPass) { p.addNewSongs(songs) })
 }
 
 // waitForScanIdle polls Navidrome's getScanStatus until it reports not-scanning

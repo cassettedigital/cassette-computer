@@ -242,16 +242,42 @@ func setMBIDFileState(state *SidecarState, path string, v *MBIDFileState) {
 	stateMu.Unlock()
 }
 
+// resolverProgress hears one resolver pass as it goes, for the window's live
+// ingest report (ingest-progress.go). Every call is quick bookkeeping: none may
+// wait on the network or hold the pass up.
+type resolverProgress interface {
+	// lookupsPlanned names every song this pass will check, before the first lookup.
+	lookupsPlanned(paths []string)
+	// lookupChecked reports one song checked; found means it now has its
+	// MusicBrainz id (already in its tags, written, or held by the hub).
+	lookupChecked(path string, found bool)
+	// lookupsFinished ends the pass; songs it never reached drop out.
+	lookupsFinished()
+}
+
 // resolveMBIDsOnce runs a single bounded resolver pass over sidecarMusicDir.
+//
+// It walks the folder once, doing the free local work (folder covers, artist
+// photos) and finding the songs to check, then checks them one by one. Knowing
+// the songs first is what lets progress hear the total before the first lookup.
+// progress may be nil.
 //
 // Returns:
 //   - tagWrites: number of files whose tags were updated this pass
 //   - dirty:     whether SidecarState was mutated (caller should save)
 //   - err:       fatal walking error, if any. Per-file errors are logged
-//                and counted, not returned.
-func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, dirty bool, err error) {
+//     and counted, not returned.
+func resolveMBIDsOnce(ctx context.Context, state *SidecarState, progress resolverProgress) (tagWrites int, dirty bool, err error) {
 	resolverMu.Lock()
 	defer resolverMu.Unlock()
+	if progress != nil {
+		defer progress.lookupsFinished()
+	}
+	checked := func(path string, found bool) {
+		if progress != nil {
+			progress.lookupChecked(path, found)
+		}
+	}
 
 	if state.MBIDResolutionState == nil {
 		stateMu.Lock()
@@ -280,6 +306,13 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 	coverWrites, heldMatches := 0, 0
 	coveredDirs := make(map[string]bool)
 	materializedArtistDirs := make(map[string]bool)
+
+	// The songs the walk finds to check (not cached, or due a recheck), in walk order.
+	type resolverCandidate struct {
+		path  string
+		mtime time.Time
+	}
+	var candidates []resolverCandidate
 
 	walkStart := time.Now()
 	walkErr := filepath.WalkDir(sidecarMusicDir, func(path string, d fs.DirEntry, walkErr error) error {
@@ -358,7 +391,26 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+		if !canReadTags(path) {
+			unsupported++
+			return nil
+		}
+		candidates = append(candidates, resolverCandidate{path: path, mtime: currentMtime})
+		return nil
+	})
 
+	// The songs to check are known: tell progress before the first lookup.
+	if progress != nil && walkErr == nil {
+		paths := make([]string, len(candidates))
+		for i, c := range candidates {
+			paths[i] = c.path
+		}
+		progress.lookupsPlanned(paths)
+	}
+
+	// resolveOne checks one song. A non-nil return stops the pass (the deadline
+	// passed while it waited its turn at MusicBrainz).
+	resolveOne := func(path string, currentMtime time.Time) error {
 		tags, readErr := readTags(path)
 		if errors.Is(readErr, errUnsupportedFormat) {
 			unsupported++
@@ -366,6 +418,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 		}
 		if readErr != nil {
 			log.Printf("MBID resolver: read tags %q: %v", path, readErr)
+			checked(path, false)
 			return nil
 		}
 
@@ -384,11 +437,13 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 			})
 			dirty = true
 			mbHits++
+			checked(path, true)
 			return nil
 		}
 
 		// Out of fuzzy-lookup budget — leave the file unrecorded so a
 		// future pass can pick it up. We intentionally do NOT cache here.
+		// Not reported either: lookupsFinished drops it from the total.
 		if queryBudget <= 0 {
 			return nil
 		}
@@ -404,6 +459,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 			})
 			dirty = true
 			mbMisses++
+			checked(path, false)
 			return nil
 		}
 
@@ -420,6 +476,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 				// again from scratch.
 				log.Printf("MBID resolver: transient MB error for %q: %v", path, queryErr)
 				mbTransient++
+				checked(path, false)
 				return nil
 			}
 			// Decode / malformed-response / other unexpected errors:
@@ -428,6 +485,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 			// because of a one-off decoder bug.
 			log.Printf("MBID resolver: MB query non-transient error for %q (treating as transient): %v", path, queryErr)
 			mbTransient++
+			checked(path, false)
 			return nil
 		}
 
@@ -442,6 +500,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 				FileModifiedAt: currentMtime,
 			})
 			dirty = true
+			checked(path, false)
 			return nil
 		}
 
@@ -459,6 +518,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 				FileModifiedAt: currentMtime,
 			})
 			dirty = true
+			checked(path, true)
 			return nil
 		}
 
@@ -475,6 +535,9 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 				FileModifiedAt: currentMtime,
 			})
 			dirty = true
+			// Known but not saved into the file, so not yet found: the cloud
+			// won't hear it until a later pass writes it.
+			checked(path, false)
 			return nil
 		}
 
@@ -495,8 +558,22 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState) (tagWrites int, 
 			FileModifiedAt: currentMtime,
 		})
 		dirty = true
+		checked(path, true)
 		return nil
-	})
+	}
+
+	if walkErr == nil {
+		for _, c := range candidates {
+			if ctx.Err() != nil {
+				walkErr = ctx.Err()
+				break
+			}
+			if stop := resolveOne(c.path, c.mtime); stop != nil {
+				walkErr = stop
+				break
+			}
+		}
+	}
 
 	if walkErr != nil && !errors.Is(walkErr, context.Canceled) {
 		log.Printf("MBID resolver: walk ended with error: %v", walkErr)

@@ -18,6 +18,7 @@ import { useSyncExternalStore } from "react";
 import { uploadLibraryFile, triggerLibraryIngest, fetchIngestStatus } from "@/lib/library-remote";
 import { queueUploads } from "@/lib/library-queue";
 import { HUB_IN_REACH } from "@/lib/hub-origin";
+import type { IngestAlbum } from "@/lib/library-remote";
 import { tell } from "@/lib/ask";
 
 export type IngestPhase =
@@ -37,6 +38,13 @@ export type IngestState = {
   failed: number; // files the Player rejected
   identified: number; // tracks the sidecar resolved to an MBID (live)
   queued: number; // files held in the offline outbox (no-Mac)
+  /** after the copy, what the computer is doing: reading the new files, looking each song up, saving */
+  stage?: "scanning" | "lookingUp" | "saving";
+  /** songs the computer will look up in this pass, and how many it has so far */
+  lookTotal?: number;
+  checked?: number;
+  /** the records coming in, with a song each for its cover (hubs from 0.5.51) */
+  albums?: IngestAlbum[];
 };
 
 const IDLE: IngestState = {
@@ -47,6 +55,10 @@ const IDLE: IngestState = {
   failed: 0,
   identified: 0,
   queued: 0,
+  stage: undefined,
+  lookTotal: 0,
+  checked: 0,
+  albums: [],
 };
 
 let state: IngestState = IDLE;
@@ -93,23 +105,66 @@ function albumFromFiles(files: { relPath: string }[]): string {
   return `${files.length} tracks`;
 }
 
+// A folder named only for its format or disc says nothing about the music in it ("MP3", "FLAC", "CD 1").
+const FORMAT_WORD = /^(mp3s?|flac|aac|alac|m4a|ogg|opus|wav|aiff?|320k?|v0|v2|(cd|dis[ck]) ?\d+)$/i;
+
+// What an add in the app is called before the computer has read the files: the one thing added, or the
+// folder the picked songs share (past a format folder to the one above it). Paths are this computer's, so a
+// Windows path splits on its backslashes too (it used to read every Windows add as "N tracks").
+function albumFromPaths(paths: string[]): string {
+  const parts = paths.map((p) => p.split(/[\\/]/).filter(Boolean));
+  if (parts.length === 1) return (parts[0].at(-1) ?? "").replace(/\.[a-z0-9]{2,4}$/i, "") || "your music";
+  const parents = new Set(parts.map((x) => x.slice(0, -1).join("/")));
+  if (parents.size === 1) {
+    const at = parts[0].length - 2;
+    const name = parts[0][at];
+    if (name && !FORMAT_WORD.test(name)) return name;
+    if (name && parts[0][at - 1]) return parts[0][at - 1];
+  }
+  return "your music";
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-// Poll the sidecar's ingest progress so the card shows a live "M identified"
-// climbing, and resolves when the pass reports done. Bounded; degrades to a
-// working spinner if the sidecar doesn't expose progress.
+// Watch the computer's own report while it reads the new files and looks each song up, so the card, the
+// sidebar and the status note move with it (2026-11-20: "Finding what it is" sat still for minutes). It
+// stops when the computer says it's done or failed, when its report hasn't moved for two minutes (an older
+// hub says nothing as it goes, a stuck one stops talking), or after half an hour. It used to give up after
+// a minute and a half and call a long lookup "Added" while it was still going.
 async function pollIdentified(): Promise<void> {
-  const deadline = Date.now() + 90_000;
+  const started = Date.now();
+  let lastAt = "";
+  let lastMove = Date.now();
   for (;;) {
-    await sleep(1500);
+    await sleep(1200);
     const ing = await fetchIngestStatus();
     if (ing) {
-      if (typeof ing.identified === "number") set({ identified: ing.identified });
-      if (ing.state === "done" || ing.state === "error") return;
+      // a report from before this add (the last one's "done") says nothing about this one
+      const at = ing.at ? Date.parse(ing.at) : NaN;
+      const fresh = !Number.isFinite(at) || at >= started - 2000;
+      if (fresh) {
+        const stage = ing.stage === "scanning" || ing.stage === "lookingUp" || ing.stage === "saving" ? ing.stage : ing.state === "scanning" ? "scanning" : undefined;
+        // the counts are this add's own only while the computer is looking songs up (after its first save,
+        // and on an older hub at the end, `total` and `identified` are the whole library's again), so they're
+        // taken then and kept
+        const looking = ing.stage === "lookingUp";
+        set({
+          ...(looking && typeof ing.identified === "number" ? { identified: ing.identified } : {}),
+          ...(stage ? { stage } : {}),
+          ...(looking && typeof ing.checked === "number" ? { checked: ing.checked } : {}),
+          ...(looking && typeof ing.total === "number" ? { lookTotal: ing.total } : {}),
+          ...(Array.isArray(ing.albums) && ing.albums.length ? { albums: ing.albums.slice(0, 8) } : {}),
+        });
+        if (ing.state === "done" || ing.state === "error") return;
+      }
+      if (ing.at && ing.at !== lastAt) {
+        lastAt = ing.at;
+        lastMove = Date.now();
+      }
     }
-    if (Date.now() > deadline) return;
+    if (Date.now() - lastMove > 120_000 || Date.now() - started > 30 * 60_000) return;
   }
 }
 
@@ -127,12 +182,12 @@ export async function startIngest(files: { relPath: string; file: File }[]): Pro
   // The website in a regular browser never reaches a hub (lib/hub-origin), so nothing would ever replay
   // an outbox: music goes in through the app, and nothing is held here.
   if (!HUB_IN_REACH) {
-    set({ phase: "noMac", album, total: files.length, uploaded: 0, failed: 0, identified: 0, queued: 0 });
+    set({ phase: "noMac", album, total: files.length, uploaded: 0, failed: 0, identified: 0, queued: 0, stage: undefined, checked: 0, lookTotal: 0, albums: [] });
     busy = false;
     scheduleClear(9000);
     return;
   }
-  set({ phase: "uploading", album, total: files.length, uploaded: 0, failed: 0, identified: 0, queued: 0 });
+  set({ phase: "uploading", album, total: files.length, uploaded: 0, failed: 0, identified: 0, queued: 0, stage: undefined, checked: 0, lookTotal: 0, albums: [] });
 
   let uploaded = 0;
   let failed = 0;
@@ -159,7 +214,7 @@ export async function startIngest(files: { relPath: string; file: File }[]): Pro
     return;
   }
 
-  set({ phase: "identifying" });
+  set({ phase: "identifying", stage: "scanning", checked: 0, lookTotal: 0 });
   await triggerLibraryIngest();
   await pollIdentified();
   set({ phase: "done" });
@@ -233,8 +288,8 @@ export async function addPathsInApp(paths: string[]): Promise<void> {
   if (!mode || busy) return;
   busy = true;
   if (clearTimer) clearTimeout(clearTimer);
-  const album = albumFromFiles(paths.map((p) => ({ relPath: p.split("/").filter(Boolean).pop() ?? p })));
-  set({ phase: "uploading", album, total: paths.length, uploaded: 0, failed: 0, identified: 0, queued: 0 });
+  const album = albumFromPaths(paths);
+  set({ phase: "uploading", album, total: paths.length, uploaded: 0, failed: 0, identified: 0, queued: 0, stage: undefined, checked: 0, lookTotal: 0, albums: [] });
   // The app says how far it has got after every song, so the card counts up while the music goes in, not only
   // once it has all gone in.
   let stopListening: (() => void) | null = null;
@@ -269,7 +324,7 @@ export async function addPathsInApp(paths: string[]): Promise<void> {
     scheduleClear();
     return;
   }
-  set({ phase: "identifying" });
+  set({ phase: "identifying", stage: "scanning", checked: 0, lookTotal: 0 });
   await triggerLibraryIngest();
   await pollIdentified();
   set({ phase: "done" });

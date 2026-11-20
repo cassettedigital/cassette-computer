@@ -8,10 +8,13 @@
 //! to another disk) first checks there is room for it, a copy keeps the file's Finder tags and dates (the system's
 //! own copy), and a move to another disk removes each original only after its copy is safely written.
 //!
-//! Where things land: a folder keeps its own name. Loose files (picked one by one, or dropped without their
-//! folder) never land loose in the top of the music folder: they go into a folder named for the one they came from
-//! (`folder_for_loose`). A song whose name is already taken is either the very same file, left as it is, or a
-//! different song, which goes in beside it as "<name> 2" (`place`), so nobody's song is ever skipped unseen.
+//! Where things land: every song is filed the way a CD rip is, by its own tags, in <Album Artist>/<Album>/ under
+//! its own file name (`tag_folder`), so the two discs of a record meet in one folder; the covers, booklets and .cue
+//! files beside the songs go with them (`file_by_tags`). A song whose tags don't name its album lands where it
+//! always did: a dropped folder keeps its own name, and loose files (picked one by one, or dropped without their
+//! folder) go into a folder named for the one they came from (`folder_for_loose`), never loose in the top of the
+//! music folder. A song whose name is already taken is either the very same file, left as it is, or a different
+//! song, which goes in beside it as "<name> 2" (`place`), so nobody's song is ever skipped unseen.
 //!
 //! The window counts along: after every song the app says how far it has got (`PROGRESS_EVENT`).
 
@@ -78,9 +81,200 @@ const GENERIC_PLACES: &[&str] = &["desktop", "downloads", "documents", "music", 
 /// one folder (`src` is then that folder). Each file is (source, path under the music folder, size).
 struct Item {
     src: PathBuf,
-    dest: PathBuf,
     files: Vec<(PathBuf, PathBuf, u64)>,
     is_dir: bool,
+}
+
+/// The folders a CD rip makes when its tags are missing (rip.go albumDir); here only when the other one is known.
+const UNKNOWN_ARTIST: &str = "Unknown Artist";
+const UNKNOWN_ALBUM: &str = "Unknown Album";
+
+/// The longest an artist or album folder's name gets, in characters and in bytes: a Mac allows 255 bytes in a
+/// name, Windows 260 characters in a whole path unless long paths are on.
+const NAME_CHARS: usize = 120;
+const NAME_BYTES: usize = 240;
+
+/// What a song's own tags say about the record it is on; each is None when the tags don't say.
+#[derive(Default, Debug, Clone, PartialEq)]
+struct SongTags {
+    album_artist: Option<String>,
+    artist: Option<String>,
+    album: Option<String>,
+}
+
+/// The song's tags, read without its pictures or its sound (the main tag first, then any other the file carries).
+/// A file that can't be read, isn't one lofty knows, or has no tags gives back nothing, and the song lands by its
+/// folder as before: reading a tag never stops an add, a damaged file included.
+fn read_tags(path: &Path) -> SongTags {
+    use lofty::config::{ParseOptions, ParsingMode};
+    use lofty::file::TaggedFileExt;
+    use lofty::probe::Probe;
+    use lofty::tag::{ItemKey, Tag};
+
+    let read = || -> Option<SongTags> {
+        let options =
+            ParseOptions::new().read_properties(false).read_cover_art(false).parsing_mode(ParsingMode::Relaxed);
+        let file = Probe::open(path).ok()?.options(options).guess_file_type().ok()?.read().ok()?;
+        let primary = file.primary_tag();
+        let tags: Vec<&Tag> = primary
+            .into_iter()
+            .chain(file.tags().iter().filter(|t| !primary.is_some_and(|p| std::ptr::eq(*t, p))))
+            .collect();
+        let first = |key: ItemKey| {
+            tags.iter().find_map(|t| t.get_string(key).map(str::trim).filter(|v| !v.is_empty()).map(String::from))
+        };
+        Some(SongTags {
+            album_artist: first(ItemKey::AlbumArtist),
+            artist: first(ItemKey::TrackArtist),
+            album: first(ItemKey::AlbumTitle),
+        })
+    };
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(read)).ok().flatten().unwrap_or_default()
+}
+
+/// A tag as an artist or album folder's name, the way a CD rip names its folders (rip.go folderName, so a rip
+/// and an add of the same record share one folder): spaces and control characters off the ends and out, the
+/// characters a Mac or Windows won't take in a name swapped (/ \ : * | for "-", " for ', < > for ( ), ? dropped),
+/// no dot or space at either end, at most `NAME_CHARS` characters, and on Windows never a name it keeps for a
+/// device. Empty when nothing usable is left.
+fn folder_name(tag: &str) -> String {
+    folder_name_for(tag, cfg!(windows))
+}
+
+/// `folder_name`, saying whether Windows' device names are kept clear of (on Windows only, as rips do: on a Mac a
+/// folder called "Con" is fine, and the rips already there are named that way).
+fn folder_name_for(tag: &str, windows: bool) -> String {
+    let ends = |c: char| c == '.' || c == ' ';
+    let mut swapped = String::with_capacity(tag.len());
+    for c in tag.trim().chars().filter(|c| !c.is_control()) {
+        match c {
+            '/' | '\\' | ':' | '*' | '|' => swapped.push('-'),
+            '?' => {}
+            '"' => swapped.push('\''),
+            '<' => swapped.push('('),
+            '>' => swapped.push(')'),
+            c => swapped.push(c),
+        }
+    }
+    let mut name = String::new();
+    for (i, c) in swapped.trim_matches(ends).chars().enumerate() {
+        if i == NAME_CHARS || name.len() + c.len_utf8() > NAME_BYTES {
+            break;
+        }
+        name.push(c);
+    }
+    let name = name.trim_matches(ends).to_string();
+    if windows {
+        avoid_windows_device_name(name)
+    } else {
+        name
+    }
+}
+
+/// `name` with "_" added when Windows keeps it for a device (CON, PRN, AUX, NUL, CONIN$, CONOUT$, COM0-9, LPT0-9,
+/// COM and LPT with a superscript 1-3), in any case and with or without an extension, which Windows ignores:
+/// "Nul.Live" is NUL too, so the mark goes before the first dot (rip.go avoidWindowsDeviceName).
+fn avoid_windows_device_name(name: String) -> String {
+    let (stem, rest) = name.split_at(name.find('.').unwrap_or(name.len()));
+    let stem = stem.trim_end_matches(' ');
+    if !is_windows_device_name(stem) {
+        return name;
+    }
+    format!("{stem}_{rest}")
+}
+
+fn is_windows_device_name(stem: &str) -> bool {
+    let upper = stem.to_uppercase();
+    if ["CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"].contains(&upper.as_str()) {
+        return true;
+    }
+    let c: Vec<char> = upper.chars().collect();
+    c.len() == 4
+        && (c[..3] == ['C', 'O', 'M'] || c[..3] == ['L', 'P', 'T'])
+        && (c[3].is_ascii_digit() || ['¹', '²', '³'].contains(&c[3]))
+}
+
+/// The folder under the music folder a song is filed in by its tags, as a CD rip is: "<Album Artist>/<Album>",
+/// the song's artist when it names no album artist, "Unknown Artist" when it names an album and no artist. None
+/// when the tags name no album, or nothing a folder can be called: the song then lands by its folder, as before.
+fn tag_folder(tags: &SongTags) -> Option<PathBuf> {
+    let album = tags.album.as_deref().filter(|a| !a.trim().is_empty())?;
+    let album = folder_name(album);
+    let artist = [&tags.album_artist, &tags.artist]
+        .into_iter()
+        .flatten()
+        .map(|a| folder_name(a))
+        .find(|a| !a.is_empty())
+        .unwrap_or_default();
+    if album.is_empty() && artist.is_empty() {
+        return None;
+    }
+    let or = |name: String, unknown: &str| if name.is_empty() { unknown.to_string() } else { name };
+    Some(Path::new(&or(artist, UNKNOWN_ARTIST)).join(or(album, UNKNOWN_ALBUM)))
+}
+
+/// The files of one thing the person handed over, filed by their tags. Each comes with the place it would have had
+/// before (`plan`: its folder's name and the tree inside it, or `folder_for_loose`). A song whose tags name its
+/// album goes to "<Album Artist>/<Album>/<its own file name>" (`tag_folder`, `tags` reads them), out of whatever
+/// folders it sat in, so the discs of a record meet; one whose tags don't keeps its old place.
+///
+/// Anything that isn't a song (a cover, a booklet, a .cue or .log, a folder of scans) goes with the songs: to the
+/// record most of the songs in its own folder went to, under its own name. When its folder has no songs of its own
+/// (a cover on top of CD1/ and CD2/, a Scans/ folder), to the record most of the songs under the nearest folder
+/// above it went to, keeping its path below that folder, so "Scans/back.jpg" lands as "<record>/Scans/back.jpg"
+/// (`root`, the folder handed over or the one loose files came from, is as far up as it looks). A tie goes to the
+/// first by name. For an untagged song the record is its old place, so a folder of untagged songs keeps its whole
+/// tree, covers and scans included, as before; one with no songs anywhere in it sends nothing.
+fn file_by_tags(
+    root: &Path,
+    files: Vec<(PathBuf, PathBuf, u64)>,
+    tags: &dyn Fn(&Path) -> SongTags,
+) -> Vec<(PathBuf, PathBuf, u64)> {
+    // For each folder: where the record of each song directly in it went, and of each song anywhere under it.
+    let mut direct: HashMap<PathBuf, HashMap<PathBuf, u32>> = HashMap::new();
+    let mut under: HashMap<PathBuf, HashMap<PathBuf, u32>> = HashMap::new();
+    let mut out = Vec::with_capacity(files.len());
+    let mut others = Vec::new();
+    for (src, old, size) in files {
+        if !is_audio(&src) {
+            others.push((src, size));
+            continue;
+        }
+        let record = tag_folder(&tags(&src));
+        let dest = match (&record, src.file_name()) {
+            (Some(folder), Some(name)) => folder.join(name),
+            _ => old.clone(),
+        };
+        if let (Some(from), Some(old_dir)) = (src.parent(), old.parent()) {
+            for (up, dir) in from.ancestors().take_while(|d| d.starts_with(root)).enumerate() {
+                // An untagged song keeps the tree it came in, so seen from `up` folders above it, its record is
+                // that folder's old place.
+                let Some(went) = record.clone().or_else(|| old_dir.ancestors().nth(up).map(Path::to_path_buf)) else {
+                    break;
+                };
+                if up == 0 {
+                    *direct.entry(dir.to_path_buf()).or_default().entry(went.clone()).or_default() += 1;
+                }
+                *under.entry(dir.to_path_buf()).or_default().entry(went).or_default() += 1;
+            }
+        }
+        out.push((src, dest, size));
+    }
+    let most = |votes: &HashMap<PathBuf, u32>| {
+        votes.iter().max_by(|a, b| a.1.cmp(b.1).then_with(|| b.0.cmp(a.0))).map(|(dir, _)| dir.clone())
+    };
+    for (src, size) in others {
+        let Some(from) = src.parent() else { continue };
+        let follow = match direct.get(from) {
+            Some(votes) => Some((from, votes)),
+            None => from.ancestors().take_while(|d| d.starts_with(root)).find_map(|d| under.get(d).map(|v| (d, v))),
+        };
+        let Some((dir, votes)) = follow else { continue };
+        if let (Some(record), Ok(below)) = (most(votes), src.strip_prefix(dir)) {
+            out.push((src.clone(), record.join(below), size));
+        }
+    }
+    out
 }
 
 fn is_audio(p: &Path) -> bool {
@@ -283,8 +477,9 @@ fn place(dest: &Path, src: &Path, size: u64) -> std::io::Result<Place> {
 }
 
 /// What to do with `paths`, checked before a single file moves. Err when the whole add should stop.
-/// A folder keeps its name. Loose files are gathered by the folder they came from, and each gathering goes into
-/// `folder_for_loose` of it. `home` is the person's home folder (`home_dir`).
+/// Every song is filed by its tags (`file_by_tags`). One whose tags don't name its album lands as it always did:
+/// in a folder's own name, or for loose files (gathered by the folder they came from) in `folder_for_loose` of it.
+/// `home` is the person's home folder (`home_dir`).
 fn plan(music: &Path, paths: &[String], home: Option<&Path>) -> Result<(Vec<Item>, u32), String> {
     let mut items: Vec<Item> = Vec::new();
     // Each loose file's source folder, and where in `items` its files are gathered.
@@ -315,17 +510,21 @@ fn plan(music: &Path, paths: &[String], home: Option<&Path>) -> Result<(Vec<Item
         if meta.is_dir() {
             let mut files = Vec::new();
             walk(&real, &name, &mut files).map_err(|e| format!("{raw}: {e}"))?;
-            items.push(Item { dest: music.join(&name), src: real, files, is_dir: true });
+            // In order of where they are, so when two discs share a file name it is the first disc's that keeps it.
+            files.sort_by(|a, b| a.0.cmp(&b.0));
+            items.push(Item { src: real, files, is_dir: true });
         } else if meta.is_file() {
             let Some(parent) = real.parent() else { continue };
             let folder = folder_for_loose(parent, home);
             let at = *loose.entry(parent.to_path_buf()).or_insert_with(|| {
-                let dest = music.join(&folder);
-                items.push(Item { dest, src: parent.to_path_buf(), files: Vec::new(), is_dir: false });
+                items.push(Item { src: parent.to_path_buf(), files: Vec::new(), is_dir: false });
                 items.len() - 1
             });
             items[at].files.push((real.clone(), Path::new(&folder).join(&name), meta.len()));
         }
+    }
+    for it in &mut items {
+        it.files = file_by_tags(&it.src, std::mem::take(&mut it.files), &read_tags);
     }
     items.retain(|it| it.files.iter().any(|(s, _, _)| is_audio(s)));
     if items.is_empty() && already == 0 {
@@ -420,22 +619,9 @@ fn add(
     progress(report.progress(done, total));
 
     for it in &items {
+        // A move on the same disk renames each file into its album's folder, which is instant; the folders it
+        // leaves empty are tidied away after.
         let local = moving && same_disk(&it.src, &music);
-        // A whole folder moving on the same disk, with nothing of that name in the music folder yet: one rename
-        // takes everything in it along, its pictures included, in an instant.
-        if local && it.is_dir && !it.dest.exists() {
-            let songs = it.files.iter().filter(|(s, _, _)| is_audio(s)).count() as u32;
-            match fs::rename(&it.src, &it.dest) {
-                Ok(()) => report.added += songs,
-                Err(e) => {
-                    report.failed += 1;
-                    report.error.get_or_insert(format!("{}: {e}", it.src.display()));
-                }
-            }
-            done += songs;
-            progress(report.progress(done, total));
-            continue;
-        }
         for (src, rel, size) in &it.files {
             let counts = is_audio(src);
             let meant = music.join(rel);
@@ -679,6 +865,257 @@ mod tests {
         put(&docs.join("notes.txt"), b"x");
         assert!(run(&music, &[s(&docs)], true).unwrap_err().contains("no music"));
         assert!(docs.join("notes.txt").exists());
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    fn tags(album_artist: Option<&str>, artist: Option<&str>, album: Option<&str>) -> SongTags {
+        let own = |s: Option<&str>| s.map(String::from);
+        SongTags { album_artist: own(album_artist), artist: own(artist), album: own(album) }
+    }
+
+    /// A FLAC file with no sound in it and these Vorbis comments ("ALBUM", "The Album").
+    fn flac(comments: &[(&str, &str)]) -> Vec<u8> {
+        let mut b = b"fLaC".to_vec();
+        // STREAMINFO: 4096-sample blocks, 44.1 kHz, two channels, 16 bits, no frames.
+        b.extend([0x00, 0x00, 0x00, 34]);
+        b.extend(4096u16.to_be_bytes());
+        b.extend(4096u16.to_be_bytes());
+        b.extend([0u8; 6]);
+        b.extend(((44100u64 << 44) | (1 << 41) | (15 << 36)).to_be_bytes());
+        b.extend([0u8; 16]);
+        let mut body = Vec::new();
+        body.extend(4u32.to_le_bytes());
+        body.extend(b"test");
+        body.extend((comments.len() as u32).to_le_bytes());
+        for (key, value) in comments {
+            let c = format!("{key}={value}");
+            body.extend((c.len() as u32).to_le_bytes());
+            body.extend(c.as_bytes());
+        }
+        b.push(0x80 | 4); // the last block: VORBIS_COMMENT
+        b.extend(&(body.len() as u32).to_be_bytes()[1..]);
+        b.extend(body);
+        b
+    }
+
+    /// An MP3 with an ID3v2.3 tag of these frames ("TALB", "The Album") and three silent frames.
+    fn mp3(frames: &[(&str, &str)]) -> Vec<u8> {
+        let mut body = Vec::new();
+        for (id, text) in frames {
+            body.extend(id.as_bytes());
+            body.extend(((text.len() + 1) as u32).to_be_bytes());
+            body.extend([0, 0, 0]); // no flags; ISO-8859-1 text
+            body.extend(text.as_bytes());
+        }
+        let n = body.len() as u32;
+        let mut b = b"ID3\x03\x00\x00".to_vec();
+        b.extend([(n >> 21) as u8 & 0x7f, (n >> 14) as u8 & 0x7f, (n >> 7) as u8 & 0x7f, n as u8 & 0x7f]);
+        b.extend(body);
+        for _ in 0..3 {
+            b.extend([0xFF, 0xFB, 0x90, 0x00]); // MPEG-1 layer III, 128 kbps, 44.1 kHz: 417 bytes a frame
+            b.extend([0u8; 413]);
+        }
+        b
+    }
+
+    #[test]
+    fn a_song_is_filed_under_its_album_artist_and_album() {
+        let at = |t: SongTags| tag_folder(&t).map(|p| p.to_string_lossy().into_owned());
+        let folder = |artist: &str, album: &str| Some(Path::new(artist).join(album).to_string_lossy().into_owned());
+        // the album artist over the song's own artist, so a record's guests don't scatter it
+        let various = tags(Some("Various Artists"), Some("Beck"), Some("Big Hits"));
+        assert_eq!(at(various), folder("Various Artists", "Big Hits"));
+        // no album artist: the song's artist
+        assert_eq!(at(tags(None, Some("Beck"), Some("Odelay"))), folder("Beck", "Odelay"));
+        assert_eq!(at(tags(Some("  "), Some("Beck"), Some("Odelay"))), folder("Beck", "Odelay"));
+        assert_eq!(at(tags(Some("?"), Some("Beck"), Some("Odelay"))), folder("Beck", "Odelay"));
+        // an album and no artist, or an artist and an album with nothing a folder can be called: as rips do
+        assert_eq!(at(tags(None, None, Some("Odelay"))), folder("Unknown Artist", "Odelay"));
+        assert_eq!(at(tags(None, Some("Beck"), Some("???"))), folder("Beck", "Unknown Album"));
+        // no album, or nothing usable in either: no folder from the tags, so the song lands by its own folder
+        assert_eq!(at(tags(Some("Beck"), Some("Beck"), None)), None);
+        assert_eq!(at(tags(None, Some("Beck"), Some(" "))), None);
+        assert_eq!(at(tags(None, None, Some("..."))), None);
+        assert_eq!(at(SongTags::default()), None);
+    }
+
+    #[test]
+    fn folder_names_are_safe_on_a_mac_and_on_windows() {
+        let mac = |s: &str| folder_name_for(s, false);
+        let win = |s: &str| folder_name_for(s, true);
+        // rip.go's own swaps
+        assert_eq!(mac("AC/DC"), "AC-DC");
+        assert_eq!(mac("Live: Back\\Forth"), "Live- Back-Forth");
+        assert_eq!(mac("Who? *Me* |Now|"), "Who -Me- -Now-");
+        assert_eq!(mac("Say \"Hi\" <Live>"), "Say 'Hi' (Live)");
+        // control characters out, and no dot or space at either end
+        assert_eq!(mac("Tab\there\u{7}"), "Tabhere");
+        assert_eq!(mac("  Hello...  "), "Hello");
+        assert_eq!(mac("...And Justice for All."), "And Justice for All");
+        assert_eq!(mac("Sgt. Pepper"), "Sgt. Pepper");
+        assert_eq!(mac(" ?? "), "");
+        // a name Windows keeps for a device gets "_", with or without an extension, in any case; on a Mac it stays
+        assert_eq!(win("CON"), "CON_");
+        assert_eq!(win("con"), "con_");
+        assert_eq!(win("Nul.Live"), "Nul_.Live");
+        assert_eq!(win("Aux .Live"), "Aux_.Live");
+        assert_eq!(win("COM1"), "COM1_");
+        assert_eq!(win("lpt9"), "lpt9_");
+        assert_eq!(win("PRN"), "PRN_");
+        assert_eq!(win("Console"), "Console");
+        assert_eq!(win("COM10"), "COM10");
+        assert_eq!(win("Connie"), "Connie");
+        assert_eq!(mac("CON"), "CON");
+        // long names: cut to 120 characters on a character's edge, never mid-letter, and never past 240 bytes
+        assert_eq!(mac(&"a".repeat(300)), "a".repeat(120));
+        assert_eq!(mac(&"é".repeat(300)), "é".repeat(120));
+        assert_eq!(mac(&"😀".repeat(100)), "😀".repeat(60));
+        assert_eq!(mac(&format!("{}. and more", "x".repeat(119))), "x".repeat(119), "no dot left at the cut");
+    }
+
+    #[test]
+    fn covers_follow_the_songs_they_sat_beside_and_two_discs_share_a_folder() {
+        let d = Path::new("/In/Abbey Road (Deluxe)");
+        let file = |rel: &str| (d.join(rel), Path::new("Abbey Road (Deluxe)").join(rel), 1u64);
+        let beatles = tags(Some("The Beatles"), Some("The Beatles"), Some("Abbey Road"));
+        let read = |p: &Path| -> SongTags {
+            let name = p.file_name().unwrap().to_string_lossy();
+            if name.starts_with("untagged") {
+                SongTags::default()
+            } else if name.starts_with("bonus") {
+                tags(None, Some("Paul McCartney"), Some("McCartney"))
+            } else {
+                beatles.clone()
+            }
+        };
+        let files = vec![
+            file("CD1/1-01 Come Together.flac"),
+            file("CD1/1-02 Something.flac"),
+            file("CD1/bonus.flac"),
+            file("CD1/cover.jpg"),
+            file("CD2/1-01 Come Together.flac"),
+            file("CD2/booklet.pdf"),
+            file("Scans/front.jpg"),
+            file("Scans/Inlay/back.jpg"),
+            file("folder.jpg"),
+            file("Untagged/untagged 1.mp3"),
+            file("Untagged/untagged.cue"),
+            file("Untagged/Scans/inlay.jpg"),
+        ];
+        let filed: HashMap<PathBuf, PathBuf> =
+            file_by_tags(d, files, &read).into_iter().map(|(src, dest, _)| (src, dest)).collect();
+        let to = |rel: &str| filed.get(&d.join(rel)).map(|p| p.to_string_lossy().into_owned());
+        let at = |p: &str| Some(p.to_string());
+        // both discs in one folder, each song under its own file name
+        assert_eq!(to("CD1/1-01 Come Together.flac"), at("The Beatles/Abbey Road/1-01 Come Together.flac"));
+        assert_eq!(to("CD2/1-01 Come Together.flac"), at("The Beatles/Abbey Road/1-01 Come Together.flac"));
+        assert_eq!(to("CD1/bonus.flac"), at("Paul McCartney/McCartney/bonus.flac"));
+        // a cover goes where most of its folder's songs went
+        assert_eq!(to("CD1/cover.jpg"), at("The Beatles/Abbey Road/cover.jpg"));
+        assert_eq!(to("CD2/booklet.pdf"), at("The Beatles/Abbey Road/booklet.pdf"));
+        // a folder with no songs of its own follows the songs under the nearest folder above it that has some,
+        // its path below that folder kept: the cover on top of CD1/ and CD2/, and a scans folder stays a folder
+        assert_eq!(to("folder.jpg"), at("The Beatles/Abbey Road/folder.jpg"));
+        assert_eq!(to("Scans/front.jpg"), at("The Beatles/Abbey Road/Scans/front.jpg"));
+        assert_eq!(to("Scans/Inlay/back.jpg"), at("The Beatles/Abbey Road/Scans/Inlay/back.jpg"));
+        // untagged songs land as they always did, their folder's tree kept, and their .cue and scans with them
+        assert_eq!(to("Untagged/untagged 1.mp3"), at("Abbey Road (Deluxe)/Untagged/untagged 1.mp3"));
+        assert_eq!(to("Untagged/untagged.cue"), at("Abbey Road (Deluxe)/Untagged/untagged.cue"));
+        assert_eq!(to("Untagged/Scans/inlay.jpg"), at("Abbey Road (Deluxe)/Untagged/Scans/inlay.jpg"));
+        assert_eq!(filed.len(), 12);
+    }
+
+    #[test]
+    fn untagged_discs_keep_their_tree_and_a_folder_with_no_songs_sends_nothing() {
+        let d = Path::new("/In/Mixtape");
+        let file = |rel: &str| (d.join(rel), Path::new("Mixtape").join(rel), 1u64);
+        let none = |_: &Path| SongTags::default();
+        let files: Vec<_> =
+            ["CD1/a.mp3", "CD2/b.mp3", "CD2/c.mp3", "cover.jpg", "Scans/back.jpg"].into_iter().map(file).collect();
+        let filed: Vec<(PathBuf, PathBuf)> =
+            file_by_tags(d, files.clone(), &none).into_iter().map(|(src, dest, _)| (src, dest)).collect();
+        // every file exactly where the folder's own tree puts it, as before tags were read
+        let before: Vec<(PathBuf, PathBuf)> = files.into_iter().map(|(src, old, _)| (src, old)).collect();
+        assert_eq!(filed.len(), before.len());
+        for pair in &before {
+            assert!(filed.contains(pair), "{pair:?}");
+        }
+        // a folder with no songs anywhere in it: nothing goes
+        let art = Path::new("/In/Artwork");
+        let pics = vec![(art.join("poster.jpg"), PathBuf::from("Artwork/poster.jpg"), 1u64)];
+        assert!(file_by_tags(art, pics, &none).is_empty());
+    }
+
+    #[test]
+    fn real_tagged_files_are_read_and_filed_the_way_a_rip_is() {
+        let root = scratch("tagged");
+        let music = root.join("Music/Cassette");
+        let album = root.join("Downloads/Abbey Road (Deluxe)");
+        let beatles = [("ALBUMARTIST", "The Beatles"), ("ARTIST", "The Beatles"), ("ALBUM", "Abbey Road")];
+        let song = |title: &str| flac(&[("TITLE", title), beatles[0], beatles[1], beatles[2]]);
+        put(&album.join("CD1/1-01 Come Together.flac"), &song("Come Together"));
+        put(&album.join("CD1/1-02 Something.flac"), &song("Something"));
+        put(&album.join("CD1/cover.jpg"), b"art");
+        put(&album.join("CD2/2-01 Come Together (Demo).flac"), &flac(&[beatles[1], beatles[2]]));
+        put(&album.join("CD2/booklet.pdf"), b"pdf");
+        put(&album.join("Scans/front.jpg"), b"scan");
+        put(&album.join("folder.jpg"), b"top");
+        put(&album.join("Extras/untagged.mp3"), b"not really an mp3");
+        let artwork = root.join("Downloads/Artwork");
+        put(&artwork.join("poster.jpg"), b"poster");
+        let single = root.join("Downloads/song.mp3");
+        put(&single, &mp3(&[("TIT2", "1999"), ("TPE1", "Prince"), ("TALB", "1999")]));
+        let acdc = root.join("Downloads/hells bells.mp3");
+        put(&acdc, &mp3(&[("TPE1", "Brian Johnson"), ("TPE2", "AC/DC"), ("TALB", "Back In Black")]));
+
+        // what lofty reads, and that a file it can't read is no tags rather than a failure
+        assert_eq!(read_tags(&single), tags(None, Some("Prince"), Some("1999")));
+        assert_eq!(read_tags(&acdc), tags(Some("AC/DC"), Some("Brian Johnson"), Some("Back In Black")));
+        let demo = read_tags(&album.join("CD2/2-01 Come Together (Demo).flac"));
+        assert_eq!(demo, tags(None, Some("The Beatles"), Some("Abbey Road")));
+        assert_eq!(read_tags(&album.join("Extras/untagged.mp3")), SongTags::default());
+        assert_eq!(read_tags(&root.join("nowhere.flac")), SongTags::default());
+
+        let mut heard = Vec::new();
+        let picked = [s(&album), s(&single), s(&acdc), s(&artwork)];
+        let r = add(&music, &picked, true, &mut |p: AddProgress| heard.push(p)).unwrap();
+        assert_eq!((r.added, r.already, r.failed), (6, 0, 0), "{:?}", r.error);
+        assert_eq!(heard.first(), Some(&AddProgress { total: 6, ..Default::default() }));
+        assert_eq!(heard.last(), Some(&AddProgress { done: 6, total: 6, added: 6, already: 0, failed: 0 }));
+        let rec = music.join("The Beatles/Abbey Road");
+        let names = ["1-01 Come Together.flac", "1-02 Something.flac", "2-01 Come Together (Demo).flac"];
+        for name in names.iter().chain(&["cover.jpg", "booklet.pdf", "folder.jpg", "Scans/front.jpg"]) {
+            assert!(rec.join(name).is_file(), "{name}");
+        }
+        assert!(music.join("Prince/1999/song.mp3").is_file());
+        assert!(music.join("AC-DC/Back In Black/hells bells.mp3").is_file());
+        assert_eq!(fs::read(music.join("Abbey Road (Deluxe)/Extras/untagged.mp3")).unwrap(), b"not really an mp3");
+        assert_eq!(fs::read(rec.join("Scans/front.jpg")).unwrap(), b"scan");
+        // the move took every file it placed, the top cover and the scans too, and tidied the emptied folders away
+        assert!(!album.exists() && !single.exists());
+        // a folder with no songs in it sends nothing, and the move leaves it be
+        assert_eq!(fs::read(artwork.join("poster.jpg")).unwrap(), b"poster");
+        assert!(!music.join("Artwork").exists() && !music.join("The Beatles/Abbey Road/poster.jpg").exists());
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn two_discs_with_the_same_file_names_share_the_album_folder_and_a_copy_leaves_them() {
+        let root = scratch("discs");
+        let music = root.join("Music/Cassette");
+        let album = root.join("Desktop/The Wall");
+        let wall = [("ARTIST", "Pink Floyd"), ("ALBUM", "The Wall")];
+        put(&album.join("CD 1/01.flac"), &flac(&[("TITLE", "In the Flesh?"), wall[0], wall[1]]));
+        put(&album.join("CD 2/01.flac"), &flac(&[("TITLE", "Hey You"), wall[0], wall[1]]));
+        let r = run(&music, &[s(&album)], false).unwrap();
+        assert_eq!((r.added, r.already, r.failed), (2, 0, 0));
+        let rec = music.join("Pink Floyd/The Wall");
+        assert_eq!(fs::read(rec.join("01.flac")).unwrap(), fs::read(album.join("CD 1/01.flac")).unwrap());
+        assert_eq!(fs::read(rec.join("01 2.flac")).unwrap(), fs::read(album.join("CD 2/01.flac")).unwrap());
+        // the same again: both already there
+        let r = run(&music, &[s(&album)], false).unwrap();
+        assert_eq!((r.added, r.already, r.failed), (0, 2, 0));
+        assert!(!rec.join("01 3.flac").exists());
         fs::remove_dir_all(&root).unwrap();
     }
 

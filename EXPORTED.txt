@@ -1,4 +1,4 @@
-# Cassette for your computer 0.5.50, exported from Cassette's own repository at acea6af378e95123392c5757cd50552791008aad.
+# Cassette for your computer 0.5.51, exported from Cassette's own repository at cc1f2da7c5854cec7c30d7868bd3bc2df296022f.
 # One line per file: where it came from, then its path.
 #   engine: the computer app's own folder; desk: a player screen or what it imports, as the website runs it;
 #   stand-in / public copy: the public copy's own file in place of the website's; package, config, asset, made.
@@ -228,6 +228,8 @@ engine	apps/cassette-player/sidecar/http-guards_test.go
 engine	apps/cassette-player/sidecar/http-guards.go
 engine	apps/cassette-player/sidecar/image_ladder_generated.go
 engine	apps/cassette-player/sidecar/ingest_test.go
+engine	apps/cassette-player/sidecar/ingest-progress_test.go
+engine	apps/cassette-player/sidecar/ingest-progress.go
 engine	apps/cassette-player/sidecar/ingest.go
 engine	apps/cassette-player/sidecar/lan-host_other.go
 engine	apps/cassette-player/sidecar/lan-host_windows.go
@@ -708,6 +710,7 @@ desk	apps/cassette/src/app/desk/disc.tsx
 desk	apps/cassette/src/app/desk/disc/page.tsx
 desk	apps/cassette/src/app/desk/Editors.tsx
 desk	apps/cassette/src/app/desk/error.tsx
+desk	apps/cassette/src/app/desk/first-run.ts
 desk	apps/cassette/src/app/desk/home.ts
 desk	apps/cassette/src/app/desk/keep-playing.tsx
 desk	apps/cassette/src/app/desk/layout.tsx
@@ -870,6 +873,7 @@ desk	apps/cassette/src/lib/hub-origin.ts
 desk	apps/cassette/src/lib/image-url.ts
 desk	apps/cassette/src/lib/images/image-ref.ts
 desk	apps/cassette/src/lib/images/picture.ts
+desk	apps/cassette/src/lib/import-status.ts
 desk	apps/cassette/src/lib/keep-playing/contract.ts
 desk	apps/cassette/src/lib/keep-playing/queue.ts
 desk	apps/cassette/src/lib/keys.ts

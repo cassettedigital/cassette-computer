@@ -32,6 +32,9 @@ getrandom = "0.2"
 serde_json = "1"
 # Free space before adding music (add_music.rs); already in the tree via tauri.
 libc = "0.2"
+# A song's own tags (album artist, artist, album) when adding music, so it is filed under
+# <Album Artist>/<Album> the way a CD rip is (add_music.rs read_tags).
+lofty = "0.25.5"
 # Pairing's sealed sign-in (pairing.rs open_sealed): X25519, HKDF and AES-GCM, and the base64url it rides in.
 # Both already in the tree (ring via the updater's TLS, base64 via tauri).
 ring = "0.17"

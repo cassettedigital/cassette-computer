@@ -41,7 +41,7 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "macos",
     label: "macOS",
     status: "available",
-    version: "0.5.50", // the release whose disk image /api/desktop/download serves; bump with each published DMG
+    version: "0.5.51", // the release whose disk image /api/desktop/download serves; bump with each published DMG
     sizeLabel: null, // filled from the published disk image
     // Apple silicon only (only darwin-aarch64 is built); 13.5 is the bundled Node 24's floor.
     requirement: "Apple silicon · macOS 13.5 or later",
@@ -74,7 +74,7 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "windows",
     label: "Windows",
     status: "available",
-    version: "0.5.50", // the signed installer publish-desktop-release.mts --target windows placed; it is also the update
+    version: "0.5.51", // the signed installer publish-desktop-release.mts --target windows placed; it is also the update
     sizeLabel: null,
     requirement: "Windows 10 or 11, 64-bit",
     // Signed-in only, like macOS; redirects to the installer in the private desktop bucket.
