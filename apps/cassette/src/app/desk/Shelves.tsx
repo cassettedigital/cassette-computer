@@ -70,6 +70,7 @@ import { DESK, deskAlbum, deskRecordPage, deskArtist, deskArtistOf, deskPlaylist
 import { PageBar, usePageBar } from "./PageBar";
 import { useAbout } from "./Artist";
 import { DiscArt, reading, useDisc } from "./disc";
+import { useNotMain } from "./ThisComputer";
 import d from "./desk.module.css";
 
 /** The playlist with no cover of its own: the neutral record tint (CoverTint's fallback). */
@@ -411,6 +412,102 @@ function QuickRecord({ a, on, live, onPlay, onMenu }: { a: DeskAlbum; on: boolea
   );
 }
 
+/** Records the first-run Home holds before the full Home takes over: one whole row. */
+const FIRST_ROW = 6;
+/** What the music pickers offer (the first-run Home's and the add card's). */
+const MUSIC_FILES = ".flac,.mp3,audio/flac,audio/mpeg";
+
+/**
+ * Home before there's a whole row of music (the founder, 2026-11-18: the old "Nothing in your library yet"
+ * said what the page already showed and sent you to Devices to do anything). Adding is the page: drop
+ * folders anywhere on the window or put a CD in, said once ("Rip it or drop it", the homepage's own line),
+ * with one key. While something goes in, the add card takes the words' place (as Devices draws it, the
+ * disc beside it), and the records land in a row of empty sleeves. The radio is under it, so there's
+ * something to play in the first minute. A second computer takes no drop-ins (its music comes from the
+ * main one, HereStrip above says so): it gets what has arrived and the radio.
+ */
+function FirstRun() {
+  const data = useDesk();
+  const ingest = useLibraryIngest();
+  const disc = useDisc();
+  const notMain = useNotMain();
+  const pick = useRef<HTMLInputElement>(null);
+  const landed = data.shelf.slice(0, FIRST_ROW);
+  const stations = data.stations.slice(0, 12);
+  const quiet = ingest.phase === "idle" && !(disc.shown && disc.status);
+  return (
+    <div className={d.page}>
+      <h1 className={d.srOnly}>Home</h1>
+      {notMain ? (
+        landed.length > 0 && (
+          <ShelfSection shout="On this computer">
+            {landed.map((a) => (
+              <AlbumTile key={a.key} a={a} />
+            ))}
+          </ShelfSection>
+        )
+      ) : (
+        <section className={d.firstRun} aria-labelledby="first-run-head">
+          {quiet ? (
+            <div className={d.firstWords}>
+              <h2 id="first-run-head" className={d.firstHead}>
+                Rip it
+                <br />
+                or drop it.
+              </h2>
+              <p className={d.firstLine}>Drag folders of music anywhere on this window, or put a CD in the drive.</p>
+              <div className={d.firstKeys}>
+                <Key tone="fill" onClick={() => pickMusicInApp() || pick.current?.click()}>
+                  Choose music
+                </Key>
+              </div>
+              <input
+                ref={pick}
+                type="file"
+                accept={MUSIC_FILES}
+                multiple
+                hidden
+                onChange={(e) => {
+                  const files = collectInputFiles(e.target.files);
+                  if (files.length) void startIngest(files);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              <h2 id="first-run-head" className={d.srOnly}>
+                Adding music
+              </h2>
+              <AddMusicRow />
+            </>
+          )}
+          <ol className={d.firstSlots} aria-label="Your records">
+            {Array.from({ length: FIRST_ROW }, (_, i) => {
+              const a = landed[i];
+              if (a) return <AlbumTile key={a.key} a={a} />;
+              const next = i === landed.length;
+              return (
+                <li key={`slot-${i}`} className={d.firstSlot}>
+                  <span className={d.firstSleeve}>{next && <Glyph name="plus" size={26} />}</span>
+                  {next && <span className={d.firstSlotWords}>{landed.length ? "The next one lands here" : "Your first record lands here"}</span>}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
+      {stations.length > 0 && (
+        <ShelfSection shout={notMain ? "Radio" : "Or put the radio on"} href={`${DESK}/radio`}>
+          {stations.map((s) => (
+            <StationTile key={s.slug} s={s} />
+          ))}
+        </ShelfSection>
+      )}
+    </div>
+  );
+}
+
 /**
  * Home, as the cloud makes it for every device (home.ts, lib/home; One Home, founder 2026-10-28):
  * the rows in the cloud's order and under its names, each drawn from what's on this Mac and hidden
@@ -431,19 +528,7 @@ export function Home() {
   const playOrToggle = (a: DeskAlbum, song?: string) => (track?.albumKey === a.key ? toggle() : void st.start(a.key, song));
   const stationOf = useMemo(() => new Map(data.stations.map((s) => [s.slug, s])), [data.stations]);
   const savedStations = useSavedStations();
-  if (data.shelf.length === 0) {
-    return (
-      <div className={d.page}>
-        <h1 className={d.srOnly}>Home</h1>
-        <div className={d.empty}>
-          <p className={d.emptyHead}>Nothing in your library yet.</p>
-          <Link href={`${DESK}/devices`} className={d.recordMore}>
-            Add music
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (data.shelf.length < FIRST_ROW) return <FirstRun />;
   if (!home || !onMac) {
     return (
       <div className={d.page}>
@@ -1570,7 +1655,7 @@ function AddMusicRow() {
         <input
           ref={pick}
           type="file"
-          accept=".flac,.mp3,audio/flac,audio/mpeg"
+          accept={MUSIC_FILES}
           multiple
           hidden
           onChange={(e) => {

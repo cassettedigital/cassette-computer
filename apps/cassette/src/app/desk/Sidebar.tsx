@@ -15,8 +15,8 @@
  *             rail's foot and scrolls on its own.
  *
  * Folded, the rail keeps the fold key, the search key, the icons and the library's art, each where it
- * was (the mark and the account step aside), with names as tooltips. A newer Mac app shows beside the
- * window's own buttons, above all of it (WindowUpdate). No rules between anything; the
+ * was (the mark and the account step aside), with names as tooltips. A newer app shows by the window's
+ * own buttons, above all of it (WindowUpdate). No rules between anything; the
  * place you're on is a lit row.
  */
 
@@ -154,18 +154,27 @@ function AccountKey({ account }: { account: DeskAccount & { studioLabel?: string
 }
 
 /**
- * A newer Mac app, beside the window's own buttons (close, minimise, zoom), in their line, the same
- * place open or folded (the founder, 2026-10-27; BUG-584: beside the account it squeezed the search
- * key off the window's edge, and folded it wasn't there at all). One click installs it and the app
- * restarts. Nothing while the app is current, or on the web. The window holds the check
- * (DeskShell), so the toolbar can step aside for it when the rail is folded.
+ * A newer app, by the window's own buttons, the same place open or folded (the founder, 2026-10-27;
+ * BUG-584: beside the account it squeezed the search key off the window's edge, and folded it wasn't
+ * there at all). One click installs it and the app restarts. Nothing while the app is current, or on
+ * the web. The window holds the check (DeskShell) and mounts this in its two places; the system the
+ * app runs on decides which one shows (desk.module.css, html[data-shell], lib/desktop-shell):
+ *   "lights": on the Mac, in the line of the close, minimise and zoom buttons the page runs under;
+ *   "bar": everywhere else (Windows, Linux), at the right end of the toolbar, under the system's own
+ *   title bar and its buttons, in the page's flow, so it can't land on anything.
  */
-export function WindowUpdate({ version, installing, install }: ReturnType<typeof useDesktopUpdate>) {
+export function WindowUpdate({
+  version,
+  installing,
+  install,
+  place,
+}: Pick<ReturnType<typeof useDesktopUpdate>, "version" | "installing" | "install"> & { place: "lights" | "bar" }) {
   if (!version) return null;
   return (
     <button
       type="button"
       className={d.winUpdate}
+      data-place={place}
       onClick={() => void install()}
       disabled={installing}
       data-installing={installing || undefined}

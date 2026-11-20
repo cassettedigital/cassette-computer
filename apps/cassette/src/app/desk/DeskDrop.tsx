@@ -6,19 +6,27 @@
  * desk's own: a veil over the window on the kit's colours while a drag is live, and the progress as the
  * desk's note above the player bar, in the same capsule as its other words, not a second kind of chip
  * pinned to the bottom edge. On the Devices screen its own card shows the progress, so no note there.
+ *
+ * When music that went in (a drop, or Choose music anywhere in the window: one shared store) is done, the
+ * window reads its library again, as it does when a rip finishes (disc.tsx): the hub has told the cloud
+ * before it says done (sidecar ingest.go), so Home, the rail and the shelves show the new records then,
+ * not three minutes later on coming back to the window (2026-11-20: four albums dropped on Windows sat
+ * on Devices while Home still said the library was empty).
  */
 
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
 import { useLibraryDrop } from "@/app/dashboard/_shell/LibraryDrop";
 import { HUB_IN_REACH } from "@/lib/hub-origin";
 import { dropNote } from "@/lib/library-drop-note";
+import { rereadLibrary } from "./songs";
 import d from "./desk.module.css";
 
 export function DeskDrop({ quietOn }: { quietOn: string }) {
   const { dragging, ingest } = useLibraryDrop();
   const { showToast } = useShell();
+  const router = useRouter();
   const pathname = usePathname();
   const quiet = pathname?.startsWith(quietOn) ?? false;
   const note = dropNote(ingest);
@@ -28,6 +36,13 @@ export function DeskDrop({ quietOn }: { quietOn: string }) {
   useEffect(() => {
     if (msg && !quiet) showToast(msg, error ? { variant: "error" } : undefined);
   }, [msg, error, quiet, showToast]);
+
+  // read once, as the import turns done (not on a window that opens with a finished one still showing)
+  const was = useRef(ingest.phase);
+  useEffect(() => {
+    if (ingest.phase === "done" && was.current !== "done") rereadLibrary(router);
+    was.current = ingest.phase;
+  }, [ingest.phase, router]);
 
   if (!dragging) return null;
   return (

@@ -257,15 +257,11 @@
   flex: none;
 }
 
-/* a newer Mac app: beside the window's own buttons (tauri.conf.json trafficLightPosition, x 20), in
-   their line, lit in the accent, the same place with the rail open or folded (the founder, 2026-10-27;
-   BUG-584). Folded, the rail is narrower than the buttons and this, so the toolbar's back and forward
-   step right for it */
+/* a newer app: one key, lit in the accent, by the window's own buttons, the same place with the rail open
+   or folded (the founder, 2026-10-27; BUG-584). The look is the same everywhere; where it sits is the
+   system's, from html[data-shell] (lib/desktop-shell), and the window mounts it in both places
+   (Sidebar.tsx WindowUpdate) so only CSS chooses. A system with no rule here gets the toolbar's end. */
 .winUpdate {
-  position: fixed;
-  top: 13px;
-  left: 90px; /* the gap the window's own buttons keep between each other (11px from the zoom button) */
-  z-index: 30;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -293,8 +289,31 @@
 .winUpdate:disabled {
   cursor: default;
 }
-.app[data-slim][data-update] .toolbar {
+/* the Mac: the page runs under the window's buttons (tauri.conf.json trafficLightPosition, x 20), so the
+   key sits in their line, beside the zoom button. Folded, the rail is narrower than the buttons and this,
+   so the toolbar's back and forward step right for it */
+.winUpdate[data-place="lights"] {
+  display: none;
+}
+:global(html[data-shell="mac"]) .winUpdate[data-place="lights"] {
+  display: flex;
+  position: fixed;
+  top: 13px;
+  left: 90px; /* the gap the window's own buttons keep between each other (11px from the zoom button) */
+  z-index: 30;
+}
+:global(html[data-shell="mac"]) .app[data-slim][data-update] .toolbar {
   padding-left: 120px;
+}
+/* Windows, Linux and anything after: the system's own title bar holds the window's buttons above the page,
+   at its right, so the key takes the right end of the toolbar just under them, in the page's flow. It
+   moves with the toolbar and can't cover the rail or the page */
+.winUpdate[data-place="bar"] {
+  flex: none;
+  margin-left: auto;
+}
+:global(html[data-shell="mac"]) .winUpdate[data-place="bar"] {
+  display: none;
 }
 .updateDot {
   flex: none;
@@ -1939,15 +1958,6 @@ button.barMode:focus-visible {
   color: var(--pk-text-secondary);
   font: var(--pk-t-metadata);
 }
-.recordMore {
-  display: inline-block;
-  margin-top: 18px;
-  font: var(--pk-t-pill);
-  letter-spacing: var(--pk-k-pill);
-  text-transform: uppercase;
-  border-bottom: 1px solid currentColor;
-  padding-bottom: 3px;
-}
 @container taste (max-width: 640px) {
   .recordTop {
     grid-template-columns: 1fr;
@@ -2089,16 +2099,90 @@ button.barMode:focus-visible {
   color: var(--pk-text-primary);
 }
 
-/* an empty Mac: one plain line and the way to add music */
-.empty {
-  margin: 48px 0;
+/* Home before there's a whole row of music (Shelves FirstRun): adding is the page, said once, with one
+   key; the records land in a row of empty sleeves the width of a shelf's tiles, one row only, so the
+   radio shelf under it lines up with it */
+.firstRun {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  margin: 8px 0 40px;
+  padding: clamp(28px, 4.2cqi, 52px);
+  border-radius: var(--pk-r-sheet);
+  background: var(--pk-surface-raised);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 7%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
-.emptyHead {
-  margin: 0 0 18px;
+.firstRun .addRow {
+  margin: 0;
+}
+.firstWords {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 640px;
+}
+.firstHead {
+  margin: 0;
   color: var(--pk-text-primary);
-  font: var(--pk-t-page-title);
-  letter-spacing: var(--pk-k-page-title);
+  font: 800 clamp(52px, 7cqi, 78px) / 0.92 var(--pk-f-display);
   text-transform: uppercase;
+}
+.firstLine {
+  margin: 0;
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-body);
+  font-size: 17px;
+  line-height: 1.45;
+}
+.firstKeys {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+.firstSlots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--pk-tile-width), 1fr));
+  grid-template-rows: auto;
+  grid-auto-rows: 0;
+  column-gap: var(--pk-tile-gap);
+  row-gap: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.firstSlot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pk-tile-title-gap);
+  min-width: 0;
+}
+.firstSleeve {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: var(--pk-r-artwork-tile);
+  background: var(--pk-surface-sunken);
+  color: var(--pk-text-tertiary);
+  box-shadow:
+    inset 0 2px 10px rgb(0 0 0 / 0.3),
+    inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 6%, transparent);
+}
+/* the row trails off: the sleeves further along are fainter */
+.firstSlot:nth-child(4) .firstSleeve {
+  opacity: 0.8;
+}
+.firstSlot:nth-child(5) .firstSleeve {
+  opacity: 0.62;
+}
+.firstSlot:nth-child(6) .firstSleeve {
+  opacity: 0.45;
+}
+.firstSlotWords {
+  color: var(--pk-text-tertiary);
+  font: var(--pk-t-caption);
 }
 
 /* the dashboard's own Account, Appearance and Purchases pages, laid in the desk's pane */

@@ -7,10 +7,10 @@
  * exactly what produced the dead `/download` links. One source, every surface
  * reads it; a version bump or a new TestFlight build updates all at once.
  *
- * IMPORTANT — distribution is NOT live yet (no notarized DMG, no TestFlight
- * build; see the playback/delivery reality audit). So `downloadUrl` is null and
- * both primary platforms are `coming_soon`. Surfaces MUST render a coming-soon /
- * disabled state when `downloadUrl` is null — never a dead link. `setupGuide`
+ * Every platform that's out points `downloadUrl` at the signed-in download route
+ * (api/desktop/download), which sends the person on to the file or, for the
+ * iPhone, to TestFlight. Surfaces MUST render a coming-soon / disabled state
+ * when `downloadUrl` is null, never a dead link. `setupGuide`
  * points at a real internal /guides/* route and is always safe to link.
  *
  * When distribution lands: set `downloadUrl`, flip `status` to "available", and
@@ -41,7 +41,7 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "macos",
     label: "macOS",
     status: "available",
-    version: "0.5.48", // the release whose disk image /api/desktop/download serves; bump with each published DMG
+    version: "0.5.49", // the release whose disk image /api/desktop/download serves; bump with each published DMG
     sizeLabel: null, // filled from the published disk image
     // Apple silicon only (only darwin-aarch64 is built); 13.5 is the bundled Node 24's floor.
     requirement: "Apple silicon · macOS 13.5 or later",
@@ -52,11 +52,12 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
   ios: {
     platform: "ios",
     label: "iOS",
-    status: "coming_soon", // -> "available" when the TestFlight build is live
+    status: "available", // TestFlight Public beta open since 2026-11-20 (0.1.0 build 7 approved)
     version: "0.1.0",
     sizeLabel: null,
-    requirement: "iPhone · iOS 26 or later", // the app target's IPHONEOS_DEPLOYMENT_TARGET (Amperfy.xcodeproj), checked 2026-10-21
-    downloadUrl: null, // TestFlight public link goes here
+    requirement: "iPhone · iOS 26 or later", // the app target's IPHONEOS_DEPLOYMENT_TARGET (Amperfy.xcodeproj), checked 2026-11-20
+    // Signed-in only, like the others; the route sends them on to the TestFlight public link, which lives only there.
+    downloadUrl: "/api/desktop/download/ios/testflight",
     setupGuide: "/guides/cassette-player-ios",
   },
   android: {
@@ -73,7 +74,7 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "windows",
     label: "Windows",
     status: "available",
-    version: "0.5.48", // the signed installer publish-desktop-release.mts --target windows placed; it is also the update
+    version: "0.5.49", // the signed installer publish-desktop-release.mts --target windows placed; it is also the update
     sizeLabel: null,
     requirement: "Windows 10 or 11, 64-bit",
     // Signed-in only, like macOS; redirects to the installer in the private desktop bucket.

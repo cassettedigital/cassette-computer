@@ -1,4 +1,4 @@
-# Cassette for your computer 0.5.48, exported from Cassette's own repository at 9cf1c225d3dac6bf5489096d2c2e5b69e4c22c25.
+# Cassette for your computer 0.5.49, exported from Cassette's own repository at 6f031ac6524853da10acdba19436de5da7ac87c7.
 # One line per file: where it came from, then its path.
 #   engine: the computer app's own folder; desk: a player screen or what it imports, as the website runs it;
 #   stand-in / public copy: the public copy's own file in place of the website's; package, config, asset, made.

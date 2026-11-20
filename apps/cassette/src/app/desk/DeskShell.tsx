@@ -247,7 +247,17 @@ function useHistoryStack(pathname: string) {
   return { canBack: at.current > 0, canForward: at.current < stack.current.length - 1, go };
 }
 
-function Toolbar({ pane, pathname, nav }: { pane: RefObject<HTMLElement | null>; pathname: string; nav: ReturnType<typeof useHistoryStack> }) {
+function Toolbar({
+  pane,
+  pathname,
+  nav,
+  update,
+}: {
+  pane: RefObject<HTMLElement | null>;
+  pathname: string;
+  nav: ReturnType<typeof useHistoryStack>;
+  update: ReturnType<typeof useDesktopUpdate>;
+}) {
   // the history is the window's, kept while the player fills the window and the toolbar is gone
   const { canBack, canForward, go } = nav;
   const [scrolled, setScrolled] = useState(false);
@@ -318,6 +328,8 @@ function Toolbar({ pane, pathname, nav }: { pane: RefObject<HTMLElement | null>;
       <p className={d.toolTitle} aria-hidden={!scrolled}>
         {title}
       </p>
+      {/* a newer app, at the toolbar's right end on Windows and Linux (on the Mac, by the lights) */}
+      <WindowUpdate {...update} place="bar" />
     </div>
   );
 }
@@ -332,7 +344,7 @@ function Window({ children }: { children: ReactNode }) {
   const owned = useOwned();
   const radio = useRadio();
   const { toast, showToast } = useShell();
-  // a newer Mac app, shown beside the window's own buttons (WindowUpdate)
+  // a newer app, shown by the window's own buttons (WindowUpdate: by the Mac's lights, or in the toolbar)
   const update = useDesktopUpdate();
   const [asideHidden, setAsideHiddenState] = useState(false);
   useEffect(() => {
@@ -387,11 +399,19 @@ function Window({ children }: { children: ReactNode }) {
   const [floatOpen, setFloatOpen] = useState(false);
   useEffect(() => setFloatOpen(false), [narrowAside]);
   useEffect(() => setFloatOpen(false), [pathname]);
-  const docked = !narrowAside && !asideHidden;
+  const [focus, setFocus] = useState<Look | null>(null);
+  // An empty library with nothing picked or playing gives the side view nothing to show ("Click a record
+  // and it opens here" beside no records; the founder, 2026-11-18): it stays put away until something is
+  // picked or plays, or the person opens it by hand.
+  const { shelf } = useDesk();
+  const [askedFor, setAskedFor] = useState(false);
+  const nothingYet = shelf.length === 0 && !focus && !owned.track && radio.status === "idle" && !preview.track && !askedFor;
+  const docked = !narrowAside && !asideHidden && !nothingYet;
   const asideAway = !docked && !floatOpen;
   const asideOver = !docked && floatOpen;
   const setAway = useCallback(
     (v: boolean) => {
+      if (!v) setAskedFor(true);
       if (narrowAside) return setFloatOpen(!v);
       setAsideHidden(v);
       setFloatOpen(false);
@@ -418,12 +438,12 @@ function Window({ children }: { children: ReactNode }) {
     if (!docked || !a || !pane || !a.el.isConnected) return;
     pane.scrollTop += a.el.getBoundingClientRect().top - a.top;
   }, [docked]);
-  const [focus, setFocus] = useState<Look | null>(null);
   const [tab, setTab] = useState<"look" | "queue">("look");
   // no back key: the side view shows what's picked and nothing else; to go back, pick the earlier thing
   // in the page, where it still is (the founder, 2026-11-07: the side view is meant to feel temporary)
   const aside = useMemo<Aside>(() => {
     const open = () => {
+      setAskedFor(true);
       if (docked) return;
       if (narrowAside) return setFloatOpen(true);
       // the click (or, from the keyboard, the focus) that asked for it, if it's in the page
@@ -699,13 +719,13 @@ function Window({ children }: { children: ReactNode }) {
         data-update={update.version ? "" : undefined /* folded, the toolbar steps right for it */}
       >
         <Sidebar slim={slimNow} onSlim={onSlim} />
-        <WindowUpdate {...update} />
+        <WindowUpdate {...update} place="lights" />
         <main ref={paneRef} className={`${t.body} ${d.pane}`}>
           {/* not the main computer: Home says where the music comes from, Devices keeps the switch (ThisComputer) */}
           {(pathname === DESK || pathname === `${DESK}/devices`) && <HereStrip always={pathname !== DESK} />}
           {children}
         </main>
-        {!room && <Toolbar pane={paneRef} pathname={pathname} nav={nav} />}
+        {!room && <Toolbar pane={paneRef} pathname={pathname} nav={nav} update={update} />}
         {/* the right column: the side view, a preview's video at its top (Rail); put away, or the
             player filling the window, the video floats as a card instead */}
         {!room && !asideAway && <Rail />}

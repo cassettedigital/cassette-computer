@@ -4,13 +4,19 @@
  * moves the window unless the page says where (data-tauri-drag-region, the shell's drag script).
  *
  * A tiny script in the root layout (DESKTOP_SHELL_SCRIPT) sees the shell before first paint and sets
- * html[data-shell="mac"]. A page that lays out its own top for this (the desk, data-titlebar="own" on
- * its window) gets nothing more. Any other page in the app starts under a strip that holds the lights
- * and moves the window (globals.css, .cs-shell-top in the root layout).
+ * html[data-shell] to the system the app runs on: "mac", "windows" or "linux" (nothing on the website).
+ * A page that lays out its own top for the Mac's overlay (the desk, data-titlebar="own" on its window)
+ * gets nothing more. Any other page in the app starts under a strip that holds the lights and moves the
+ * window (globals.css, .cs-shell-top in the root layout), on the Mac only.
+ *
+ * Windows and Linux keep the system's own title bar above the page, with the window's buttons in it, so
+ * the page's top is free there. Whatever sits by the window's buttons is placed per system from this one
+ * attribute (the desk's update key: desk.module.css .winUpdate), and a system with no rule of its own
+ * gets the in-the-page placement, so a new system never inherits the Mac's coordinates.
  */
 
 export const DESKTOP_SHELL_SCRIPT =
-  'try{if(window.__TAURI__&&/Mac/.test(navigator.platform))document.documentElement.setAttribute("data-shell","mac");}catch(e){}';
+  'try{if(window.__TAURI__){var p=navigator.platform||"",s=/Mac/.test(p)?"mac":/Win/.test(p)?"windows":/Linux/.test(p)?"linux":"";if(s)document.documentElement.setAttribute("data-shell",s);}}catch(e){}';
 
 /**
  * A link that leaves Cassette opens in the person's browser, never in the app's window: the window has no
