@@ -12,6 +12,8 @@
  */
 
 /** Bump when the answer's shape changes in a way an older device can't read. */
+import type { ImageRef } from "@discovery/cassette-kit/images";
+
 export const HOME_VERSION = 1;
 
 /** A record, as every device finds it: by its songs. `key` is made-for-you's album key. */
@@ -19,6 +21,20 @@ export type HomeRecord = { key: string; title: string; artist: string; year: num
 
 /** An artist, found on a device by any of the songs listed. */
 export type HomeArtist = { key: string; name: string; songs: string[] };
+
+/** A record from the catalog, not the person's own: one of their followed artists' new records (the "new" row). It
+ *  opens the record's page; the phones and the Mac draw it from these fields alone: the phones from `coverRef`, the
+ *  image ladder's reference (null when the ladder can't serve it), the Mac's window from the stored `cover`. */
+export type HomeNewRecord = {
+  id: number;
+  slug: string;
+  title: string;
+  artist: string;
+  artistSlug: string | null;
+  cover: string | null;
+  coverRef: ImageRef | null;
+  released: string;
+};
 
 /** A made-for-you playlist (or the Nostalgia mix), in the made-for-you route's own shape. */
 export type HomeMix = {
@@ -63,6 +79,9 @@ export type HomeRow =
   | (Named & { kind: "stations"; stations: string[]; like?: Record<string, HomeRecord[]> })
   | (Named & { kind: "reach"; shelf: HomeShelf })
   | (Named & { kind: "artists"; artists: HomeArtist[] })
+  /** New from artists you follow (owning a record of theirs, or chosen): catalog records, not yours (board #1162).
+      An app that doesn't know the kind leaves the row out. */
+  | (Named & { kind: "new"; records: HomeNewRecord[] })
   | (Named & { kind: "all-shelves"; count: number });
 
 export type HomeAnswer = {

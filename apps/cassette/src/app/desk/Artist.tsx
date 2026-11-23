@@ -25,6 +25,7 @@ import { useShell } from "@/app/dashboard/_shell/shell-context";
 import { swrRead } from "@/lib/read-cache";
 import { Art, albumCovers, artistCovers, trackCovers } from "./Art";
 import { useAside, useDesk } from "./DeskShell";
+import { useArtistFollow } from "./artist-follows";
 import { useEditArtist } from "./Editors";
 import { useOwned } from "./owned";
 import { createPlaylist, playlistSongs } from "./playlists";
@@ -129,7 +130,13 @@ export function useArtistMenu(name: string | null, slug: string | null, opts: { 
   const remove = useRemoveFromLibrary();
   const queue = useQueueLines();
   const { albums, keys, songs } = useArtist(name ?? "", slug);
+  const follow = useArtistFollow();
   if (!name) return null;
+  // an artist you own a record by you follow (board #1162): their new records come to Home; Unfollow stops only that
+  const following: MenuItem[] =
+    slug && keys.length
+      ? [follow.follows(slug) ? { label: "Unfollow", onSelect: () => follow.set(slug, false) } : { label: "Follow", onSelect: () => follow.set(slug, true) }]
+      : [];
   return [
     { label: "Play", onSelect: () => void owned.playRecords(keys), disabled: !keys.length },
     { label: "Shuffle", onSelect: () => void owned.playRecords(keys, { shuffle: true }), disabled: !keys.length },
@@ -140,6 +147,7 @@ export function useArtistMenu(name: string | null, slug: string | null, opts: { 
     { label: "Edit artist…", onSelect: () => editArtist(name, albums) },
     ...(songs ? adds({ songs }) : []),
     { label: "Make a playlist from them", onSelect: () => void make(name, songs ?? []), disabled: !songs?.length },
+    ...following,
     // in your library: Hide and Delete, each asking first (the founder, 2026-10-29)
     ...(keys.length
       ? ([

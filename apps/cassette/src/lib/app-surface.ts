@@ -27,8 +27,9 @@ export function isAppUserAgent(userAgent: string | null | undefined): boolean {
  * Which window a record page's body is drawn in (page infrastructure step 3d): the website, the iPhone
  * app's web view, or the desktop app's desk. The album and artist bodies share one rule for what a record
  * or artist you don't own offers there (the founder's Decision 6): on the website everything; in the apps
- * Preview only, with no song share key, no Follow, no Claim and no Want it. A record's Buy stays, and never
- * takes over the window: the desk opens it in the browser, the iPhone's web view hands it to Safari (Q5).
+ * Preview, with no song share key and no Claim. A record's Buy stays, and never takes over the window: the
+ * desk opens it in the browser, the iPhone's web view hands it to Safari (Q5). Save (an artist's, a record's)
+ * is in every window since the founder's Save and Follow model (2026-11-23, board #1162).
  */
 export type Surface = "web" | "app" | "desk";
 

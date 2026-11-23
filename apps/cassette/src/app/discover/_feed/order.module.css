@@ -50,3 +50,28 @@
   margin-bottom: calc(var(--control-h) / 2 + 8px - 0.5lh);
   font: var(--t-head-small);
 }
+
+/* Saved for later (SavedForLater.tsx): its sections at the page's section gap, each head close over what it names */
+.saved {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sec, 48px);
+}
+.saved > section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.savedEmpty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-block: 8px 24px;
+}
+.savedEmpty p {
+  margin: 0;
+  max-width: 38em;
+  font: var(--t-body);
+  color: var(--ink-2);
+}

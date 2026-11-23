@@ -42,7 +42,7 @@ export function PlayButton({
       round={round}
       icon={<Icon name={moving ? "pause" : "play"} size={14} />}
       data-live={state === "playing" || undefined}
-      data-give={round ? undefined : "play"}
+      data-give={round ? "keep" : "play"}
       {...rest}
     >
       {!round && <Say whole={word} short={state === "idle" ? short : undefined} />}

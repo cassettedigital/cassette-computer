@@ -116,7 +116,7 @@ function Acts({ r, surface }: { r: RecordItem; surface: Surface }) {
       <Preview r={r} />
       <Buy r={r} surface={surface} />
       {!r.hear && !r.buy && (
-        <Link href={albumHref(r.slug)} className={buttonClass("outlined")}>
+        <Link href={albumHref(r.slug)} className={buttonClass("outlined")} data-give="keep">
           Open the album
         </Link>
       )}

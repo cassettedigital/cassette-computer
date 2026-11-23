@@ -10,7 +10,8 @@ import { NotKeptOffline, deskDiscover } from "../source";
 
 export const metadata = { title: "Discover" };
 
-export default async function DeskDiscoverPage() {
+export default async function DeskDiscoverPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const { view } = await searchParams;
   const user = await deskUser();
   let got: Awaited<ReturnType<typeof deskDiscover>> = null;
   try {
@@ -18,5 +19,5 @@ export default async function DeskDiscoverPage() {
   } catch (e) {
     if (!(e instanceof NotKeptOffline)) throw e;
   }
-  return <DeskDiscover view={got?.view ?? null} offline={got?.offline ?? true} />;
+  return <DeskDiscover view={got?.view ?? null} offline={got?.offline ?? true} initial={view === "saved" ? "saved" : "discover"} />;
 }

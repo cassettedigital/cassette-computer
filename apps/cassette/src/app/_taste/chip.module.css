@@ -1,0 +1,59 @@
+/*
+ * A chip (Chip.tsx): a small outlined key in the label type, lit in the stock's ink when pressed. The
+ * chip's class is doubled in its rules, so a chip that is a link outweighs the paper's own `.root a`.
+ */
+.chip.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-e);
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip.chip > svg {
+  flex: none;
+}
+.chip.chip:hover {
+  border-color: var(--ink-e);
+  background: var(--wash);
+}
+.chip.chip[aria-pressed="true"],
+.chip.chip[aria-current="true"] {
+  border-color: var(--fill);
+  background: var(--fill);
+  color: var(--on-fill, var(--bg));
+}
+.chip.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.group {
+  display: grid;
+  gap: 12px;
+}
+.label {
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

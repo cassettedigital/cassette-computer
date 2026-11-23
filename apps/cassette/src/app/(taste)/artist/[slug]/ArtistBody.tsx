@@ -6,8 +6,8 @@
  * is owed. Artists like may come as `like`, a promise the server is still working out: it streams in last, so
  * the page shows without waiting on it (the desk hands it in `p`, whole). The lead record's colour, read off its cover (the same accent its own page shows), is the
  * page's record colour: it fills the Known for bars and lights the View menu's current row. `surface` is
- * the window it is drawn in: Follow and the claim line are the website's alone, as an album's share key
- * is (the founder's Decision 6, lib/app-surface.ts).
+ * the window it is drawn in: the claim line is the website's alone, as an album's share key is (the founder's
+ * Decision 6, lib/app-surface.ts); the artist's Save key is in every window (the founder, 2026-11-23, board #1162).
  */
 
 import { Suspense, use, useCallback, useState } from "react";
@@ -131,7 +131,7 @@ export function ArtistBody({ p, like, surface = "web" }: { p: ArtistPayload; lik
   const credit = p.photo && !photoGone ? p.credit : null;
   return (
     <div className={s.page} style={style}>
-      <Intro p={p} onPhotoGone={onPhotoGone} follow={surface === "web"} />
+      <Intro p={p} onPhotoGone={onPhotoGone} surface={surface} />
       {p.records.length > 0 && <Records p={p} colours={colours} onWant={want} surface={surface} />}
       {ours && (
         <div className={`${k.own} ${s.ownRun}`}>

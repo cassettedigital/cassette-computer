@@ -7,9 +7,9 @@
  * critics strip when a studio record has earned it (each outlet's mark and its grade, plain type), then
  * the buttons, one height, on one row at every width (the shared ActionRow: short of room, Preview gives
  * way to "Preview", then to its glyph, then Buy to "Buy"): Preview album (the words the artist page's
- * records panel uses; the kit's HearIt, drawn by the shared play button), Buy (BuyMenu.tsx), and on the
- * website Want it, a round key (WantIt.tsx). The apps have no wishlist to show it in, so there it stays
- * off (Q5). Nothing moves on load but the cover, which fades in over its plain sleeve as it lands (founder, 2026-11-11).
+ * records panel uses; the kit's HearIt, drawn by the shared play button), Buy (BuyMenu.tsx), and Save (SaveRecord.tsx)
+ * in every window, unless the record is the person's own already (board #1162: what you save and don't own waits in
+ * Saved for later, at the top of Discover). Nothing moves on load but the cover, which fades in over its plain sleeve as it lands (founder, 2026-11-11).
  * Once the page is narrow enough that the lockup sits under the cover (below 760, phones included), the whole
  * top is centred: the cover, the title, the artist, the facts, the strip and the row of buttons at their own
  * widths (the founder, 2026-11-17). Inside the iPhone app the top reads like the app's own album screen (album.module.css,
@@ -31,7 +31,7 @@ import type { StripItem } from "@/app/(taste)/_kit/types";
 import type { Surface } from "@/lib/app-surface";
 import { useReadAll } from "./AlbumBody";
 import { BuyMenu } from "./BuyMenu";
-import { WantIt } from "./WantIt";
+import { SaveRecord } from "./SaveRecord";
 import { factLine } from "./shape";
 import type { AlbumPage } from "./types";
 import a from "./album.module.css";
@@ -97,7 +97,7 @@ export function Opener({ p, surface }: { p: AlbumPage; surface: Surface }) {
           <ActionRow className={a.actions} centred>
             <HearIt playables={p.playables} startIndex={startAt} verb={surface === "app" ? "Preview" : undefined} />
             {hasBuy && <BuyMenu slug={p.slug} options={p.buy.options} pick={p.buy.pick} apple={p.buy.apple} signedIn={p.signedIn} surface={surface} />}
-            {surface === "web" && <WantIt albumId={p.albumId} slug={p.slug} signedIn={p.signedIn} initial={p.wishlisted} />}
+            {!p.owned && <SaveRecord albumId={p.albumId} slug={p.slug} title={p.title} signedIn={p.signedIn} initial={p.wishlisted} />}
           </ActionRow>
         </div>
       </div>

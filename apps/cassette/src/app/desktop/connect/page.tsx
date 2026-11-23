@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PUBLIC_SITE_URL } from "@/lib/urls";
+import { FocusFrame } from "@/app/_taste/FocusFrame";
 import { ConnectClient } from "./ConnectClient";
 
 /**
@@ -19,5 +20,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default function DesktopConnectPage() {
-  return <ConnectClient cloudBase={process.env.CASSETTE_CLOUD_BASE ?? PUBLIC_SITE_URL} />;
+  // inside the app's window ConnectClient marks the page as the app's (data-surface), and the website's chrome steps
+  // aside there as it does in every app window
+  return (
+    <FocusFrame>
+      <ConnectClient cloudBase={process.env.CASSETTE_CLOUD_BASE ?? PUBLIC_SITE_URL} />
+    </FocusFrame>
+  );
 }

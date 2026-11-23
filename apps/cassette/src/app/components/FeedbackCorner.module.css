@@ -107,3 +107,9 @@
     transition: none;
   }
 }
+
+/* a phone app's sign-in sheet shows the account card and the Cassette mark alone (_taste/FocusFrame.tsx, the
+   founder's D3 B, 2026-11-22): the key steps aside by the sheet's own mark, from the first paint */
+:global(html:has([data-focus-sheet])) .corner {
+  display: none;
+}

@@ -1,0 +1,222 @@
+/*
+ * AuthCard.tsx: the account card, one narrow column on the paper, everything in it left-aligned. No box, no stripe:
+ * the title carries the card. Its title is sized to the column (the founder's D2 B, 2026-11-22): 40px on a computer,
+ * so most titles sit on one line above the keys ("Sign in on this computer?" fills the 420px column at 404px); 30px on
+ * a phone.
+ */
+
+.card {
+  width: min(calc(100% - 2 * var(--gutter)), 420px);
+  margin-inline: auto;
+  padding: clamp(40px, 8cqi, 112px) 0 clamp(64px, 10cqi, 144px);
+  display: grid;
+  gap: 28px;
+}
+/* a phone's sign-in sheet (FocusFrame): the card a little way under the Cassette mark */
+:global([data-focus-sheet]) .card {
+  padding-top: clamp(40px, 14dvh, 140px);
+}
+
+/* the subject: the app's own tile, its caption, and the account */
+/* the subject keeps the tile's height, so a long address stays centred on the tile and grows up and down around its
+   middle, and the title never moves (the founder's pick, 11-23) */
+.subject {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  /* the tile's side is 0.7 of this (GlyphTile) */
+  --tile-font: 80px;
+  margin-bottom: -4px;
+}
+.who {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.app {
+  font: 800 20px / 1 var(--f-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-e);
+}
+.as {
+  font: var(--t-caption);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.address {
+  color: var(--ink-e);
+}
+.head {
+  display: grid;
+  gap: 12px;
+}
+.title {
+  margin: 0;
+  font: 800 40px / 0.95 var(--f-display);
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--ink-e);
+}
+@container taste (width < 760px) {
+  .title {
+    font-size: 30px;
+  }
+}
+.line {
+  margin: 0;
+  font: var(--t-caption);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+/* a sentence said where the person commits, under the keys (the terms) */
+.foot {
+  margin: -8px 0 0;
+  font: var(--t-caption);
+  color: var(--ink-3);
+}
+
+.card .inline {
+  color: var(--ink-e);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+.card .inline:hover {
+  text-decoration-color: var(--ink-e);
+}
+
+/* the one line that comes and goes (an error, a field's error, a note, "sent"), on the raised stock, an error in the
+   danger ink. Its home is right under the key row, so nothing above it moves; the links under it step down (the
+   founder's pick, 11-23) */
+.notice {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--r-card);
+  background: var(--raised);
+  font: var(--t-caption);
+  color: var(--ink-e);
+}
+.notice[data-tone="error"] {
+  color: var(--danger);
+}
+
+/* a field with something wrong: its edge in the danger ink (the words are in the notice); the class doubled so it
+   outweighs the field's own edge */
+.card .invalid.invalid {
+  border-color: var(--danger);
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+/* the keys sit a little apart from the fields above them */
+.form > :not(ul) + [data-halves] {
+  margin-top: 6px;
+}
+/* the emailed code: the field's own height, its digits a little larger and spaced (beats the field's code look) */
+.card .code.code {
+  font: 500 20px / 1 var(--f-mono);
+  letter-spacing: 0.4em;
+}
+
+/* an artist being claimed: the kit's artist row */
+.artist {
+  margin-bottom: -4px;
+}
+
+/* things to take: a key across the column each, its detail at the far end in the meta type (the class doubled where
+   it changes the button's layout, so it outweighs the button's own rules in any load order) */
+.list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.item.item {
+  width: 100%;
+  justify-content: space-between;
+}
+.detail {
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  color: var(--ink-3);
+}
+
+/* a box to tick, with its sentence */
+.tick {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font: var(--t-caption);
+  color: var(--ink-e);
+  cursor: pointer;
+}
+.tick input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--fill);
+  cursor: pointer;
+}
+.tick input:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* another way in, and the word between it and the form */
+.another {
+  display: grid;
+  gap: 18px;
+}
+.or {
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink-3);
+}
+
+/* the quiet links under the keys, in the label role, each a 44px touch. Links here carry the card's class too, so
+   they outweigh the paper's own `.root a` rule whatever order the build loads the sheets in */
+.links {
+  margin: -10px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+}
+.card .link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.card .link:hover:not(:disabled) {
+  color: var(--ink-e);
+}
+.card .link:disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+.card .link:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--r-small);
+}

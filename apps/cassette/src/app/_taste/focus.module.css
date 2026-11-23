@@ -1,0 +1,27 @@
+/*
+ * FocusFrame.tsx: a phone's sign-in sheet. No masthead to leave room for; the Cassette mark at the top of the card's
+ * column, in the footer's lockup (the mark in its gradient, the name in the display caps), so the person knows whose
+ * page this is without a link that leads out of signing in.
+ */
+
+.sheet {
+  --mast-room: 0px;
+  min-height: 100dvh;
+}
+.mark {
+  width: min(calc(100% - 2 * var(--gutter)), 420px);
+  margin: 0 auto;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 800 17px / 1 var(--f-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-e);
+}
+.logo {
+  flex: none;
+  width: 26px;
+  height: 26px;
+}

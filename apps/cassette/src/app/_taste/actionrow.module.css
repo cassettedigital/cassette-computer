@@ -6,6 +6,8 @@
  *   data-names  whole | short           a name with a short form (data-give="name"): "Buy on Barnes & Noble", "Buy"
  *   data-words  whole | glyph           a word beside a glyph (data-give="word"): "+ Follow", the plus
  *   data-squeeze                        nothing fits: the named buttons shrink, their words cut short
+ *   data-halves                         an equal pair (an account card's Cancel and Sign in): each half the row
+ * A key that never gives way says data-give="keep"; no rule here reads it.
  */
 
 .row {
@@ -33,6 +35,15 @@
 .row > * {
   flex: none;
   min-width: 0;
+}
+
+/* an equal pair: each key half the row, whatever its words, so Cancel is as big a target as Sign in */
+.row[data-halves] > * {
+  flex: 1 1 0;
+}
+/* a key in a wrapper of its own (a server action's form, a menu) fills its half */
+.row[data-halves] > :not([data-give]) > [data-give] {
+  width: 100%;
 }
 
 /* a button's words: one line, cut short only when squeezed; the whole name unless the row says otherwise */

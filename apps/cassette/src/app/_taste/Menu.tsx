@@ -42,7 +42,7 @@
  */
 
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import { Button } from "./Button";
+import { Button, type Give } from "./Button";
 import { Icon, type IconName } from "./Icon";
 import b from "./button.module.css";
 import m from "./menu.module.css";
@@ -65,6 +65,7 @@ export function Menu({
   buttonLabel,
   focusOnOpen,
   onWarm,
+  give,
   children,
 }: {
   trigger: "label" | "button" | "text" | "avatar" | "word" | "menu" | "split";
@@ -84,6 +85,8 @@ export function Menu({
   /** Runs when a person points at, focuses or opens the button: the moment to fetch what the menu shows
    *  (Buy asks for Apple's price then, never at render, so a crawler never sets it off). */
   onWarm?: () => void;
+  /** trigger "button" in a row of keys (ActionRow): how it gives way, as every key in a row says (Button's `give`). */
+  give?: Give;
   children: ReactNode;
 }) {
   const id = useId();
@@ -221,7 +224,7 @@ export function Menu({
             {chevron}
           </button>
         ) : (
-          <Button look="outlined" className={m.button} trail={chevron} {...buttonProps}>
+          <Button look="outlined" give={give} className={m.button} trail={chevron} {...buttonProps}>
             {title}
           </Button>
         )}

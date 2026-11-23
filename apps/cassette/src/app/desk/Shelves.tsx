@@ -28,6 +28,8 @@ import { PlaylistCoverPicker } from "@/app/dashboard/library/components/Playlist
 import { choosePhoneAlbums, setPhonesGet, type PhonesGet } from "./phones";
 import { createPlaylist, deletePlaylist, playlistPlayed, playlistSongs, setPlaylistCover, positionsAfterMove, removeFromPlaylist, renamePlaylist, reorderPlaylist } from "./playlists";
 import type { HomeRow } from "@/lib/home/types";
+import { Sleeve } from "@/app/_taste/Sleeve";
+import { useSavedSongs } from "./saved-songs";
 import { useHome, useOnMac } from "./home";
 import { AllShelvesRow, FeatureCard, ReachRow } from "./Reach";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
@@ -261,9 +263,14 @@ export function useSongMenu() {
   const queue = useQueueLines();
   const showInFiles = useShowInFiles();
   const { showToast } = useShell();
+  const keep = useSavedSongs();
   return (t: OwnedTrack, at: { play?: MenuItem[]; extra?: MenuItem[]; except?: string } = {}): MenuItem[] => {
     const record = t.albumKey ? deskAlbum({ key: t.albumKey, slug: t.albumSlug }) : t.albumSlug ? deskAlbum(t.albumSlug) : null;
     const lead = [...(at.play ?? []), ...(t.subsonicTrackId ? queue([t]) : [])];
+    // Saved songs (board #1162): a song of yours to come back to, pinned first in Playlists
+    const save: MenuItem[] = t.cassetteLocalId
+      ? [keep.isSaved(t) ? { label: "Remove from Saved songs", onSelect: () => keep.set([t], false) } : { label: "Save", onSelect: () => keep.set([t], true) }]
+      : [];
     return [
       ...(lead.length ? [...lead, "separator" as const] : []),
       ...shareLines(t, showToast),
@@ -272,6 +279,7 @@ export function useSongMenu() {
       { label: "Go to the artist", onSelect: () => router.push(deskArtistOf(t)), disabled: !t.artist && !t.artistSlug },
       ...showInFiles({ song: t }),
       ...(at.extra?.length ? ["separator" as const, ...at.extra] : []),
+      ...save,
       ...adds({ songs: [t] }, at.except),
     ];
   };
@@ -286,13 +294,19 @@ export function useSongsMenu() {
   const songMenu = useSongMenu();
   const adds = usePlaylistAdds();
   const queue = useQueueLines();
+  const keep = useSavedSongs();
   return (list: OwnedTrack[], at: { play?: MenuItem[]; extra?: MenuItem[]; except?: string } = {}): MenuItem[] => {
     if (list.length === 1) return songMenu(list[0], at);
     const mine = list.filter((x) => x.subsonicTrackId);
+    const unsaved = list.filter((x) => x.cassetteLocalId && !keep.isSaved(x));
+    const save: MenuItem[] = list.some((x) => x.cassetteLocalId)
+      ? [unsaved.length ? { label: "Save", onSelect: () => keep.set(unsaved, true) } : { label: "Remove from Saved songs", onSelect: () => keep.set(list, false) }]
+      : [];
     return [
       { caption: `${list.length} songs` },
       ...(mine.length ? queue(mine) : []),
       ...(at.extra?.length ? ["separator" as const, ...at.extra] : []),
+      ...save,
       ...adds({ songs: mine }, at.except),
     ];
   };
@@ -748,6 +762,17 @@ export function Home() {
       }
       case "all-shelves":
         return <AllShelvesRow key={row.id} />;
+      case "new":
+        // new from the artists you follow: catalog records, not yours, so each opens its page (its Preview and Buy are
+        // there); nothing here plays (board #1162)
+        if (!row.records.length) return null;
+        return (
+          <ShelfSection key={row.id} shout={row.shout} answer={row.answer || undefined}>
+            {row.records.map((r) => (
+              <Tile key={r.id} art={<Sleeve src={r.cover} title={r.title} sizes="200px" />} title={r.title} line={r.artist} href={`${DESK}/album/${r.slug}`} />
+            ))}
+          </ShelfSection>
+        );
     }
   };
   return (
@@ -1060,6 +1085,7 @@ export function useDeletePlaylist() {
 
 export function Playlists() {
   const { playlists } = useDesk();
+  const keep = useSavedSongs();
   const made = useMadeForYou();
   const router = useRouter();
   const { showToast } = useShell();
@@ -1090,10 +1116,19 @@ export function Playlists() {
       />
       {/* yours first, with no label: playlists here are yours unless said otherwise (the founder,
           2026-11-06); the ones we make for you are the extra, underneath and named */}
-      {playlists.length === 0 ? (
+      {playlists.length === 0 && !keep.ids.length ? (
         <ListsEmpty make={make} making={making} />
       ) : (
         <Grid min={168}>
+          {/* Saved songs, pinned first (board #1162): the songs of yours you saved */}
+          {keep.ids.length > 0 && (
+            <Tile
+              art={<WordArt name="Saved songs" accent="#6B5A44" />}
+              title="Saved songs"
+              line={`${keep.ids.length} ${keep.ids.length === 1 ? "song" : "songs"}`}
+              href={`${DESK}/saved`}
+            />
+          )}
           {playlists.map((p) => (
             <PlaylistTile key={p.id} id={p.id} name={p.name} cover={p.cover} count={p.songs} />
           ))}

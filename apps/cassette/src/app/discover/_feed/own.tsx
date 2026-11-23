@@ -60,7 +60,7 @@ export function PickKeys({ p, signedIn, surface }: { p: DiscoverHero; signedIn: 
   return (
     <>
       {play}
-      <Link className={buttonClass(play ? "outlined" : "filled")} href={albumHref(p.slug)}>
+      <Link className={buttonClass(play ? "outlined" : "filled")} href={albumHref(p.slug)} data-give="keep">
         See the record
       </Link>
       {p.buy.options.length > 0 && <BuyMenu slug={p.slug} options={p.buy.options} pick={p.buy.pick} apple={p.buy.apple} signedIn={signedIn} surface={surface} />}

@@ -24,6 +24,12 @@ import b from "./button.module.css";
 
 export type ButtonLook = "filled" | "outlined";
 
+/**
+ * How a key gives way in a row of keys (ActionRow, row-fit.ts): the play key to "Preview" then its glyph ("play"), a name
+ * with a short form ("name"), a word beside a glyph ("word"), or never ("keep"). Every key in a row says one.
+ */
+export type Give = "play" | "name" | "word" | "keep";
+
 /** The class list for anything drawn as a Button (the Button itself, a menu's trigger, a link). */
 export function buttonClass(look: ButtonLook = "filled", extra?: string): string {
   return [b.btn, b[look], extra].filter(Boolean).join(" ");
@@ -31,6 +37,7 @@ export function buttonClass(look: ButtonLook = "filled", extra?: string): string
 
 export function Button({
   look,
+  give,
   icon,
   trail,
   round,
@@ -40,6 +47,8 @@ export function Button({
   ...rest
 }: ComponentPropsWithRef<"button"> & {
   look?: ButtonLook;
+  /** How it gives way in a row of keys (ActionRow); every key in a row says one. */
+  give?: Give;
   /** A leading glyph. */
   icon?: ReactNode;
   /** A trailing piece after the label. */
@@ -51,7 +60,7 @@ export function Button({
   round?: boolean;
 }) {
   return (
-    <button type={type} className={buttonClass(look, round ? [b.round, className].filter(Boolean).join(" ") : className)} {...rest}>
+    <button type={type} className={buttonClass(look, round ? [b.round, className].filter(Boolean).join(" ") : className)} data-give={give} {...rest}>
       {icon}
       {children}
       {trail}

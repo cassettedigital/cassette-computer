@@ -15,9 +15,19 @@
  * first button takes the room the row leaves, unless it is down to its glyph; a `centred` row (under a
  * page top that is centred on a phone, the album's and the artist's) keeps its buttons at their own widths
  * in the middle.
+ *
+ * `halves` (design wave 1a): two keys as an equal pair, each half the row, nothing giving way: an account card's Cancel
+ * and Sign in, the iPhone's Play and Shuffle. Centring comes from the page shape, never the row.
+ *
+ * Every key in a row says how it gives way, with data-give (the Button's `give`): "play", "name" or "word" as
+ * row-fit.ts reads them, or "keep" for a key that never changes (a glyph-only key, a plain link drawn as a key, either
+ * half of a pair). One "keep" per row, except in halves, where both keep. The row says so in development when a key
+ * doesn't (the design check's `rows` section holds the same rule in the code, and refuses a row of keys built
+ * anywhere but here).
  */
 
 import { useLayoutEffect, useRef, useSyncExternalStore, type ComponentPropsWithoutRef } from "react";
+import { rowGiveProblems } from "./row-give";
 import { fitRow, ROW_FIT_NOW, ROW_WATCH } from "./row-fit";
 import r from "./actionrow.module.css";
 
@@ -27,8 +37,9 @@ export function ActionRow({
   className,
   children,
   centred,
+  halves,
   ...rest
-}: ComponentPropsWithoutRef<"div"> & { centred?: boolean }) {
+}: ComponentPropsWithoutRef<"div"> & { centred?: boolean; halves?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   // the script only while the server's page is being read and taken over: a row drawn later fits in its effect
   const read = useSyncExternalStore(never, () => false, () => true);
@@ -43,6 +54,9 @@ export function ActionRow({
       delete (row as HTMLDivElement & { [ROW_WATCH]?: ResizeObserver })[ROW_WATCH];
     }
     fitRow(row);
+    if (process.env.NODE_ENV !== "production") {
+      for (const problem of rowGiveProblems(row, !!halves)) console.error(`ActionRow: ${problem}.`);
+    }
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => fitRow(row));
     ro.observe(row);
@@ -55,6 +69,7 @@ export function ActionRow({
       ref={ref}
       className={className ? `${r.row} ${className}` : r.row}
       data-centred={centred || undefined}
+      data-halves={halves || undefined}
       suppressHydrationWarning
       {...rest}
     >

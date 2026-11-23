@@ -1,0 +1,104 @@
+/*
+ * The text field (Field.tsx): a label, the input as a capsule line around the paper at the button's height, a
+ * hint or an error. Colours come from the stock it sits on. The input's own class is doubled where a
+ * state restyles it, so a state always outweighs the base however the build orders the sheets.
+ */
+.field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.label {
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  height: var(--control-h);
+  padding: 0 22px;
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-e);
+  font: var(--t-body);
+  transition: border-color 0.2s;
+}
+.input::placeholder {
+  color: var(--ink-3);
+}
+.input.input:hover {
+  border-color: var(--ink-3);
+}
+.input.input:focus {
+  outline: none;
+  border-color: var(--ink-e);
+  box-shadow: var(--ring);
+}
+.input.input[data-invalid] {
+  border-color: var(--danger);
+}
+.input.input[data-disabled] {
+  border-color: var(--track);
+  color: var(--ink-3);
+}
+/* a code: DM Mono caps, tracked */
+.input.mono {
+  font: 500 15px / 1 var(--f-mono);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+}
+
+/* a password with its Show key inside the line, at the end */
+.reveal {
+  position: relative;
+  display: grid;
+}
+.input.withReveal {
+  padding-right: 84px;
+}
+.show {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  translate: 0 -50%;
+  height: calc(var(--control-h) - 12px);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s;
+}
+.show:hover {
+  color: var(--ink-e);
+  background: var(--raised);
+}
+.show:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.hint {
+  font: var(--t-caption);
+  color: var(--ink-3);
+}
+.error {
+  font: var(--t-caption);
+  color: var(--danger);
+}

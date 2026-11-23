@@ -1,0 +1,68 @@
+/*
+ * GlyphTile.tsx: a glyph on the Cassette app icon's tile, in the kit's app-icon material. One tile for the page titles
+ * (Discover and Radio) and the account cards' app tile.
+ */
+
+/* the glyph's tile: the app icon's tile (Brand.tsx AppIcon), exactly as tall as the caps beside it (the
+   display face's capitals stand 0.7em), its corner the kit's app-icon corner. Its material is the kit's
+   (tokens.json appIcon, the founder's pick on 2026-11-23): a calm lacquer body, the faintest sheen, and a hint of
+   light from behind the glass pooled at the top-left and bottom-right corners; the glyph on it stays flat. It is
+   its own container, so the edge light's lengths are shares of its side. On the light paper a faint outline keeps
+   its shape against the cream; its shadow follows the paper it sits on (light-dark, the stock's color-scheme). */
+.tile {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  /* as tall as the caps of the words beside it (a page title's), or, drawn on its own, the size its holder asks for
+     with --tile-font (the tile is 0.7 of it, so its light and shadow keep their shares) */
+  font-size: var(--tile-font, inherit);
+  width: 0.7em;
+  height: 0.7em;
+  container-type: inline-size;
+  border-radius: var(--r-app-icon);
+  background: var(--icon-body);
+  box-shadow:
+    0 0 0 max(0.5px, 0.004em) light-dark(rgb(60 30 14 / 0.34), transparent),
+    0 0.012em 0.025em light-dark(rgb(50 24 10 / 0.24), rgb(0 0 0 / 0.45)),
+    0 0.06em 0.14em -0.03em light-dark(rgb(50 24 10 / 0.2), rgb(0 0 0 / 0.4));
+}
+/* the light along its edge, through the mask that pools it at two corners */
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: var(--icon-edge);
+  -webkit-mask-image: var(--icon-edge-mask);
+  mask-image: var(--icon-edge-mask);
+  pointer-events: none;
+}
+/* the sheen across its upper part */
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: var(--icon-sheen);
+  pointer-events: none;
+}
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+/* out of the flow, so the tile holds nothing that has a baseline of its own and its foot is the one the
+   title lines up on the letters' baseline */
+.glyph {
+  position: absolute;
+  inset: 19%;
+  width: 62%;
+  height: 62%;
+}
+.glyph [stroke] {
+  stroke: url(#cs-title-mark);
+}

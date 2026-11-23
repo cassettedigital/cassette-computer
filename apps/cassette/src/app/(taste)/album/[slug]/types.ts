@@ -92,6 +92,8 @@ export type AlbumPage = {
   /** For Want it: the record's id and whether it is on this person's list already. */
   albumId: number;
   wishlisted: boolean;
+  /** The record is the person's own already: no Save key. */
+  owned: boolean;
   /** A verified artist looking at their own unpublished draft (?preview=1). */
   previewing: boolean;
   tracks: AlbumTrack[];

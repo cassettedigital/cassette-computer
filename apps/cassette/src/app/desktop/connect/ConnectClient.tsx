@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AuthCard } from "@/app/_taste/AuthCard";
-import { ArrowButton, buttonClass } from "@/app/_taste/Button";
-import a from "@/app/_taste/auth.module.css";
+import { AuthCard, type AuthLink } from "@/app/_taste/AuthCard";
+import { Button, buttonClass } from "@/app/_taste/Button";
 import { openOutside } from "@/lib/open-outside";
 
 type Tauri = { core?: { invoke?: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T> } };
@@ -27,19 +26,20 @@ function plainError(e: unknown): string {
   return "Cassette couldn't finish signing in. Try again.";
 }
 
-export function ConnectClient({ cloudBase }: { cloudBase: string }) {
-  const [inApp, setInApp] = useState<boolean | null>(null);
-  const [waiting, setWaiting] = useState(false);
+export function ConnectClient({ cloudBase, start }: { cloudBase: string; /** the dev-only preview's state (/proto/account-cards) */ start?: "app" | "waiting" }) {
+  const [inApp, setInApp] = useState<boolean | null>(start ? true : null);
+  const [waiting, setWaiting] = useState(start === "waiting");
   const [error, setError] = useState<string | null>(null);
   // The app waits half an hour for the browser; a closed tab can be opened again, and only the latest try speaks.
   const attempt = useRef(0);
 
   // The app is the frame here: drop the site's masthead and footer (lib/app-surface.ts).
   useEffect(() => {
+    if (start) return;
     const present = !!tauri()?.core?.invoke;
     setInApp(present);
     if (present) document.documentElement.setAttribute("data-surface", "app");
-  }, []);
+  }, [start]);
 
   const signIn = useCallback(async () => {
     const mine = ++attempt.current;
@@ -59,43 +59,35 @@ export function ConnectClient({ cloudBase }: { cloudBase: string }) {
 
   if (inApp === false) {
     return (
-      <AuthCard title="Open Cassette" subtitle="This page signs in the Cassette app on your computer. Open the app to use it.">
-        <a href="/apps#mac" className={buttonClass("outlined", a.block)}>
-          Get the app
-        </a>
-      </AuthCard>
+      <AuthCard
+        title="Open Cassette."
+        line="This page signs in the Cassette app on your computer."
+        keys={[
+          <a key="get" href="/apps#mac" className={buttonClass("outlined")} data-give="keep">
+            Get the app
+          </a>,
+        ]}
+      />
     );
   }
 
+  const links: AuthLink[] = [];
+  if (waiting) links.push({ label: "Open the page again", onPress: () => void signIn() });
+  // the seat form is on the website, so it opens in the browser; its page points a friend's link on to /invite
+  links.push({ label: "Save a seat", onPress: () => openOutside(`${cloudBase}/waitlist`) });
+
   return (
     <AuthCard
-      title="Sign in to Cassette"
-      subtitle="Finish in your browser, then Cassette opens signed in."
-      footer={
-        <>
-          {/* the seat form is on the website, so it opens in the browser; its page points a friend's link on to /invite */}
-          New to Cassette?{" "}
-          <a
-            href={`${cloudBase}/waitlist`}
-            onClick={(e) => {
-              e.preventDefault();
-              openOutside(`${cloudBase}/waitlist`);
-            }}
-          >
-            Save a seat
-          </a>
-        </>
-      }
-    >
-      <div className={a.stack}>
-        <button type="button" className={buttonClass("filled", a.block)} onClick={signIn} disabled={waiting || inApp === null}>
+      subject={{ device: "computer" }}
+      title="Sign in to Cassette."
+      line="Finish in your browser, then Cassette opens signed in."
+      notice={error ? { say: error } : undefined}
+      keys={[
+        <Button key="go" look="filled" give="keep" onClick={signIn} disabled={waiting || inApp === null} aria-busy={waiting || undefined}>
           {waiting ? "Waiting for your browser…" : "Sign in"}
-        </button>
-        {waiting ? (
-          <ArrowButton onClick={signIn}>Open the sign-in page again</ArrowButton>
-        ) : null}
-        {error ? <p className={`${a.notice} ${a.noticeError}`}>{error}</p> : null}
-      </div>
-    </AuthCard>
+        </Button>,
+      ]}
+      links={links}
+    />
   );
 }

@@ -135,17 +135,6 @@
   margin-top: 30px;
 }
 
-/* Want it: a round key of the buttons' height (a circle), its bookmark filled in the record's colour once on the list */
-.actions .want {
-  width: 48px;
-  padding: 0;
-  gap: 0;
-}
-.want[data-on] svg path {
-  fill: var(--accent-c);
-  stroke: var(--accent-c);
-}
-
 /* ═══ shared section frame: one gap between sections, the kit's --sec ═══ */
 .section {
   padding: var(--sec) 0;

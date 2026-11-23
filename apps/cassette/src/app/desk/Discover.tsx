@@ -9,6 +9,9 @@
  *                      in the side view, its name opens your copy, and a right click is the record's own menu
  *   any other record   opens its page in the catalog (the window keeps the website's links inside itself, DeskShell),
  *                      and its keys preview it in the booth, the window's preview player
+ *   Saved for later    Discover's second view, switched from the title (discover/_feed/views.tsx, the website's too): what
+ *                      you saved and don't own, asked of the cloud as the radio's saves are (/api/saves), so it is never
+ *                      part of the copy kept for no internet
  *   the Radio band     the window's station tiles: a click looks into the station in the side view, its disc tunes in
  *   Buy                opens in the browser (BuyMenu's desk surface)
  *
@@ -20,21 +23,25 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useContextMenu } from "@discovery/cassette-kit";
 import { DiscoverBody } from "@/app/discover/_feed/DiscoverBody";
 import { DiscoverOwnedProvider, type OwnedHere } from "@/app/discover/_feed/own";
 import { RadioBand } from "@/app/discover/_feed/RadioBand";
+import { SavedPane } from "@/app/discover/_feed/SavedForLater";
+import { DiscoverViewPanes, DiscoverViewProvider, ViewHeading, type DiscoverView as OpenView } from "@/app/discover/_feed/views";
+import { NOTHING_SAVED, type SavedForLater as Saved } from "@/lib/saves-types";
+import { Heading } from "@discovery/cassette-kit";
 import type { DiscoverView } from "@/app/discover/_feed/view";
 import { useDesk } from "./DeskShell";
 import { useOnline } from "./network";
 import { useOwned } from "./owned";
 import { useRecordDisc, useStartRecord } from "./Player";
-import { PageHead, StationTile, useLook, useRecordMenu } from "./Shelves";
+import { StationTile, useLook, useRecordMenu } from "./Shelves";
 import { DESK } from "./types";
 import d from "./desk.module.css";
 
-export function DeskDiscover({ view, offline }: { view: DiscoverView | null; offline: boolean }) {
+export function DeskDiscover({ view, offline, initial = "discover" }: { view: DiscoverView | null; offline: boolean; initial?: OpenView }) {
   const { shelf, stations } = useDesk();
   const owned = useOwned();
   const st = useStartRecord();
@@ -44,6 +51,21 @@ export function DeskDiscover({ view, offline }: { view: DiscoverView | null; off
   const cm = useContextMenu();
   const router = useRouter();
   const online = useOnline();
+  // Saved for later: asked of the cloud each time the page shows, and again when the internet comes back
+  const [saved, setSaved] = useState<Saved>(NOTHING_SAVED);
+  useEffect(() => {
+    if (!online) return;
+    let alive = true;
+    fetch("/api/saves", { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<Saved>) : null))
+      .then((d) => {
+        if (alive && d && Array.isArray(d.artists) && Array.isArray(d.records) && Array.isArray(d.songs)) setSaved(d);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [online]);
   // the internet back after it was gone: today's page in place of the kept copy (or of no page at all)
   const was = useRef(online);
   useEffect(() => {
@@ -90,28 +112,36 @@ export function DeskDiscover({ view, offline }: { view: DiscoverView | null; off
     );
 
   return (
-    <div className={d.page}>
-      <PageHead title="Discover" />
-      {/* the kept copy: "No internet" only when it is the internet that's gone, not the cloud slow to answer */}
-      {offline && <p className={d.quiet}>{online ? "" : "No internet. "}This is Discover as it was the last time it loaded here.</p>}
-      <DiscoverOwnedProvider value={ownedHere}>
-        <DiscoverBody
-          view={view}
-          signedIn
-          surface="desk"
-          radio={
-            <RadioBand
-              stations={band.map((x) => x.band)}
-              radioHref={`${DESK}/radio`}
-              tile={(s) => {
-                const x = band.find((b) => b.band.slug === s.slug);
-                return x ? <StationTile key={s.slug} s={x.desk} /> : null;
-              }}
-            />
+    <DiscoverViewProvider initial={initial}>
+      <div className={d.page}>
+        {/* the title names the open view; the other, small beside it, switches to it */}
+        <ViewHeading heading={(label) => <Heading as="h1" shout={label} tone="quiet" />} />
+        {/* the kept copy: "No internet" only when it is the internet that's gone, not the cloud slow to answer */}
+        {offline && <p className={d.quiet}>{online ? "" : "No internet. "}This is Discover as it was the last time it loaded here.</p>}
+        <DiscoverViewPanes
+          saved={<SavedPane saved={saved} />}
+          discover={
+            <DiscoverOwnedProvider value={ownedHere}>
+              <DiscoverBody
+                view={view}
+                signedIn
+                surface="desk"
+                radio={
+                  <RadioBand
+                    stations={band.map((x) => x.band)}
+                    radioHref={`${DESK}/radio`}
+                    tile={(s) => {
+                      const x = band.find((b) => b.band.slug === s.slug);
+                      return x ? <StationTile key={s.slug} s={x.desk} /> : null;
+                    }}
+                  />
+                }
+              />
+            </DiscoverOwnedProvider>
           }
         />
-      </DiscoverOwnedProvider>
-      {cm.menu}
-    </div>
+        {cm.menu}
+      </div>
+    </DiscoverViewProvider>
   );
 }

@@ -11,7 +11,8 @@
  * devices (Apps), gear (Settings) and leave (Sign out, an arrow out of a door); and note, a speech bubble, for
  * Feedback wherever its door is (components/feedback-door); sound and muted, a speaker with its waves or crossed out, for
  * a live stream's mute (the radio night's event page); list, three lines with their dots, for a schedule; and
- * loading, three quarters of a ring, which a button turns while it waits (button.module.css, aria-busy).
+ * loading, three quarters of a ring, which a button turns while it waits (button.module.css, aria-busy); and computer
+ * (a laptop) and phone, the devices the Cassette app runs on, for its tile on an account card (AuthCard).
  * Illustrations (the PSA's wireframes, No catch's device drawings, the computer and the desktop app) are
  * pictures, not glyphs, and keep their own drawing.
  */
@@ -56,7 +57,9 @@ export type IconName =
   | "sound"
   | "muted"
   | "list"
-  | "loading";
+  | "loading"
+  | "computer"
+  | "phone";
 
 const line = {
   fill: "none",
@@ -232,6 +235,22 @@ export function Icon({ name, size = 16, className, filled }: { name: IconName; s
         <g {...line}>
           <circle cx="12" cy="12" r="10" />
           <path d="M9.4 9.3a2.7 2.7 0 1 1 3.7 2.5c-.7.3-1.1.9-1.1 1.6v.4M12 17.3v.1" />
+        </g>
+      );
+      break;
+    case "computer":
+      body = (
+        <g {...line}>
+          <rect x="4" y="5" width="16" height="11" rx="1.5" />
+          <path d="M2 19.5h20" />
+        </g>
+      );
+      break;
+    case "phone":
+      body = (
+        <g {...line}>
+          <rect x="6.5" y="2.5" width="11" height="19" rx="2" />
+          <path d="M11 18.5h2" />
         </g>
       );
       break;

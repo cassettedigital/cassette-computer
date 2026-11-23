@@ -7,7 +7,8 @@
  * in the line kept under the stack. Beside them the facts with the photo as a small circle when there is
  * one (its count of photos shows when it is pointed at), the name huge and fitted to its column, the
  * first sentence or two of their Wikipedia article credited under it the way a press quote is, then
- * Preview (their best-known songs, then every album, most popular first) and Follow, which is the website's alone (`follow`).
+ * Preview (their best-known songs, then every album, most popular first) and the artist's one key, Save or Following
+ * (ArtistKey: the ladder, the same in every window; `surface` says where a press came from).
  * Where previews come from is the dock's to say. Nothing moves on load. Below 760 (phones included), with the
  * covers on top, everything under them is centred on their line, as the album page's top is (the founder,
  * 2026-11-17), the buttons a centred ActionRow.
@@ -15,23 +16,22 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { ActionRow } from "@/app/_taste/ActionRow";
 import { ArtistGallery } from "@/app/_taste/ArtistGallery";
 import { AlbumCover } from "@/app/components/AlbumCover";
 import { ArtistPhoto } from "@/app/components/ArtistPhoto";
-import { Button } from "@/app/_taste/Button";
 import { coverClass } from "@/app/_taste/Cover";
 import { CoverGlow } from "@/app/_taste/CoverGlow";
 import { Facts } from "@/app/_taste/Facts";
 import { Icon } from "@/app/_taste/Icon";
 import { PlayButton } from "@/app/_taste/PlayButton";
 import { Byline } from "@/app/_taste/Quote";
-import { Say } from "@/app/_taste/Say";
 import k from "@/app/_taste/taste.module.css";
 import { albumHref } from "@/app/_taste/links";
 import type { Playable } from "@/app/_taste/play";
 import { usePlayer } from "@/app/_taste/player";
+import type { Surface } from "@/lib/app-surface";
+import { ArtistKey } from "./ArtistKey";
 import { useFitName } from "./useFitName";
 import { previewOf, type PreviewQueue } from "../_lib/rules";
 import type { ArtistPayload, HeaderPhoto, StackCover } from "../_lib/types";
@@ -59,67 +59,6 @@ function Preview({ name, hear }: { name: string; hear: PreviewQueue<Playable> })
       aria-label={!mine ? `Preview ${name}: ${what}, from YouTube` : status === "paused" ? `Resume ${name}` : `Pause ${name}`}
       onClick={() => (mine ? toggle() : playList(hear.queue, 0))}
     />
-  );
-}
-
-/**
- * Follow, the shared outlined Button, on the site's one follows list (/api/follows, the same edge the
- * label pages use). Signed in, it reads whether you follow them once mounted, flips at once and puts it back if the
- * save fails; signed out, the save answers 401 and the page goes to sign-in and back. In a row short of room
- * (beside a long name in Preview) it is its glyph alone (the shared ActionRow).
- */
-function Follow({ slug, name }: { slug: string; name: string }) {
-  const [on, setOn] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const { status } = useSession();
-  // only someone signed in can be following anyone: nobody else's visit asks
-  useEffect(() => {
-    if (status !== "authenticated") return;
-    let alive = true;
-    fetch(`/api/follows?${new URLSearchParams({ type: "artist", id: slug })}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (alive && d && typeof d.following === "boolean") setOn(d.following);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [slug, status]);
-  const toggle = async () => {
-    if (busy) return;
-    const next = !on;
-    setOn(next);
-    setBusy(true);
-    try {
-      const res = await fetch("/api/follows", {
-        method: next ? "POST" : "DELETE",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ type: "artist", id: slug, source: "artist_page" }),
-      });
-      if (res.status === 401) {
-        window.location.href = `/sign-in?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
-        return;
-      }
-      const d = res.ok ? await res.json().catch(() => null) : null;
-      setOn(d && typeof d.following === "boolean" ? d.following : res.ok ? next : !next);
-    } catch {
-      setOn(!next);
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <Button
-      look="outlined"
-      data-give="word"
-      icon={<Icon name={on ? "check" : "plus"} size={14} />}
-      aria-pressed={on}
-      aria-label={on ? `Following ${name}` : `Follow ${name}`}
-      onClick={toggle}
-    >
-      <Say whole={on ? "Following" : "Follow"} />
-    </Button>
   );
 }
 
@@ -212,7 +151,7 @@ function Stack({ covers }: { covers: StackCover[] }) {
   );
 }
 
-export function Intro({ p, onPhotoGone, follow }: { p: ArtistPayload; onPhotoGone: () => void; follow: boolean }) {
+export function Intro({ p, onPhotoGone, surface }: { p: ArtistPayload; onPhotoGone: () => void; surface: Surface }) {
   const nameRef = useRef<HTMLHeadingElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
   const lines = useFitName(nameRef, measureRef, p.name);
@@ -257,12 +196,10 @@ export function Intro({ p, onPhotoGone, follow }: { p: ArtistPayload; onPhotoGon
                 </div>
               </>
             )}
-            {(hear || follow) && (
-              <ActionRow className={s.acts} centred>
-                {hear && <Preview name={p.name} hear={hear} />}
-                {follow && <Follow slug={p.slug} name={p.name} />}
-              </ActionRow>
-            )}
+            <ActionRow className={s.acts} centred>
+              {hear && <Preview name={p.name} hear={hear} />}
+              <ArtistKey slug={p.slug} name={p.name} source={surface === "web" ? "artist_page" : surface === "desk" ? "desk" : "ios"} app={surface !== "web"} />
+            </ActionRow>
             {/* a claimed artist's own places: their site, their socials */}
             {p.creator.links.length > 0 && (
               <ul className={s.links}>

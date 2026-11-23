@@ -1,0 +1,38 @@
+/*
+ * The paragraph field's box (TextArea.tsx): the single-line field's line around the paper and its letter,
+ * with the area's corners (--r-area) and room inside them. Colours come from the stock it sits on. The
+ * box's own class is doubled where a state restyles it, so a state always outweighs the base however the
+ * build orders the sheets.
+ */
+.area {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--control-h) * 1.5);
+  padding: 14px 20px;
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-area);
+  background: transparent;
+  color: var(--ink-e);
+  font: var(--t-body);
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+.area::placeholder {
+  color: var(--ink-3);
+}
+.area.area:hover {
+  border-color: var(--ink-3);
+}
+.area.area:focus {
+  outline: none;
+  border-color: var(--ink-e);
+  box-shadow: var(--ring);
+}
+.area.area[data-invalid] {
+  border-color: var(--danger);
+}
+.area.area[data-disabled] {
+  border-color: var(--track);
+  color: var(--ink-3);
+}

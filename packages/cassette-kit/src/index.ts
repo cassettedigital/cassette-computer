@@ -9,6 +9,8 @@ export { PlayDisc, PlayPill, ShufflePill, SavePill, Pill, Pills, PlayerTransport
 export { Heading, Shelf, Grid, Tile, TrackRow, Rows, StationRow, HubRow, StripRow, Hero, Ambient, Waveform, WordArt, type TilePlay } from "./Parts";
 export { PlayerArt, StationLine, PlayerTitle, Scrubber } from "./NowPlaying";
 export { PlayOver } from "./PlayOver";
+export { Tip, TIP_MAX } from "./Tip";
+export { BUDGET } from "./budgets";
 export { pick, pickForMenu, pickHow, NOTHING_PICKED, type Picked, type PickHow } from "./select";
 export { SongTable, ShelfSection, QuickCard, Volume, Segmented, useContextMenu, type SongRow, type MenuItem } from "./Desktop";
 export { Places, Place, DataTable, Stats, Stat, Facts, Fact, Tag, Key, Field, Input, Select, Toggle, Check, Dialog, Panel, Code, Note, Notice, type Tone, type Column } from "./Pages";

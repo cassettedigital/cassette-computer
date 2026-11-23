@@ -102,6 +102,34 @@
   align-items: center;
   gap: 4px;
 }
+/* a row's own keys at its end (save it, go to its record): round and quiet until pointed at, the check in the full
+   ink once saved. Two classes, so a link key outweighs a page's plain link rule (search's and Discover's lists) */
+.end .key {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+.end .key:hover {
+  color: var(--ink-e);
+  background: var(--wash);
+}
+.end .key[aria-pressed="true"] {
+  color: var(--ink-e);
+}
+.end .key:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
 
 /* a narrow column (a phone, which points at nothing) gives a row that carries its own keys the room its
    number took: the title before the count */

@@ -10,6 +10,7 @@ import {
   AudioLines,
   Check,
   ChevronRight,
+  CircleHelp,
   Compass,
   Ellipsis,
   Laptop,
@@ -71,7 +72,8 @@ export type Concept =
   | "waveform"
   | "check"
   | "edit"
-  | "eject";
+  | "eject"
+  | "help";
 
 /* The kit's own, drawn on Lucide's grid and stroke so they sit with the rest (the founder's picks for
    the desk's places, 2026-10-22): the house without its door, and a boombox (handle, body, two
@@ -126,6 +128,7 @@ const LUCIDE: Record<Concept, LucideIcon> = {
   check: Check,
   edit: Pencil,
   eject: Eject,
+  help: CircleHelp,
 };
 
 /** The four sizes (CassetteIconSize): small 13, row 15, control 17, prominent 25. */

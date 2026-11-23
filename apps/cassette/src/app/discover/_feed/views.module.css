@@ -1,0 +1,68 @@
+/*
+ * Discover's two names (views.tsx): "DISCOVER" then "SAVED FOR LATER", always in that order on one baseline. The open
+ * one is the title, in the title's own face; the other is small, in the same face, on the house's underline (the
+ * founder's pick, 2026-11-23), so a press can grow it into the title where it stands.
+ */
+
+/* a box a move can scale (an inline box can't be), whose baseline is its first line's (an inline-block's would be its
+   last, dropping the title's tile beside the second line of a wrapped "SAVED FOR LATER." on a phone) */
+.word {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  min-width: 0;
+  transform-origin: left bottom;
+}
+
+/* the website's open name: the PageTitle's own face, which it inherits */
+.big {
+  margin: 0;
+  min-width: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  text-wrap: balance;
+}
+
+/* the other name: the small head's face on the house's underlined-link rule, never wrapping */
+.switch {
+  display: inline-flex;
+  align-items: baseline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--ink-4);
+  font: var(--t-head-small, 700 22px/1.05 var(--font-display, sans-serif));
+  letter-spacing: normal;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.2s,
+    text-decoration-color 0.2s;
+}
+.switch:hover {
+  color: var(--ink-e);
+  text-decoration-color: currentColor;
+}
+.switch:focus-visible {
+  outline: var(--ring-line);
+  outline-offset: 4px;
+}
+
+/* a window's own heading row (the Mac app's): the names on one baseline, wrapping when narrow */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.5em;
+  row-gap: 8px;
+  min-width: 0;
+}
