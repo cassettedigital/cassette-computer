@@ -133,7 +133,16 @@ export async function deleteFromLibrary(t: LibraryTarget, notify: Notify, onRemo
         notify("Files moved to the Trash, but the cleanup couldn't reach Cassette. It won't come back.", "error");
         return;
       }
-      notify(`${done} Files moved to the Trash.`, "success");
+      // Songs in a folder Cassette reads where it is leave the library and keep their files (#1163).
+      const kept = result.kept?.length ?? 0;
+      notify(
+        kept === 0
+          ? `${done} Files moved to the Trash.`
+          : result.trashed.length === 0
+            ? `${done} Its files stay in your folder, since Cassette only reads it.`
+            : `${done} Files moved to the Trash, apart from ${kept} in a folder Cassette only reads, which stay put.`,
+        "success",
+      );
       return;
     }
     const failed =

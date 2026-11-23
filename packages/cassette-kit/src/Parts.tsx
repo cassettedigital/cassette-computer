@@ -26,7 +26,7 @@
  * colour arrives as --pk-tint-text and --pk-tint-glow on any ancestor.
  */
 
-import type { CSSProperties, DragEvent, MouseEvent, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from "react";
 import { Glyph, type Concept } from "./Glyph";
 import { PlayDisc, type PlayState } from "./Controls";
 import { useKitLink } from "./KitProvider";
@@ -107,6 +107,9 @@ export function Tile({
   onOpen,
   disc,
   count,
+  onDragOut,
+  dropTarget,
+  dropping,
 }: {
   art: ReactNode;
   title: string;
@@ -136,6 +139,12 @@ export function Tile({
   selected?: boolean;
   onSelect?: (e: MouseEvent) => void;
   onOpen?: () => void;
+  /** Desktop: the press, for the host to drag the tile's music out (onto a playlist), as TrackRow's onDragOut */
+  onDragOut?: (e: PointerEvent) => void;
+  /** Desktop: music dragged onto this tile goes on it (a playlist's id, read by the host's drag as
+      `data-drop-playlist`); `dropping` lights it while the drag is held over it */
+  dropTarget?: string;
+  dropping?: boolean;
 }) {
   const Link = useKitLink();
   const plain = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
@@ -165,7 +174,18 @@ export function Tile({
     </>
   );
   return (
-    <li className={s.tile} data-playing={playing || undefined} data-selected={selected || undefined} data-looks={onSelect ? "" : undefined} data-disc={disc} onContextMenu={onContextMenu}>
+    <li
+      className={s.tile}
+      data-playing={playing || undefined}
+      data-selected={selected || undefined}
+      data-looks={onSelect ? "" : undefined}
+      data-disc={disc}
+      data-drop-playlist={dropTarget}
+      data-drop={dropping || undefined}
+      onContextMenu={onContextMenu}
+      onPointerDown={onDragOut}
+      onDragStart={onDragOut ? (e) => e.preventDefault() : undefined}
+    >
       {href ? (
         <Link href={href} className={s.tileLink} onClick={pick} onDoubleClick={open}>
           {face}
@@ -228,7 +248,7 @@ export function TrackRow({
   plays = false,
   label,
   onContextMenu,
-  onDragStart,
+  onDragOut,
   onSelect,
   onPlay,
   selected,
@@ -251,8 +271,10 @@ export function TrackRow({
   label?: string;
   /** desktop: a right click opens the host's menu */
   onContextMenu?: (e: MouseEvent) => void;
-  /** desktop: the row can be dragged (the host fills the drag, e.g. songs onto a playlist) */
-  onDragStart?: (e: DragEvent) => void;
+  /** desktop: the row can be dragged out (songs onto a playlist): the press, for the host to follow the pointer
+   *  from. Pointer events, never the browser's own drag, which the desktop app's window keeps for files from the
+   *  computer and never hands the page (2026-11-21), so a drop on a playlist never landed there. */
+  onDragOut?: (e: PointerEvent) => void;
   /** The Mac's rows (the founder, 2026-11-06): a click picks the row (Shift and Command for several, the
    *  host keeps the picks, kit select.ts) and only the play symbol on its number plays (`onPlay`; on the
    *  song playing, the host's pause), so a click never changes what's on. `selected` lights a picked row. */
@@ -277,7 +299,7 @@ export function TrackRow({
     // the triangle sits in the cell, not the key, so it stands exactly where the number does
     const tri = can && !playing ? <PlayOver bare size={16} align="end" /> : null;
     return (
-      <li onContextMenu={onContextMenu} draggable={onDragStart ? true : undefined} onDragStart={onDragStart} aria-selected={selected || false}>
+      <li onContextMenu={onContextMenu} onPointerDown={onDragOut} onDragStart={onDragOut ? (e) => e.preventDefault() : undefined} aria-selected={selected || false}>
         <div
           className={s.row}
           data-picks=""
@@ -354,7 +376,7 @@ export function TrackRow({
     </>
   );
   return (
-    <li onContextMenu={onContextMenu} draggable={onDragStart ? true : undefined} onDragStart={onDragStart}>
+    <li onContextMenu={onContextMenu} onPointerDown={onDragOut} onDragStart={onDragOut ? (e) => e.preventDefault() : undefined}>
       {onClick ? (
         <button type="button" className={s.row} data-art={art ? (counted ? "counted" : "") : undefined} data-on={playing || undefined} data-dim={dim || undefined} onClick={onClick} aria-label={label}>
           {body}

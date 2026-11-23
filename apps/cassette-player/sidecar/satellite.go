@@ -145,14 +145,24 @@ func placeLibrary() {
 		return
 	}
 	var peek struct {
-		Satellite   *satelliteState `json:"satellite"`
-		LibraryDir  string          `json:"libraryDir"`
-		LibraryData string          `json:"libraryData"`
+		Satellite      *satelliteState `json:"satellite"`
+		LibraryDir     string          `json:"libraryDir"`
+		LibraryData    string          `json:"libraryData"`
+		LibraryDrive   string          `json:"libraryDrive"`
+		LibraryOnDrive string          `json:"libraryOnDrive"`
 	}
 	if json.Unmarshal(b, &peek) != nil {
 		return
 	}
 	dir, data := peek.LibraryDir, peek.LibraryData
+	// A Cassette folder moved to an external drive that came back under another letter (Windows): follow it.
+	if dir != "" && peek.LibraryDrive != "" {
+		if _, err := os.Stat(dir); err != nil {
+			if now, ok := findOnDrive(peek.LibraryDrive, peek.LibraryOnDrive); ok {
+				dir = now
+			}
+		}
+	}
 	if s := peek.Satellite; s != nil {
 		if s.Main != "" {
 			notMainName.Store(s.Main)
@@ -163,10 +173,16 @@ func placeLibrary() {
 		}
 	}
 	if dir != "" {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			log.Printf("satellite: can't make the music folder %q: %v", dir, err)
-			satelliteOn.Store(false)
-			return
+		if err := makeMusicFolder(dir); err != nil {
+			if satelliteOn.Load() {
+				log.Printf("satellite: can't make the music folder %q: %v", dir, err)
+				satelliteOn.Store(false)
+				return
+			}
+			// A Cassette folder the person moved stays where they put it even while its drive is away:
+			// falling back to the old folder would send music and rips to a place they left behind,
+			// and the hub reads the away folder as away, never as empty (library-folders.go).
+			log.Printf("folders: the Cassette folder %q isn't here (%v); waiting for its drive", dir, err)
 		}
 		sidecarMusicDir = dir
 		os.Setenv("SIDECAR_MUSIC_DIR", dir)

@@ -226,6 +226,11 @@ func songFileInLibrary(songID string) (file, musicDir string, err error) {
 	if !filepath.IsAbs(p) {
 		p = filepath.Join(sidecarMusicDir, p)
 	}
+	// A song in a folder Cassette reads where it is (library-folders.go) is shown there: revealing only
+	// opens the file window, nothing is written.
+	if root := linkedRootFor(p); root != "" {
+		return pathInsideLibrary(p, root)
+	}
 	return pathInsideLibrary(p, sidecarMusicDir)
 }
 

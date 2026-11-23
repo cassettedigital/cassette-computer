@@ -29,7 +29,8 @@ import { useEditArtist } from "./Editors";
 import { useOwned } from "./owned";
 import { createPlaylist, playlistSongs } from "./playlists";
 import { AlbumTile, PlaylistTile, len, usePlaylistAdds, useQueueLines, useRecordMenu, useSongsMenu } from "./Shelves";
-import { dragSongs, useSongPicks } from "./picks";
+import { useSongPicks } from "./picks";
+import { dragSongs } from "./drag";
 import { useRemoveFromLibrary } from "./remove";
 import { inRecordOrder, useSongs } from "./songs";
 import { deskAlbum, deskArtist, deskArtistOf, deskPlaylist, type DeskArtistAbout, type DeskPlaylist, type OwnedTrack } from "./types";
@@ -329,6 +330,7 @@ export function ArtistView({ name, slug, size }: { name: string; slug: string | 
             })}
             onPlay={(i) => playSong(songs[i])}
             menu={(i, picked) => songsMenu(picked.map((r) => songs[r]), { play: [{ label: "Play", onSelect: () => playSong(songs[i]), disabled: !songs[i].subsonicTrackId }] })}
+            dragOut={(_, picked, e) => dragSongs(e, () => picked.map((r) => songs[r]).filter((x) => !!x), { now: true })}
           />
           {!allSongs && songs.length > PAGE_SONGS && (
             <Key className={d.allSongs} onClick={() => setAllSongs(true)}>
@@ -392,10 +394,7 @@ function SideSongs({ songs, name, slug }: { songs: OwnedTrack[]; name: string; s
                 onSelect={picks.onSelect(i)}
                 onPlay={x.subsonicTrackId ? () => (on ? owned.toggle() : owned.playList(songs, i)) : undefined}
                 onContextMenu={(e) => cm.open(e, songsMenu(picks.take(i), { play: [{ label: "Play", onSelect: () => owned.playList(songs, i), disabled: !x.subsonicTrackId }] }))}
-                onDragStart={x.subsonicTrackId ? (e) => {
-                  const going = picks.take(i);
-                  dragSongs(e, going, going.length === 1 ? x.title : `${going.length} songs`);
-                } : undefined}
+                onDragOut={x.subsonicTrackId ? (e) => dragSongs(e, () => picks.take(i)) : undefined}
               />
             );
           })}

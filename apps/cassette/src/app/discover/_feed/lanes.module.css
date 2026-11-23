@@ -1,0 +1,179 @@
+/* Discover's lanes and Radio band, in the desktop app's look: everything reads the player kit's tokens
+   (the .kit scope the wrappers carry), so the light and dark papers follow the device as the kit does. */
+
+.lanes {
+  margin-top: 8px;
+}
+
+/* ── a lane's name ── */
+
+/* The pill is always laid out (its padding and the key's room), only its fill comes and goes, so a row
+   never moves when the pointer arrives. The negative margin keeps the words on the tiles' left edge. */
+.head {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: calc(100% + 14px);
+  min-width: 0;
+  min-height: 38px;
+  margin: var(--pk-heading-top) 0 var(--pk-heading-bottom) -14px;
+  padding: 6px 6px 6px 14px;
+  border-radius: var(--pk-r-pill);
+  color: var(--pk-text-primary);
+  transition: background-color 0.15s;
+}
+.words {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.shout {
+  overflow: hidden;
+  font: var(--pk-t-shout);
+  letter-spacing: var(--pk-k-shout);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+.answer,
+.lead {
+  flex: none;
+  font: var(--pk-t-answer);
+  letter-spacing: var(--pk-k-answer);
+  color: var(--pk-accent-answer);
+}
+.answer {
+  margin-left: 0.3em;
+}
+.lead {
+  margin-right: 0.3em;
+}
+
+/* playing: small orange bars standing on the words' baseline (a flex item with no text sits its bottom
+   edge there) */
+.bars {
+  display: inline-flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 2px;
+  height: 15px;
+  margin-left: 10px;
+}
+.bars i {
+  width: 3.5px;
+  height: 100%;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-accent-progress);
+  transform-origin: bottom;
+  animation: lane-bars 0.9s ease-in-out infinite alternate;
+}
+.bars i:nth-child(2) {
+  animation-duration: 0.7s;
+  animation-delay: -0.3s;
+}
+.bars i:nth-child(3) {
+  animation-duration: 1.1s;
+  animation-delay: -0.6s;
+}
+@keyframes lane-bars {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bars i {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+  .bars i:nth-child(2) {
+    transform: scaleY(1);
+  }
+}
+
+/* the key: small, inset evenly at the pill's end (6px above, below and to its right) */
+.key {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-left: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+.key svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+.key:focus-visible {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 2px;
+}
+
+/* a pointer: the key waits for it, and the name lifts into its pill */
+@media (hover: hover) and (pointer: fine) {
+  .key {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .head[data-can-play]:hover {
+    background: color-mix(in srgb, var(--pk-text-primary) 7%, transparent);
+  }
+  .head[data-can-play]:hover .key,
+  .key:focus-visible {
+    opacity: 1;
+  }
+  /* the pill's pause key stands in for the bars */
+  .head[data-sounding]:hover .bars {
+    display: none;
+  }
+}
+/* a phone: the key is always there; while the lane sounds, the bars are its mark (the lit cover pauses) */
+@media (hover: none) {
+  .head {
+    min-height: 0;
+    margin-left: 0;
+    padding: 0;
+  }
+  .head[data-sounding] .key {
+    display: none;
+  }
+}
+
+/* ── the Radio band ── */
+
+/* the radio band: the kit's own shelf on the page's paper, so the stations keep the record shelves' columns,
+   arrows and head (RadioBand.tsx; its darker full-bleed fill went 2026-11-18) */
+.band {
+  color: var(--pk-text-primary);
+}
+.bandLink {
+  color: inherit;
+  text-decoration: none;
+}
+.bandLink:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+/* a station's mark fills its tile; one with no art (or art that fails) is its colour and initials */
+.stationArt {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  font: var(--pk-t-shout);
+  color: var(--pk-text-secondary);
+}

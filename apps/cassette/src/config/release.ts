@@ -74,7 +74,7 @@ export const RELEASE: Record<Platform, PlatformRelease> = {
     platform: "windows",
     label: "Windows",
     status: "available",
-    version: "0.5.51", // the signed installer publish-desktop-release.mts --target windows placed; it is also the update
+    version: "0.5.52", // the signed installer publish-desktop-release.mts --target windows placed; it is also the update
     sizeLabel: null,
     requirement: "Windows 10 or 11, 64-bit",
     // Signed-in only, like macOS; redirects to the installer in the private desktop bucket.

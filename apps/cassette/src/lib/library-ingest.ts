@@ -15,7 +15,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { uploadLibraryFile, triggerLibraryIngest, fetchIngestStatus } from "@/lib/library-remote";
+import { uploadLibraryFile, triggerLibraryIngest, fetchIngestStatus, fetchLibraryFolders } from "@/lib/library-remote";
 import { queueUploads } from "@/lib/library-queue";
 import { HUB_IN_REACH } from "@/lib/hub-origin";
 import type { IngestAlbum } from "@/lib/library-remote";
@@ -262,7 +262,7 @@ async function askAddMode(invoke: ShellInvoke): Promise<AddMode | null> {
     const answer = await invoke<string>("plugin:dialog|message", {
       title: "Add music",
       message:
-        "Cassette keeps your music in the Cassette folder inside Music. Move your files there, or copy them and leave the originals where they are?\n\nCassette remembers your answer. You can change it in Settings.",
+        "Cassette keeps the music you add in its Cassette folder. Move your files there, or copy them and leave the originals where they are?\n\nCassette remembers your answer. You can change it in Settings. To play a whole library from where it already is, add its folder on your computer's page in Devices.",
       kind: "info",
       buttons: { YesNoCancelCustom: ["Move", "Copy", "Cancel"] },
     });
@@ -284,6 +284,17 @@ const ADD_PROGRESS_EVENT = "add-music-progress";
 export async function addPathsInApp(paths: string[]): Promise<void> {
   const invoke = shell()?.core?.invoke;
   if (!invoke || busy || paths.length === 0) return;
+  // Where the Cassette folder is now (it can be moved, board #1163), and the folders Cassette reads where they
+  // are, which nothing is ever moved out of. A hub too old to say leaves both to the app's own default.
+  const folders = await fetchLibraryFolders();
+  if (folders?.move && folders.move.phase !== "error") {
+    void tell("The Cassette folder is moving. Add your music when it's done.");
+    return;
+  }
+  if (folders && !folders.cassette.here) {
+    void tell("The Cassette folder's drive isn't connected. Connect it and try again.");
+    return;
+  }
   const mode = await askAddMode(invoke);
   if (!mode || busy) return;
   busy = true;
@@ -305,7 +316,11 @@ export async function addPathsInApp(paths: string[]): Promise<void> {
   }
   let report: AddReport;
   try {
-    report = await invoke<AddReport>("add_music", { paths, mode });
+    report = await invoke<AddReport>("add_music", {
+      paths,
+      mode,
+      ...(folders ? { dest: folders.cassette.path, read: folders.linked.map((f) => f.path) } : {}),
+    });
   } catch (e) {
     // a whole add refused before anything moved: no room, no music in it, the music folder itself
     set({ phase: "error" });
@@ -330,6 +345,21 @@ export async function addPathsInApp(paths: string[]): Promise<void> {
   set({ phase: "done" });
   busy = false;
   scheduleClear();
+}
+
+/** The app's own folder picker. Null outside the app (no picker there) or when the person cancels. */
+export async function pickFolderInApp(title: string): Promise<string | null> {
+  const invoke = shell()?.core?.invoke;
+  if (!invoke) return null;
+  try {
+    const picked = await invoke<string[] | string | null>("plugin:dialog|open", {
+      options: { title, multiple: false, directory: true },
+    });
+    const one = Array.isArray(picked) ? picked[0] : picked;
+    return typeof one === "string" && one ? one : null;
+  } catch {
+    return null;
+  }
 }
 
 const AUDIO_EXTENSIONS = ["flac", "mp3", "m4a", "aac", "alac", "wav", "aif", "aiff", "ogg", "oga", "opus", "wma", "ape", "wv", "dsf", "dff"];

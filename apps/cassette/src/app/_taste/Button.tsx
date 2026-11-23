@@ -1,7 +1,7 @@
 /**
  * The printed label button and the links, shared by the taste pages.
  *
- * Button (P1): one height (52px, 48 under 760), one padding, two looks: `filled` (the stock's ink as the
+ * Button (P1): one height (the kit's control height, var(--control-h)), one padding, two looks: `filled` (the stock's ink as the
  * fill, its paper as the label: cream on the dark stock, ink on the light one) and `outlined` (a line on
  * the paper). An optional leading glyph, one line of label, and an optional trailing piece; never a
  * second line of detail under the label (the founder, 2026-10-21: the two-line Buy and "Hear it /

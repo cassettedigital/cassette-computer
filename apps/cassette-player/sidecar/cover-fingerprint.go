@@ -128,6 +128,10 @@ func hashCoverFiles(paths []string) (fingerprint string, ok bool) {
 // multi-disc parent fallback: for a FLAT library an album dir IS the music root, and
 // walking to its parent would read the user's home directory.
 func withinMusicDir(dir string) bool {
+	// A folder Cassette reads where it is is a library root too (read only here, never written).
+	if linkedRootFor(dir) != "" {
+		return true
+	}
 	root, err := filepath.Abs(sidecarMusicDir)
 	if err != nil {
 		return false

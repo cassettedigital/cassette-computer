@@ -21,6 +21,7 @@ import { CoverCropper } from "@/app/dashboard/library/components/CoverCropper";
 import { replaceArtistPhoto } from "@/lib/library-remote";
 import { bumpLocalCoverEpoch } from "@/lib/local-cover-epoch";
 import { toBase64Url } from "@/lib/dashboard/library-group-keys";
+import { putSignedUpload } from "@/lib/signed-upload";
 import { useShell } from "./shell-context";
 import styles from "./ArtistPhotoEditButton.module.css";
 
@@ -97,10 +98,9 @@ export function ArtistPhotoEditButton({
   }
 
   // The cloud copy (R2 + the override row, what the web renders) and the copy in the artist's folder
-  // on the Mac (what the Mac and the desktop app show). Either one landing is a save: the desktop app
-  // has no R2 of its own (presign answers storage_unconfigured there), and used to stop at that, so a
-  // photo couldn't be set from inside the app at all. Like an album cover (commitAlbumCover), the
-  // cloud copy is now best-effort beside the folder write.
+  // on the Mac (what the Mac and the desktop app show). Either one landing is a save. Like an album cover
+  // (commitAlbumCover), the cloud copy is best-effort beside the folder write; from the app it goes up
+  // through the app's own server, since the store refuses the window itself (BUG-1075: it never landed).
   async function saveToCloud(blob: Blob): Promise<boolean> {
     const encodedKey = toBase64Url(groupKey);
     const presignRes = await fetch(`/api/sync/library/artist/${encodedKey}/photo/presign`, {
@@ -111,8 +111,7 @@ export function ArtistPhotoEditButton({
     }).catch(() => null);
     if (!presignRes?.ok) return false;
     const { presignedUrl, publicUrl } = (await presignRes.json()) as { presignedUrl: string; publicUrl: string };
-    const putRes = await fetch(presignedUrl, { method: "PUT", body: blob, headers: { "Content-Type": "image/jpeg" } }).catch(() => null);
-    if (!putRes?.ok) return false;
+    if (!(await putSignedUpload(presignedUrl, blob, "image/jpeg"))) return false;
     const saveRes = await fetch(`/api/sync/library/artist/${encodedKey}/photo`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

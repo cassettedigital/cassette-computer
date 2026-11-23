@@ -480,7 +480,7 @@ fn place(dest: &Path, src: &Path, size: u64) -> std::io::Result<Place> {
 /// Every song is filed by its tags (`file_by_tags`). One whose tags don't name its album lands as it always did:
 /// in a folder's own name, or for loose files (gathered by the folder they came from) in `folder_for_loose` of it.
 /// `home` is the person's home folder (`home_dir`).
-fn plan(music: &Path, paths: &[String], home: Option<&Path>) -> Result<(Vec<Item>, u32), String> {
+fn plan(music: &Path, paths: &[String], home: Option<&Path>, read: &[PathBuf]) -> Result<(Vec<Item>, u32), String> {
     let mut items: Vec<Item> = Vec::new();
     // Each loose file's source folder, and where in `items` its files are gathered.
     let mut loose: HashMap<PathBuf, usize> = HashMap::new();
@@ -502,6 +502,14 @@ fn plan(music: &Path, paths: &[String], home: Option<&Path>) -> Result<(Vec<Item
         let Some(name) = real.file_name().map(PathBuf::from) else {
             continue;
         };
+        // In a folder Cassette reads where it is (board #1163): it's already in the library, and a move
+        // would take it out of the folder the person asked Cassette to leave alone.
+        if let Some(folder) = read.iter().find(|f| real.starts_with(f)) {
+            return Err(format!(
+                "Cassette already plays this from {}, where it is. There's nothing to add.",
+                folder.display()
+            ));
+        }
         // Already in the music folder: nothing to do.
         if real.starts_with(music) {
             already += 1;
@@ -584,10 +592,23 @@ fn add(
     moving: bool,
     progress: &mut dyn FnMut(AddProgress),
 ) -> Result<AddReport, String> {
+    add_beside_read(music, paths, moving, &[], progress)
+}
+
+/// `add`, knowing the folders Cassette reads where they are (board #1163): nothing in one is ever added, so a
+/// move can never take music out of it.
+fn add_beside_read(
+    music: &Path,
+    paths: &[String],
+    moving: bool,
+    read: &[PathBuf],
+    progress: &mut dyn FnMut(AddProgress),
+) -> Result<AddReport, String> {
     fs::create_dir_all(music).map_err(|e| format!("couldn't make the music folder: {e}"))?;
     let music = fs::canonicalize(music).map_err(|e| e.to_string())?;
     let home = home_dir();
-    let (items, already) = plan(&music, paths, home.as_deref())?;
+    let read: Vec<PathBuf> = read.iter().filter_map(|p| fs::canonicalize(p).ok()).collect();
+    let (items, already) = plan(&music, paths, home.as_deref(), &read)?;
     let mut report = AddReport { already, ..Default::default() };
 
     // Room first: everything that will be written anew (all of a copy, the other-disk part of a move). A song
@@ -671,20 +692,39 @@ fn add(
 
 /// Move or copy `paths` (files and folders the person dropped on the window or picked) into the music folder.
 /// `mode` is "move" or "copy", the person's own answer. The window hears `PROGRESS_EVENT` after every song.
+/// `dest` is the Cassette folder as the hub reports it (it can be moved, board #1163); `read` the folders
+/// Cassette reads where they are, which nothing is ever moved out of. A page older than this app sends
+/// neither, and then it adds where it always did.
 #[tauri::command]
-pub async fn add_music(app: tauri::AppHandle, paths: Vec<String>, mode: String) -> Result<AddReport, String> {
+pub async fn add_music(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+    mode: String,
+    dest: Option<String>,
+    read: Option<Vec<String>>,
+) -> Result<AddReport, String> {
     let moving = match mode.as_str() {
         "move" => true,
         "copy" => false,
         _ => return Err(format!("unknown mode {mode}")),
     };
+    let from_hub = dest.filter(|d| Path::new(d).is_absolute()).map(PathBuf::from);
+    // The hub makes its Cassette folder whenever its place exists, so one it names that isn't there is on a
+    // drive that's away: making it would start a new library on this computer's own disk.
+    if let Some(d) = &from_hub {
+        if away(d) {
+            return Err("The Cassette folder's drive isn't connected. Connect it and try again.".into());
+        }
+    }
     // A dev build runs no hub of its own; it adds to the folder a hand-run hub watches by default.
-    let music = match MUSIC_DIR.get() {
-        Some(dir) => dir.clone(),
-        None => PathBuf::from(std::env::var("HOME").map_err(|_| "no home folder")?).join("Music/Cassette"),
+    let music = match (from_hub, MUSIC_DIR.get()) {
+        (Some(d), _) => d,
+        (None, Some(dir)) => dir.clone(),
+        (None, None) => PathBuf::from(std::env::var("HOME").map_err(|_| "no home folder")?).join("Music/Cassette"),
     };
+    let read: Vec<PathBuf> = read.unwrap_or_default().into_iter().map(PathBuf::from).collect();
     tauri::async_runtime::spawn_blocking(move || {
-        add(&music, &paths, moving, &mut |p: AddProgress| {
+        add_beside_read(&music, &paths, moving, &read, &mut |p: AddProgress| {
             let _ = app.emit(PROGRESS_EVENT, p);
         })
     })
@@ -692,9 +732,36 @@ pub async fn add_music(app: tauri::AppHandle, paths: Vec<String>, mode: String) 
         .map_err(|e| e.to_string())?
 }
 
+/// A folder that isn't there and whose place isn't either: its drive is unplugged.
+fn away(music: &Path) -> bool {
+    !music.exists() && !music.parent().is_some_and(|p| p.is_dir())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nothing_moves_out_of_a_folder_cassette_reads() {
+        let root = scratch("read");
+        let music = root.join("Music/Cassette");
+        let read = root.join("NAS/Music");
+        let album = read.join("Artist/Album");
+        put(&album.join("01.flac"), b"one");
+        let err = add_beside_read(&music, &[s(&album)], true, &[read.clone()], &mut |_: AddProgress| {}).unwrap_err();
+        assert!(err.contains("already plays"), "{err}");
+        assert!(album.join("01.flac").exists(), "the song stays where it is");
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn a_drive_thats_unplugged_is_away() {
+        let root = scratch("away");
+        fs::create_dir_all(root.join("Music")).unwrap();
+        assert!(away(&root.join("Volumes/Drive/Cassette")));
+        assert!(!away(&root.join("Music/Cassette")), "a fresh Cassette folder in Music is made, not away");
+        fs::remove_dir_all(&root).unwrap();
+    }
 
     fn scratch(name: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("cassette-add-{name}-{}", std::process::id()));

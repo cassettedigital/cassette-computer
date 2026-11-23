@@ -26,7 +26,7 @@ import { importStatus, type ImportStatus } from "@/lib/import-status";
 import { coverArtURL } from "@/lib/playback-remote";
 import { DESK } from "./types";
 import { useDesk } from "./DeskShell";
-import { FIRST_ROW } from "./first-run";
+import { showsFirstRun } from "./first-run";
 import { rereadLibrary } from "./songs";
 import d from "./desk.module.css";
 
@@ -36,9 +36,9 @@ export function DeskDrop({ quietOn }: { quietOn: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const { shelf } = useDesk();
-  // where the add card itself is on screen (Devices, and Home before a whole row of music): it's the focus
+  // where the add card itself is on screen (Devices, and Home while the library is empty): it's the focus
   // there, so the note at the foot of the window steps aside
-  const onCard = (pathname?.startsWith(quietOn) ?? false) || (pathname === DESK && shelf.length < FIRST_ROW);
+  const onCard = (pathname?.startsWith(quietOn) ?? false) || (pathname === DESK && showsFirstRun(shelf.length));
 
   // A brief word only for what isn't progress (waiting for the computer, couldn't add). Progress is the
   // steady note below: a toast per song flashed in and out on every one (the founder, 2026-11-20).

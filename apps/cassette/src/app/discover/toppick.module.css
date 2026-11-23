@@ -1,0 +1,79 @@
+/*
+ * The top pick (TopPick.tsx), moved here from the feed unchanged: the cover, and beside it (under it on a
+ * phone) the reason, title, artist, a line, the keys. Links carry a second class so they outweigh the
+ * paper's own link rule.
+ */
+.pick {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+@container taste (width >= 760px) {
+  /* side by side: the cover at about two fifths of the width (it was a 5fr column), and smaller on a short
+     window, so the section under it always shows its head and the top of its covers (the founder, 2026-11-18:
+     "users pretty much always get a peek of the carousels below"); its column is the cover's own width */
+  .pick {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: clamp(32px, 4.5cqi, 72px);
+  }
+  .pick .cover {
+    width: min(440px, 40cqi, max(220px, 100svh - 370px));
+    max-width: none;
+  }
+}
+.cover {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+}
+.text {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  justify-items: start;
+}
+.why {
+  margin: 0;
+  font: var(--t-label);
+  letter-spacing: var(--t-label-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.title {
+  margin: 0;
+  font: var(--t-head);
+  letter-spacing: var(--t-head-track);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.pick .title a {
+  /* the record's colour when the page has read it (an ancestor's --accent-ink), else the paper's ink */
+  color: var(--accent-ink, var(--ink-e));
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.pick .title a:hover {
+  color: var(--ink-2);
+}
+.by {
+  margin: 0;
+  font: var(--t-meta);
+  letter-spacing: var(--t-meta-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.pick .by a {
+  color: var(--ink-e);
+  text-decoration: none;
+}
+.pick .by a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+}
+/* the keys: the record's page, the Buy menu (its list hangs from this row), a play key, on the shared
+   one-line ActionRow */
+.actions {
+  margin-top: 6px;
+}

@@ -20,6 +20,7 @@
 import { replaceAlbumCover } from "@/lib/library-remote";
 import { toBase64Url } from "@/lib/dashboard/library-group-keys";
 import { bumpLocalCoverEpoch } from "@/lib/local-cover-epoch";
+import { putSignedUpload } from "@/lib/signed-upload";
 
 export type CoverSource = "upload" | "paste" | "url" | "caa";
 
@@ -127,12 +128,8 @@ export async function commitAlbumCover(opts: {
         presignedUrl: string;
         publicUrl: string;
       };
-      const putRes = await fetch(presignedUrl, {
-        method: "PUT",
-        body: norm.blob,
-        headers: { "Content-Type": "image/jpeg" },
-      });
-      if (putRes.ok) {
+      // from the app through its own server, which the store lets in (BUG-1075)
+      if (await putSignedUpload(presignedUrl, norm.blob, "image/jpeg")) {
         const saveRes = await fetch(`/api/sync/library/album/${encodedKey}/cover`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -148,7 +145,7 @@ export async function commitAlbumCover(opts: {
           cloudSaved = true;
           cloudPublicUrl = publicUrl;
         } else cloudError = "Couldn't save that cover.";
-      } else cloudError = "Upload failed — try again.";
+      } else cloudError = "The cover didn't upload. Try again.";
     } else {
       const b = await presignRes.json().catch(() => ({}) as { message?: string });
       cloudError = b.message ?? "Couldn't upload that cover.";

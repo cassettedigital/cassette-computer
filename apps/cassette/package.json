@@ -1,6 +1,6 @@
 {
   "name": "cassette",
-  "version": "0.5.51",
+  "version": "0.5.52",
   "private": true,
   "type": "module",
   "description": "Cassette for your computer: the player screens (the desk), served inside the app",

@@ -139,17 +139,6 @@ button.quiet {
   outline-offset: 2px;
 }
 
-/* ── a notice the desktop app shows where a page lives on the website: a panel that reads on any paper ── */
-.notice {
-  display: grid;
-  gap: 18px;
-  max-width: 820px;
-  padding: 28px;
-  border-radius: var(--pk-r-panel);
-  background: var(--pk-surface-base);
-  color: var(--pk-text-primary);
-}
-
 /* ── a page with nothing in it yet: three faint rows in the shape of its real ones, fading out, then what
       lands here and the keys that get someone there. The rows are tints of the page's own ink, so they read
       on either paper; no lines. ── */

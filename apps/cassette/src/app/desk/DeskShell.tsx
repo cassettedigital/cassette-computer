@@ -48,6 +48,7 @@ import { TASTE } from "@/app/(taste)/_kit/links";
 import { PlayerProvider, usePlayer } from "@/app/(taste)/_kit/player";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
 import { DeskDrop } from "./DeskDrop";
+import { DragChip } from "./drag";
 import type { RailAccountUser } from "@/app/components/RailAccountMenu";
 import { Sidebar, WindowUpdate } from "./Sidebar";
 import { useDesktopUpdate } from "@/app/components/UpdatePill";
@@ -73,7 +74,7 @@ import d from "./desk.module.css";
 const DataCtx = createContext<DeskData | null>(null);
 
 /** Who's signed in, for the rail's account menu (the same one every rail has). Not cached with the data. */
-export type DeskAccount = { user: RailAccountUser; isCreator: boolean; isAdmin: boolean };
+export type DeskAccount = { user: RailAccountUser; isCreator: boolean; isAdmin: boolean; /** bought an album here: the menu offers Purchases */ hasPurchases?: boolean };
 const AccountCtx = createContext<DeskAccount | null>(null);
 export const useDeskAccount = () => useContext(AccountCtx);
 export function useDesk(): DeskData {
@@ -735,6 +736,8 @@ function Window({ children }: { children: ReactNode }) {
         {/* drop an album folder anywhere in the window to add it to the Mac; files dropped while the
             Mac can't be reached wait in the outbox and go when it's back (the dashboard's own) */}
         {!notMain && <DeskDrop quietOn={`${DESK}/devices`} />}
+        {/* music being dragged onto a playlist, beside the pointer */}
+        <DragChip />
         {/* File > Add to Library… (the menu bar) */}
         <input
           ref={pickFiles}

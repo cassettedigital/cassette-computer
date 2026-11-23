@@ -10,6 +10,7 @@ import {
   AudioLines,
   Check,
   ChevronRight,
+  Compass,
   Ellipsis,
   Laptop,
   Library,
@@ -46,6 +47,7 @@ export type Concept =
   | "song"
   | "playlist"
   | "radio"
+  | "discover"
   | "search"
   | "plus"
   | "more"
@@ -98,6 +100,8 @@ const LUCIDE: Record<Concept, LucideIcon> = {
   song: Music,
   playlist: ListMusic,
   radio: Boombox,
+  // the website's own sign for Discover (its masthead's compass), so the place reads the same in both
+  discover: Compass,
   search: Search,
   plus: Plus,
   more: Ellipsis,

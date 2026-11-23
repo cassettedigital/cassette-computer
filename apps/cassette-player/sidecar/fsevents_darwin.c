@@ -5,6 +5,7 @@
 #include <dispatch/dispatch.h>
 
 extern void cassetteMusicDirChanged(void);
+extern void cassetteLinkedFolderChanged(void);
 
 static void cassetteFSCallback(ConstFSEventStreamRef stream, void *info, size_t n,
                                void *paths, const FSEventStreamEventFlags flags[],
@@ -12,14 +13,28 @@ static void cassetteFSCallback(ConstFSEventStreamRef stream, void *info, size_t 
     cassetteMusicDirChanged();
 }
 
-int cassetteWatchDir(const char *path) {
+// A folder Cassette only reads (library-folders.go) has its own callback, so its
+// changes never look like changes to the Cassette folder.
+static void cassetteLinkedCallback(ConstFSEventStreamRef stream, void *info, size_t n,
+                                   void *paths, const FSEventStreamEventFlags flags[],
+                                   const FSEventStreamEventId ids[]) {
+    cassetteLinkedFolderChanged();
+}
+
+static int cassetteWatch(const char *path, FSEventStreamCallback cb);
+
+int cassetteWatchDir(const char *path) { return cassetteWatch(path, &cassetteFSCallback); }
+
+int cassetteWatchLinked(const char *path) { return cassetteWatch(path, &cassetteLinkedCallback); }
+
+static int cassetteWatch(const char *path, FSEventStreamCallback cb) {
     CFStringRef p = CFStringCreateWithCString(NULL, path, kCFStringEncodingUTF8);
     if (!p) return 0;
     CFArrayRef paths = CFArrayCreate(NULL, (const void **)&p, 1, &kCFTypeArrayCallBacks);
     CFRelease(p);
     if (!paths) return 0;
     // 2 s latency: a copy of many files arrives as a few batches, not thousands.
-    FSEventStreamRef s = FSEventStreamCreate(NULL, &cassetteFSCallback, NULL, paths,
+    FSEventStreamRef s = FSEventStreamCreate(NULL, cb, NULL, paths,
                                              kFSEventStreamEventIdSinceNow, 2.0,
                                              kFSEventStreamCreateFlagNone);
     CFRelease(paths);

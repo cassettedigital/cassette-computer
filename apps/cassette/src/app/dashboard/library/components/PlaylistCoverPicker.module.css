@@ -21,7 +21,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--cs-space-5);
-  max-height: min(62vh, 640px);
+  max-height: min(46vh, 480px);
   overflow-y: auto;
   padding: 4px;
   margin: -4px;
@@ -59,6 +59,11 @@
   box-shadow: var(--cs-shadow-sm);
   outline: none;
 }
+/* the one lit: shown at the head, kept on "Use this cover" */
+.tile[aria-checked="true"] {
+  border-color: var(--cs-ink);
+  box-shadow: 0 0 0 2px var(--cs-ink);
+}
 .tileImg {
   width: 100%;
   height: 100%;
@@ -92,12 +97,12 @@
   outline: none;
 }
 
-.previewWrap {
+/* the head: the cover as it will be, and the two keys beside it */
+.head {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--cs-space-4);
-  padding: var(--cs-space-3) 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--cs-space-5);
 }
 
 /* 160px with rounded corners: the playlist detail page header's cover
@@ -142,6 +147,10 @@
   background: var(--cs-orange);
   border: 1px solid var(--cs-orange);
   color: var(--cs-on-accent, #1c1913);
+}
+.confirm:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .error {

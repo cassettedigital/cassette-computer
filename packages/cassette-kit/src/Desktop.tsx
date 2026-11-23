@@ -10,11 +10,13 @@
  *                 the play glyph or Enter plays (the founder, 2026-11-06: a click never changes what's
  *                 on); the arrows move, a right click opens the menu for every picked row. The header
  *                 stays put while the list scrolls. With `onMove` a long press lifts a row to drag to a
- *                 new place (a line shows where it'll land); with `onDelete` the Delete key takes the
- *                 picked rows out.
+ *                 new place (a line shows where it'll land); with `dragOut` a press that slides off at once
+ *                 drags the picked rows out (onto a playlist; the host follows the pointer); with
+ *                 `onDelete` the Delete key takes the picked rows out.
  *   ContextMenu   useContextMenu(): the right-click menu, at the pointer, kept inside the window,
  *                 arrows and Escape, closes on any click away or scroll; a few of its lines can wait
- *                 on an answer and change in place when it comes
+ *                 on an answer and change in place when it comes; a line can open a submenu beside it
+ *                 (pointing at it, a click, or the right arrow), as a Mac's own menus do
  *   ShelfSection  a shelf's heading with paddles at its end (a mouse has no swipe), disabled at the ends;
  *                 whole tiles only, as many as the width holds, a paddle press a page of them
  *                 (with `flip`, a shelf of versions of itself: a paddle turns to the next version, one row of each)
@@ -41,15 +43,22 @@ import s from "./kit.module.css";
 
 /** A menu's line: an action, a quiet caption that isn't one (an account's address at its head), or a rule.
     Or lines still being asked about (a song's Copy Link while the cloud says whether it can be sent):
-    `until` shows at once, and the answer's lines take their place when `later` settles, menu open. */
+    `until` shows at once, and the answer's lines take their place when `later` settles, menu open.
+    Or a line that opens a submenu of its own lines beside it ("Add to playlist" and every playlist, the
+    founder 2026-11-21: one line instead of the whole list in the menu). */
 export type MenuItem =
   | { label: string; onSelect: () => void; disabled?: boolean }
+  | { label: string; submenu: MenuItem[]; disabled?: boolean }
   | { caption: string }
   | { later: Promise<MenuItem[]>; until: MenuItem[] }
   | "separator";
 type MenuLine = Exclude<MenuItem, { later: Promise<MenuItem[]> }>;
+type SubLine = Extract<MenuItem, { submenu: MenuItem[] }>;
 const isLater = (it: MenuItem): it is Extract<MenuItem, { later: Promise<MenuItem[]> }> => typeof it === "object" && "later" in it;
+const isSub = (it: MenuLine): it is SubLine => typeof it === "object" && "submenu" in it;
 const settledLines = (list: MenuItem[]): MenuLine[] => list.flatMap((it) => (isLater(it) ? settledLines(it.until) : [it]));
+/** the lines one level of a menu moves through with the arrows (not its submenu's) */
+const linesOf = (el: HTMLElement | null, level: string) => Array.from(el?.querySelectorAll<HTMLElement>(`[data-level="${level}"]:not([disabled])`) ?? []);
 
 export function useContextMenu() {
   const [at, setAt] = useState<{ x: number; y: number; items: MenuItem[]; n: number } | null>(null);
@@ -78,6 +87,19 @@ function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: Me
     };
   }, [items]);
   const lines = settledLines(items.flatMap((it, i) => (isLater(it) ? (settled.get(i) ?? it.until) : [it])));
+  // the line whose submenu is open. Pointing at another line closes it after a moment, so the pointer can
+  // cross a line or two on its way into the submenu without losing it; pointing into it keeps it.
+  const [sub, setSub] = useState<number | null>(null);
+  // opened from the keys (the right arrow, Enter): its first line takes them as it's drawn
+  const [subKeys, setSubKeys] = useState(false);
+  const leaving = useRef<number | undefined>(undefined);
+  const point = (i: number | null) => {
+    window.clearTimeout(leaving.current);
+    setSubKeys(false);
+    if (i !== null) setSub(i);
+    else leaving.current = window.setTimeout(() => setSub(null), 260);
+  };
+  useEffect(() => () => window.clearTimeout(leaving.current), []);
   // kept inside the window: flip left or up when it would run off the edge (again if an answer grows it)
   useLayoutEffect(() => {
     const el = ref.current;
@@ -89,7 +111,7 @@ function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: Me
     });
   }, [x, y, lines.length]);
   useLayoutEffect(() => {
-    ref.current?.querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')?.focus();
+    linesOf(ref.current, "top")[0]?.focus();
   }, [x, y]);
   useEffect(() => {
     const away = (e: Event) => {
@@ -98,27 +120,80 @@ function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: Me
     const key = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+    // a long submenu scrolls on its own; any other scroll closes the menu
+    const scrolled = (e: Event) => {
+      if (!ref.current?.contains(e.target as Node)) onClose();
+    };
     document.addEventListener("pointerdown", away, true);
-    window.addEventListener("scroll", onClose, true);
+    window.addEventListener("scroll", scrolled, true);
     window.addEventListener("blur", onClose);
     window.addEventListener("keydown", key);
     return () => {
       document.removeEventListener("pointerdown", away, true);
-      window.removeEventListener("scroll", onClose, true);
+      window.removeEventListener("scroll", scrolled, true);
       window.removeEventListener("blur", onClose);
       window.removeEventListener("keydown", key);
     };
   }, [onClose]);
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const list = Array.from(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? []);
+    const list = linesOf(ref.current, "top");
     const i = list.indexOf(document.activeElement as HTMLElement);
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
+      setSub(null);
       list[(i + (e.key === "ArrowDown" ? 1 : -1) + list.length) % list.length]?.focus();
     }
   };
   return (
     <div ref={ref} role="menu" className={s.cmenu} style={{ left: pos.left, top: pos.top }} onKeyDown={onKey} onContextMenu={(e) => e.preventDefault()}>
+      <MenuLines
+        lines={lines}
+        level="top"
+        onClose={onClose}
+        openSub={sub}
+        point={point}
+        renderSub={(it, i) => (
+          <Submenu
+            items={it.submenu}
+            takeKeys={subKeys}
+            onClose={onClose}
+            onStay={() => point(i)}
+            onBack={() => {
+              setSub(null);
+              linesOf(ref.current, "top").find((el) => el.dataset.line === String(i))?.focus();
+            }}
+          />
+        )}
+        openWithKey={(i) => {
+          window.clearTimeout(leaving.current);
+          setSubKeys(true);
+          setSub(i);
+        }}
+      />
+    </div>
+  );
+}
+
+/** One level of a menu's lines. A line with a submenu holds it beside itself while it's open. */
+function MenuLines({
+  lines,
+  level,
+  onClose,
+  openSub = null,
+  point,
+  renderSub,
+  openWithKey,
+}: {
+  lines: MenuLine[];
+  level: "top" | "sub";
+  onClose: () => void;
+  openSub?: number | null;
+  point?: (i: number | null) => void;
+  renderSub?: (it: SubLine, i: number) => ReactNode;
+  openWithKey?: (i: number) => void;
+}) {
+  return (
+    <>
       {lines.map((it, i) =>
         it === "separator" ? (
           <hr key={`sep-${i}`} className={s.cmenuSep} />
@@ -126,13 +201,42 @@ function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: Me
           <p key={`cap-${i}`} className={s.cmenuCaption}>
             {it.caption}
           </p>
+        ) : isSub(it) ? (
+          <div key={`sub-${i}-${it.label}`} className={s.cmenuHas} onMouseEnter={() => !it.disabled && point?.(i)} onMouseLeave={() => point?.(null)}>
+            <button
+              type="button"
+              role="menuitem"
+              aria-haspopup="menu"
+              aria-expanded={openSub === i}
+              data-level={level}
+              data-line={i}
+              data-open={openSub === i || undefined}
+              className={`${s.cmenuItem} ${s.cmenuOpener}`}
+              disabled={it.disabled}
+              onClick={() => openWithKey?.(i)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight" || e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openWithKey?.(i);
+                }
+              }}
+            >
+              <span>{it.label}</span>
+              <Glyph name="chevronRight" size={12} />
+            </button>
+            {openSub === i && renderSub?.(it, i)}
+          </div>
         ) : (
           <button
-            key={it.label}
+            // two playlists can share a name
+            key={`${i}-${it.label}`}
             type="button"
             role="menuitem"
+            data-level={level}
             className={s.cmenuItem}
             disabled={it.disabled}
+            onMouseEnter={() => point?.(null)}
             onClick={() => {
               onClose();
               it.onSelect();
@@ -142,6 +246,54 @@ function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: Me
           </button>
         ),
       )}
+    </>
+  );
+}
+
+/**
+ * A submenu, beside the line that opened it: to its right, or to its left when the window's edge is near,
+ * and lifted when it would run off the bottom; a long one scrolls. The arrows move in it; the left arrow
+ * (or Escape) goes back to the line it came from.
+ */
+function Submenu({ items, takeKeys, onClose, onStay, onBack }: { items: MenuItem[]; takeKeys: boolean; onClose: () => void; onStay: () => void; onBack: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (takeKeys) linesOf(ref.current, "sub")[0]?.focus();
+  }, [takeKeys]);
+  const [place, setPlace] = useState<{ flip: boolean; lift: number }>({ flip: false, lift: 0 });
+  const lines = settledLines(items);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const flip = r.right > window.innerWidth - 8;
+    const lift = Math.max(0, r.bottom - (window.innerHeight - 8));
+    setPlace({ flip, lift: Math.min(lift, Math.max(0, r.top - 8)) });
+  }, [lines.length]);
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const list = linesOf(ref.current, "sub");
+    const i = list.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      list[(i + (e.key === "ArrowDown" ? 1 : -1) + list.length) % list.length]?.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      onBack();
+    }
+  };
+  return (
+    <div
+      ref={ref}
+      role="menu"
+      className={`${s.cmenu} ${s.cmenuSub}`}
+      data-flip={place.flip || undefined}
+      style={{ marginTop: -place.lift }}
+      onMouseEnter={onStay}
+      onKeyDown={onKey}
+    >
+      <MenuLines lines={lines} level="sub" onClose={onClose} />
     </div>
   );
 }
@@ -172,6 +324,7 @@ export function SongTable({
   showArtist = true,
   label,
   onMove,
+  dragOut,
   onDelete,
   look = "table",
 }: {
@@ -185,6 +338,9 @@ export function SongTable({
   label: string;
   /** a row dragged from `from` to land before the row now at `to` (rows.length: at the end) */
   onMove?: (from: number, to: number) => void;
+  /** a press that slides away before a long press would lift the row: the row pressed, every row picked (it
+      among them), and the pointer, for the host to drag them out from (pointer events: see TrackRow) */
+  dragOut?: (index: number, picked: number[], e: globalThis.PointerEvent) => void;
   /** the Delete or Backspace key: the row the keyboard is on, and every row picked */
   onDelete?: (index: number, picked: number[]) => void;
   /** "record": a record's own page, its songs and nothing else to sort them by: no column heads, roomier
@@ -224,6 +380,8 @@ export function SongTable({
   // (or below, past its middle), and letting go drops it there. Pointer events, not HTML drag and
   // drop: a browser decides at the press whether it can become a drag, too early for a long press.
   const press = useRef<{ i: number; x: number; y: number; timer: number } | null>(null);
+  // the long press has lifted the row to move it: a slide now moves it, never drags it out
+  const lifted = useRef(false);
   const dropAtFrom = (y: number) => {
     const list = Array.from(body.current?.querySelectorAll<HTMLElement>("[data-row]") ?? []);
     for (let j = 0; j < list.length; j++) {
@@ -237,20 +395,48 @@ export function SongTable({
     press.current = null;
   };
   const onPressStart = (e: PointerEvent<HTMLDivElement>, i: number) => {
-    if (!onMove || e.button !== 0 || e.pointerType === "touch") return;
+    if ((!onMove && !dragOut) || e.button !== 0 || e.pointerType === "touch") return;
     const el = e.currentTarget;
     const pointer = e.pointerId;
     endPress();
+    lifted.current = false;
+    // a slide before the long press drags the picked rows out (the row alone when it isn't picked), watched on
+    // the window, since a quick slide is off the row by its first move
+    if (dragOut) {
+      const x0 = e.clientX;
+      const y0 = e.clientY;
+      const was = picked;
+      const slid = (ev: globalThis.PointerEvent) => {
+        if (lifted.current) return stop();
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) <= 5) return;
+        stop();
+        endPress();
+        const now = pickForMenu(was, i);
+        setPicked(now);
+        dragOut(i, now.rows, ev);
+      };
+      const stop = () => {
+        window.removeEventListener("pointermove", slid);
+        window.removeEventListener("pointerup", stop);
+        window.removeEventListener("pointercancel", stop);
+      };
+      window.addEventListener("pointermove", slid);
+      window.addEventListener("pointerup", stop);
+      window.addEventListener("pointercancel", stop);
+    }
     press.current = {
       i,
       x: e.clientX,
       y: e.clientY,
-      timer: window.setTimeout(() => {
-        setDragFrom(i);
-        setPicked({ rows: [i], anchor: i });
-        setDropAt(i);
-        el.setPointerCapture?.(pointer);
-      }, 330),
+      timer: onMove
+        ? window.setTimeout(() => {
+            lifted.current = true;
+            setDragFrom(i);
+            setPicked({ rows: [i], anchor: i });
+            setDropAt(i);
+            el.setPointerCapture?.(pointer);
+          }, 330)
+        : 0,
     };
   };
   const onPressMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -299,10 +485,12 @@ export function SongTable({
             data-movable={onMove ? "" : undefined}
             data-drag={dragFrom === i || undefined}
             data-drop={dragFrom === null ? undefined : dropAt === i ? "before" : dropAt === i + 1 && i === rows.length - 1 ? "after" : undefined}
-            onPointerDown={onMove ? (e) => onPressStart(e, i) : undefined}
-            onPointerMove={onMove ? onPressMove : undefined}
-            onPointerUp={onMove ? onPressEnd : undefined}
-            onPointerCancel={onMove ? onPressEnd : undefined}
+            onPointerDown={onMove || dragOut ? (e) => onPressStart(e, i) : undefined}
+            onPointerMove={onMove || dragOut ? onPressMove : undefined}
+            onPointerUp={onMove || dragOut ? onPressEnd : undefined}
+            onPointerCancel={onMove || dragOut ? onPressEnd : undefined}
+            // the row's art and links never start the browser's own drag (it would take the pointer away)
+            onDragStart={dragOut ? (e) => e.preventDefault() : undefined}
             onClick={(e) => setPicked((was) => pick(was, i, pickHow(e)))}
             // Shift-click picks a run of rows, not the text between them
             onMouseDown={(e) => e.shiftKey && e.preventDefault()}

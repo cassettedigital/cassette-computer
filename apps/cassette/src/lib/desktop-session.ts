@@ -33,6 +33,8 @@ export type DashboardShell = {
   isCreator: boolean;
   /** whether the account menu offers Studio, by the Studio door's own rule (api/player/dashboard-shell); absent from an older cloud */
   studio?: boolean;
+  /** whether the account has bought an album here, for the menu's Purchases (api/player/dashboard-shell); absent from an older cloud */
+  hasPurchases?: boolean;
   avatarPreset: string;
   emailVerified: string | null;
   themeId: string;

@@ -6,8 +6,8 @@
  *   top       the mark, and the key that folds the rail to its icons (it remembers)
  *   search    a key that opens the search at the top of the page, results coming in as you type
  *             ("/" or Cmd-K from anywhere), with your account beside it (2026-10-22)
- *   places    Home, Albums, Artists, Playlists, Radio, Devices: names only (counts and a connected
- *             line were noise). Radio names the station that's on.
+ *   places    Home, Albums, Artists, Playlists, Discover, Radio, Devices: names only (counts and a
+ *             connected line were noise). Radio names the station that's on.
  *   library   your playlists, your stations and the records you've played lately, as rows with their
  *             art (a desktop player's library, not a list of words). The kit's switch along its head
  *             filters it; under the pointer the art becomes a play key; what's playing wears the bars;
@@ -40,9 +40,9 @@ import { useDesktopUpdate } from "@/app/components/UpdatePill";
 import { useLibraryIngest } from "@/lib/library-ingest";
 import { importStatus, type ImportStatus } from "@/lib/import-status";
 import type { DeskAccount } from "./DeskShell";
-import { usePlaylistDrop } from "./Rail";
+import { useDragging, useDragOver, useDropMusic } from "./drag";
 import { useStartRecord } from "./Player";
-import { useQueueLines, useRecordMenu } from "./Shelves";
+import { useAddToPlaylist, useQueueLines, useRecordMenu } from "./Shelves";
 import { useOnline } from "./network";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
 import { DESK, deskAlbum, deskPlaylist, type OwnedTrack } from "./types";
@@ -95,14 +95,20 @@ const FILTER_KEY = "desk-taste-rail-filter";
 
 /** One row of the library, by the window's one rule (2026-11-06): the art selects it (the side view shows
     it), the name opens its page (a station, which has none, is selected), the play symbol at the row's end
-    plays it; folded to its icons, the art selects. A playlist row takes songs dragged onto it from the side
-    view. */
+    plays it; folded to its icons, the art selects. A playlist row takes songs or an album dragged onto it
+    from anywhere in the window (drag.tsx). */
 function LibraryRow({ i, slim, kindWord, onMenu }: { i: Item; slim: boolean; kindWord: string | null; onMenu: (e: MouseEvent) => void }) {
   const aside = useAside();
-  const drop = usePlaylistDrop(i.playlist ?? { id: "", name: "" });
-  const dropping = i.playlist ? { onDragEnter: drop.onDragEnter, onDragOver: drop.onDragOver, onDragLeave: drop.onDragLeave, onDrop: drop.onDrop } : {};
+  const dropping = useDragOver(i.playlist?.id ?? null);
   return (
-    <li className={d.libItem} data-on={i.on || undefined} data-look={aside.showing(i.look) || undefined} data-drop={(i.playlist && drop.over) || undefined} onContextMenu={onMenu} {...dropping}>
+    <li
+      className={d.libItem}
+      data-on={i.on || undefined}
+      data-look={aside.showing(i.look) || undefined}
+      data-drop-playlist={i.playlist?.id}
+      data-drop={dropping || undefined}
+      onContextMenu={onMenu}
+    >
       <button type="button" className={d.libArt} data-kind={i.kind} aria-label={`Show ${i.title}`} onClick={() => aside.select(i.look)} title={slim ? i.title : undefined}>
         {i.art}
         {i.on && (
@@ -137,12 +143,13 @@ function LibraryRow({ i, slim, kindWord, onMenu }: { i: Item; slim: boolean; kin
  * account menu: the other workspaces you can go to, then the desk's settings, then Feedback (the one door every
  * menu shares, components/feedback-door) and signing out. The artist
  * studio lives on the website, so it opens in the browser rather than in a window that can't draw it.
+ * Purchases shows once the account has bought something (the founder, 2026-11-21: until then it's a door to nothing).
  */
 function AccountKey({ account }: { account: DeskAccount & { studioLabel?: string } }) {
   const router = useRouter();
   const cm = useContextMenu();
   // isCreator: anyone Studio lets in (an artist, a writer, a site admin); studioLabel: "Studio" for everyone
-  const { user, isCreator, isAdmin, studioLabel = "Studio" } = account;
+  const { user, isCreator, isAdmin, hasPurchases, studioLabel = "Studio" } = account;
   const name = user.name?.trim() || user.email?.split("@")[0] || "Account";
   const items: MenuItem[] = [
     ...(user.email ? ([{ caption: user.email }] as MenuItem[]) : []),
@@ -152,7 +159,7 @@ function AccountKey({ account }: { account: DeskAccount & { studioLabel?: string
     ...(isCreator || isAdmin ? (["separator"] as MenuItem[]) : []),
     { label: "Account", onSelect: () => router.push(`${DESK}/settings/account`) },
     { label: "Appearance", onSelect: () => router.push(`${DESK}/settings/appearance`) },
-    { label: "Purchases", onSelect: () => router.push(`${DESK}/settings/purchases`) },
+    ...(hasPurchases ? ([{ label: "Purchases", onSelect: () => router.push(`${DESK}/settings/purchases`) }] as MenuItem[]) : []),
     { label: "Hidden", onSelect: () => router.push(`${DESK}/settings/hidden`) },
     "separator",
     feedbackMenuItem(),
@@ -202,6 +209,27 @@ export function WindowUpdate({
   );
 }
 
+/**
+ * While music is being dragged, the library's first row: let go on it and a new playlist starts with what's
+ * dragged, named after it (the founder's wife, 2026-11-21: dropping should make a playlist as well as fill one).
+ */
+function NewPlaylistDrop({ slim }: { slim: boolean }) {
+  const dropping = useDragOver("new");
+  return (
+    <li className={d.libItem} data-drop-playlist="new" data-drop={dropping || undefined} data-new="">
+      <span className={d.libArt} data-kind="new" aria-hidden="true">
+        <Glyph name="plus" size={16} />
+      </span>
+      {!slim && (
+        <span className={d.libText}>
+          <span className={d.libTitle}>New playlist</span>
+          <span className={d.libLine}>Drop here to start one</span>
+        </span>
+      )}
+    </li>
+  );
+}
+
 function Library({ slim }: { slim: boolean }) {
   const data = useDesk();
   const radio = useRadio();
@@ -217,6 +245,10 @@ function Library({ slim }: { slim: boolean }) {
   const online = useOnline();
   const { showToast } = useShell();
   const [kind, setKind] = useState<Kind>("all");
+  // the window's one drop (drag.tsx): onto a playlist, or onto "New playlist" to start one
+  const { toNew, toPlaylist } = useAddToPlaylist();
+  useDropMusic((target, music) => (target === "new" ? void toNew(music) : toPlaylist(target, music)));
+  const dragging = useDragging();
   useEffect(() => {
     try {
       const k = localStorage.getItem(FILTER_KEY) as Kind | null;
@@ -293,7 +325,8 @@ function Library({ slim }: { slim: boolean }) {
     });
     return [...playlists, ...stations, ...records];
   }, [data, savedStations, stationMenu, recent, radio, track, playing, playList, toggle, st, router, recordMenu, queue, online, showToast]);
-  const shown = kind === "all" ? items : items.filter((i) => i.kind === kind);
+  // during a drag the playlists show whatever the switch says, since they're where it can land
+  const shown = kind === "all" ? items : items.filter((i) => i.kind === kind || (dragging && i.kind === "playlist"));
   const kinds = (["playlist", "station", "record"] as const).filter((k) => items.some((i) => i.kind === k));
 
   return (
@@ -315,6 +348,7 @@ function Library({ slim }: { slim: boolean }) {
         </div>
       )}
       <ul className={d.libList}>
+        {dragging && <NewPlaylistDrop slim={slim} />}
         {shown.map((i) => (
           <LibraryRow key={i.key} i={i} slim={slim} kindWord={kind === "all" ? KIND_WORD[i.kind] : null} onMenu={(e) => cm.open(e, i.menu)} />
         ))}
@@ -405,6 +439,7 @@ export function Sidebar({ slim, onSlim }: { slim: boolean; onSlim: (v: boolean) 
         <RailPlace href={`${DESK}/albums`} label="Albums" glyph="album" />
         <RailPlace href={`${DESK}/artists`} label="Artists" glyph="artist" />
         <RailPlace href={`${DESK}/playlists`} label="Playlists" glyph="playlist" exact />
+        <RailPlace href={`${DESK}/discover`} label="Discover" glyph="discover" />
         <RailPlace
           href={`${DESK}/radio`}
           label="Radio"

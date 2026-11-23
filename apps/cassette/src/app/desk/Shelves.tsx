@@ -31,12 +31,16 @@ import type { HomeRow } from "@/lib/home/types";
 import { useHome, useOnMac } from "./home";
 import { AllShelvesRow, FeatureCard, ReachRow } from "./Reach";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
+import { askToConfirm } from "@/lib/ask";
+import { dragRecord, dragSongs, useDragOver, type DragMusic } from "./drag";
 import { inRecordOrder, loadSongs, songsOfRecordNow, useSongs } from "./songs";
 import { SIDECAR_SAME_ORIGIN } from "@/lib/hub-origin";
 import { revealInLibrary, revealLibrary } from "@/lib/library-remote";
 import { computerWordsForUserAgent } from "@/lib/computer-words";
 import { useOnline } from "./network";
 import { collectInputFiles, pickMusicInApp, startIngest, useLibraryIngest } from "@/lib/library-ingest";
+import { useCheckForNewMusic } from "@/lib/check-new-music";
+import { MusicFolders } from "@/app/components/MusicFolders";
 import { ripDoneCount } from "@/lib/rip-status";
 import {
   Glyph,
@@ -74,7 +78,7 @@ import { PageBar, usePageBar } from "./PageBar";
 import { useAbout } from "./Artist";
 import { DiscArt, reading, useDisc } from "./disc";
 import { useNotMain } from "./ThisComputer";
-import { FIRST_ROW } from "./first-run";
+import { FIRST_ROW, showsFirstRun } from "./first-run";
 import { importStatus } from "@/lib/import-status";
 import { coverArtURL } from "@/lib/playback-remote";
 import { HubPicture } from "@/app/components/HubPicture";
@@ -120,16 +124,27 @@ export function useQueueLines() {
   };
 }
 
-/** The right-click menu every record shares. */
-/** "Add to <playlist>" for a menu: your playlists, newest first (eight at most), less the one you're in. */
-export function usePlaylistAdds() {
+/**
+ * Putting music on a playlist, from a menu or a drop (drag.tsx): onto one you have (owned.tsx's add, which
+ * leaves out the songs already on it), or onto a new one named after what's going on it: the album, the
+ * song, the album or the artist several songs share.
+ */
+export function useAddToPlaylist() {
   const { playlists, shelf } = useDesk();
   const { addToPlaylist } = useOwned();
   const { showToast } = useShell();
   const router = useRouter();
-  // a new playlist named after what's going in it
-  const toNew = async (what: { songs: OwnedTrack[] } | { record: string }) => {
-    const name = "record" in what ? (shelf.find((a) => a.key === what.record)?.title ?? "New playlist") : (what.songs[0]?.title ?? "New playlist");
+  const nameFor = (what: DragMusic): string => {
+    if ("record" in what) return shelf.find((a) => a.key === what.record)?.title ?? "New playlist";
+    const [first] = what.songs;
+    if (!first) return "New playlist";
+    if (what.songs.length === 1) return first.title;
+    if (what.songs.every((x) => x.album && x.album === first.album)) return first.album;
+    if (what.songs.every((x) => x.artist && x.artist === first.artist)) return first.artist;
+    return "New playlist";
+  };
+  const toNew = async (what: DragMusic) => {
+    const name = nameFor(what);
     try {
       const id = await createPlaylist(name);
       await addToPlaylist({ id, name }, what);
@@ -138,12 +153,31 @@ export function usePlaylistAdds() {
       showToast((e as Error).message, { variant: "error" });
     }
   };
-  return (what: { songs: OwnedTrack[] } | { record: string }, except?: string): MenuItem[] => {
-    const to = playlists.filter((p) => p.id !== except).slice(0, 8);
+  const toPlaylist = (id: string, what: DragMusic) => {
+    const p = playlists.find((x) => x.id === id);
+    if (p) void addToPlaylist(p, what);
+  };
+  return { playlists, toNew, toPlaylist };
+}
+
+/**
+ * "Add to playlist" for a menu: one line that opens your playlists beside it (the kit's submenu), a new one
+ * first, less the one you're in (the founder's wife, 2026-11-21: every playlist listed in the menu itself
+ * made it long, and it only ever showed eight).
+ */
+export function usePlaylistAdds() {
+  const { playlists, toNew, toPlaylist } = useAddToPlaylist();
+  return (what: DragMusic, except?: string): MenuItem[] => {
+    const to = playlists.filter((p) => p.id !== except);
     return [
       "separator",
-      ...to.map((p): MenuItem => ({ label: `Add to ${p.name}`, onSelect: () => void addToPlaylist(p, what) })),
-      { label: "Add to a new playlist", onSelect: () => void toNew(what) },
+      {
+        label: "Add to playlist",
+        submenu: [
+          { label: "New playlist", onSelect: () => void toNew(what) },
+          ...(to.length ? (["separator", ...to.map((p): MenuItem => ({ label: p.name, onSelect: () => toPlaylist(p.id, what) }))] as MenuItem[]) : []),
+        ],
+      },
     ];
   };
 }
@@ -343,6 +377,7 @@ export function AlbumTile({ a, line, onMenu }: { a: DeskAlbum; line?: string | n
       playing={track?.albumKey === a.key && status === "playing"}
       onContextMenu={onMenu ? (e) => onMenu(e, a) : undefined}
       onMore={onMenu ? (e) => onMenu(e, a) : undefined}
+      onDragOut={(e) => dragRecord(e, a)}
     />
   );
 }
@@ -396,6 +431,8 @@ function StationFoot({ s, saved, like }: { s: DeskStation; saved: boolean; like:
 
 export function PlaylistTile({ id, name, cover, count }: { id: string; name: string; cover: string | null; count: number }) {
   const look = useLook();
+  // songs or an album dragged onto it go on it (drag.tsx)
+  const dropping = useDragOver(id);
   const { playList } = useOwned();
   const { showToast } = useShell();
   const [busy, setBusy] = useState(false);
@@ -423,6 +460,8 @@ export function PlaylistTile({ id, name, cover, count }: { id: string; name: str
       href={deskPlaylist(id)}
       play={count > 0 ? { state: "play", label: `Play ${name}`, busy, onClick: () => void play() } : null}
       {...look({ kind: "playlist", id })}
+      dropTarget={id}
+      dropping={dropping}
     />
   );
 }
@@ -453,7 +492,7 @@ function QuickRecord({ a, on, live, onPlay, onMenu }: { a: DeskAlbum; on: boolea
 const MUSIC_FILES = ".flac,.mp3,audio/flac,audio/mpeg";
 
 /**
- * Home before there's a whole row of music (the founder, 2026-11-18: the old "Nothing in your library yet"
+ * Home before there's any music (lib first-run.ts; the founder, 2026-11-18: the old "Nothing in your library yet"
  * said what the page already showed and sent you to Devices to do anything). Adding is the page: drop
  * folders anywhere on the window or put a CD in, said once ("Rip it or drop it", the homepage's own line),
  * with one key. While something goes in, the add card takes the words' place (as Devices draws it, the
@@ -563,7 +602,7 @@ export function Home() {
   const playOrToggle = (a: DeskAlbum, song?: string) => (track?.albumKey === a.key ? toggle() : void st.start(a.key, song));
   const stationOf = useMemo(() => new Map(data.stations.map((s) => [s.slug, s])), [data.stations]);
   const savedStations = useSavedStations();
-  if (data.shelf.length < FIRST_ROW) return <FirstRun />;
+  if (showsFirstRun(data.shelf.length)) return <FirstRun />;
   if (!home || !onMac) {
     return (
       <div className={d.page}>
@@ -995,6 +1034,30 @@ export function Artists() {
 
 /* ── Playlists ── */
 
+/**
+ * Deleting a playlist, from its page's menu or the side view's: asked first the way every delete in the app
+ * asks (lib/ask: the computer's own alert, as Delete album… does), then gone here and on the phones. Its songs
+ * stay in the library. True when it went.
+ */
+export function useDeletePlaylist() {
+  const { showToast } = useShell();
+  const router = useRouter();
+  return async (p: { id: string; name: string }): Promise<boolean> => {
+    const yes = await askToConfirm(`Delete the playlist "${p.name}"?\n\nIt goes from your playlists here and on your phones. Its songs stay in your library.`, { ok: "Delete" });
+    if (!yes) return false;
+    try {
+      await deletePlaylist(p.id);
+    } catch (e) {
+      showToast((e as Error).message || "Couldn't delete that playlist", { variant: "error" });
+      return false;
+    }
+    showToast(`Deleted ${p.name}`);
+    if (window.location.pathname === deskPlaylist(p.id)) router.replace(`${DESK}/playlists`);
+    router.refresh();
+    return true;
+  };
+}
+
 export function Playlists() {
   const { playlists } = useDesk();
   const made = useMadeForYou();
@@ -1028,7 +1091,7 @@ export function Playlists() {
       {/* yours first, with no label: playlists here are yours unless said otherwise (the founder,
           2026-11-06); the ones we make for you are the extra, underneath and named */}
       {playlists.length === 0 ? (
-        <p className={d.quiet}>No playlists yet.</p>
+        <ListsEmpty make={make} making={making} />
       ) : (
         <Grid min={168}>
           {playlists.map((p) => (
@@ -1047,6 +1110,40 @@ export function Playlists() {
         </section>
       )}
     </div>
+  );
+}
+
+/**
+ * Playlists before there are any: what one is and the three ways to fill one, said once (the founder's wife,
+ * 2026-11-21: nothing said how they work). The card itself takes songs or an album dragged onto it and starts
+ * a playlist with them, as the sidebar's "New playlist" does during a drag (drag.tsx).
+ */
+function ListsEmpty({ make, making }: { make: () => void; making: boolean }) {
+  const dropping = useDragOver("new");
+  return (
+    <section className={d.listsEmpty} data-drop-playlist="new" data-drop={dropping || undefined} aria-labelledby="lists-empty-head">
+      <h2 id="lists-empty-head" className={d.listsEmptyHead}>
+        Make a playlist
+      </h2>
+      <p className={d.firstLine}>Your own run of songs, from any of your albums, in the order you like. It plays here and on your phones.</p>
+      <ul className={d.listsEmptyWays}>
+        <li>
+          <b>New playlist</b> starts an empty one for you to name.
+        </li>
+        <li>
+          <b>Right-click</b> a song or an album, then choose Add to playlist.
+        </li>
+        <li>
+          <b>Drag</b> songs or an album onto a playlist in the sidebar, or onto this card to start a new one with them.
+        </li>
+      </ul>
+      <div className={d.firstKeys}>
+        <Key tone="fill" onClick={make} disabled={making}>
+          <Glyph name="plus" size={13} />
+          New playlist
+        </Key>
+      </div>
+    </section>
   );
 }
 
@@ -1072,7 +1169,8 @@ export function PlaylistPage({ p }: { p: DeskPlaylistPage }) {
   useEffect(() => {
     if (askedRename) setEditing(true);
   }, [askedRename]);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const deleteIt = useDeletePlaylist();
+  const dropping = useDragOver(p.id);
   const field = useRef<HTMLInputElement>(null);
   const cancelled = useRef(false);
   useEffect(() => {
@@ -1150,16 +1248,6 @@ export function PlaylistPage({ p }: { p: DeskPlaylistPage }) {
       fail(e, () => setList(before));
     }
   };
-  const drop = async () => {
-    try {
-      await deletePlaylist(p.id);
-      showToast(`Deleted ${name}`);
-      router.push(`${DESK}/playlists`);
-      router.refresh();
-    } catch (e) {
-      fail(e, () => setConfirmDelete(false));
-    }
-  };
 
   // the Mac plays them in the playlist's order; a song that isn't on this Mac is dimmed and skipped
   const onMac = list.filter((x) => x.subsonicTrackId).length;
@@ -1209,6 +1297,7 @@ export function PlaylistPage({ p }: { p: DeskPlaylistPage }) {
           <PlaylistCoverPicker
             playlistId={p.id}
             playlistName={p.name}
+            current={cover}
             onCoverChosen={(url) => void chooseCover(url)}
             triggerClassName={d.coverPickKey}
             isOpen={picking}
@@ -1227,37 +1316,31 @@ export function PlaylistPage({ p }: { p: DeskPlaylistPage }) {
       >
         <div className={d.heroKeys} ref={bar.ref}>
           {playPills}
-          {confirmDelete ? (
-            <span className={d.confirm} role="group" aria-label="Delete this playlist?">
-              Delete {name}?
-              <button type="button" className={d.confirmYes} onClick={() => void drop()}>
-                Delete
-              </button>
-              <button type="button" className={d.confirmNo} onClick={() => setConfirmDelete(false)}>
-                Keep it
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              className={d.moreKey}
-              aria-label="More for this playlist"
-              onClick={(e) =>
-                pm.open(e, [
-                  ...queue(list),
-                  "separator",
-                  { label: "Rename", onSelect: () => setEditing(true) },
-                  "separator",
-                  { label: "Delete playlist", onSelect: () => setConfirmDelete(true) },
-                ])
-              }
-            >
-              <Glyph name="more" size={15} />
-            </button>
-          )}
+          <button
+            type="button"
+            className={d.moreKey}
+            aria-label="More for this playlist"
+            onClick={(e) =>
+              pm.open(e, [
+                ...queue(list),
+                "separator",
+                { label: "Rename…", onSelect: () => setEditing(true) },
+                { label: "Change the cover…", onSelect: () => pickCover(true) },
+                "separator",
+                { label: "Delete playlist…", onSelect: () => void deleteIt({ id: p.id, name }) },
+              ])
+            }
+          >
+            <Glyph name="more" size={15} />
+          </button>
         </div>
       </Hero>
-      {list.length === 0 && <p className={d.quiet}>Nothing in it yet.</p>}
+      {list.length === 0 && (
+        // takes music dragged onto it, as its row in the sidebar does
+        <p className={d.listEmpty} data-drop-playlist={p.id} data-drop={dropping || undefined}>
+          Nothing on it yet. Right-click a song or an album and choose Add to playlist, or drag songs or an album here.
+        </p>
+      )}
       <SongTable
         label={name}
         rows={list.map((x) => {
@@ -1278,6 +1361,7 @@ export function PlaylistPage({ p }: { p: DeskPlaylistPage }) {
         })}
         onPlay={(i) => (owned.playList(list, i), playlistPlayed(p.id))}
         onMove={(from, to) => void move(from, to)}
+        dragOut={(_, picked, e) => dragSongs(e, () => picked.map((r) => list[r]).filter((x): x is OwnedTrack => !!x), { now: true })}
         onDelete={(_, picked) => void remove(picked)}
         menu={(i, picked) =>
           songsMenu(
@@ -1364,9 +1448,9 @@ function seenWords(dev: DeskDevice): string {
 const onRing = (r: number, deg: number) => ({ x: PLAN.x + r * Math.cos((deg * Math.PI) / 180), y: PLAN.y + r * Math.sin((deg * Math.PI) / 180) });
 const pct = (p: { x: number; y: number }): CSSProperties => ({ left: `${(p.x / PLAN.w) * 100}%`, top: `${(p.y / PLAN.h) * 100}%` });
 
-function RingNode({ dev, ring, hub, selected, onSelect, line }: { dev: DeskDevice; ring: 0 | 1 | 2 | "hub"; hub?: boolean; selected: boolean; onSelect: () => void; line: string }) {
+function RingNode({ dev, ring, hub, selected, onSelect, onMenu, line }: { dev: DeskDevice; ring: 0 | 1 | 2 | "hub"; hub?: boolean; selected: boolean; onSelect: () => void; onMenu?: (e: MouseEvent) => void; line: string }) {
   return (
-    <button type="button" className={d.ringNode} data-ring={ring} aria-pressed={selected} onClick={onSelect}>
+    <button type="button" className={d.ringNode} data-ring={ring} aria-pressed={selected} onClick={onSelect} onContextMenu={onMenu}>
       <span className={d.ringTile}>
         <Glyph name={dev.glyph} size={hub ? 26 : ring === 0 ? 22 : ring === 1 ? 16 : 13} />
         {(hub || ring === 0) && <i className={d.nodeLight} data-light={dev.light} aria-hidden="true" />}
@@ -1377,7 +1461,7 @@ function RingNode({ dev, ring, hub, selected, onSelect, line }: { dev: DeskDevic
   );
 }
 
-function DeviceMap({ devices, selected, onSelect }: { devices: DeskDevices; selected: string; onSelect: (id: string) => void }) {
+function DeviceMap({ devices, selected, onSelect, onHubMenu }: { devices: DeskDevices; selected: string; onSelect: (id: string) => void; onHubMenu?: (e: MouseEvent) => void }) {
   // each ring's devices, newest seen first (the read already sorts them so), spread over the ring's room
   const placed = useMemo(() => {
     const by: DeskDevice[][] = [[], [], []];
@@ -1412,7 +1496,7 @@ function DeviceMap({ devices, selected, onSelect }: { devices: DeskDevices; sele
       })}
       {devices.mac && (
         <span className={d.ringAt} style={pct(PLAN)}>
-          <RingNode dev={devices.mac} ring="hub" hub selected={selected === "mac"} onSelect={() => onSelect("mac")} line="serving" />
+          <RingNode dev={devices.mac} ring="hub" hub selected={selected === "mac"} onSelect={() => onSelect("mac")} onMenu={onHubMenu} line="serving" />
           <span className={d.ringStat}>
             {devices.albumTotal} albums · {devices.songs.toLocaleString()} songs
           </span>
@@ -1648,6 +1732,10 @@ function MacDetail({ devices }: { devices: DeskDevices }) {
         <Stat label="Last sync" value={devices.mac.lastSync ?? mac?.synced ?? "–"} />
         <Stat label="Connected now" value={`${reachable} of ${devices.phones.length}`} />
       </Stats>
+      {/* where the music lives (#1163): the Cassette folder, Check for new music, the folders Cassette reads */}
+      <div className={d.macFolders}>
+        <MusicFolders notify={showToast} reveal={false} />
+      </div>
       <Heading shout="Newest" answer="in your library" href={`${DESK}/albums`} />
       <OneRow min={128}>
         {added.map((a) => (
@@ -1760,6 +1848,22 @@ function AddMusicRow() {
 export function Devices({ devices }: { devices: DeskDevices | null }) {
   const [selected, setSelected] = useState("mac");
   const pick = devices?.phones.find((p) => p.id === selected) ?? null;
+  const { showToast } = useShell();
+  const check = useCheckForNewMusic(showToast);
+  const hubMenu = useContextMenu();
+  // the computer's right-click (the founder, 2026-11-23): look for new music now, in every folder
+  const onHubMenu = (e: MouseEvent) =>
+    hubMenu.open(e, [
+      {
+        label: check.checking ? "Checking for new music…" : "Check for new music",
+        disabled: check.checking,
+        onSelect: () => {
+          showToast("Checking for new music…");
+          void check.run();
+        },
+      },
+      { label: computerWordsForUserAgent(navigator.userAgent).openFolder, onSelect: () => void revealLibrary() },
+    ]);
   return (
     <div className={d.page}>
       <PageHead title="Devices" />
@@ -1768,7 +1872,8 @@ export function Devices({ devices }: { devices: DeskDevices | null }) {
         <p className={d.quiet}>No devices yet.</p>
       ) : (
         <>
-          <DeviceMap devices={devices} selected={selected} onSelect={setSelected} />
+          <DeviceMap devices={devices} selected={selected} onSelect={setSelected} onHubMenu={onHubMenu} />
+          {hubMenu.menu}
           {pick ? <DeviceDetail dev={pick} devices={devices} /> : <MacDetail devices={devices} />}
         </>
       )}
@@ -1857,6 +1962,7 @@ export function OwnedRecord({ r }: { r: DeskRecordPage }) {
         })}
         onPlay={play}
         menu={(i, picked) => songsMenu(picked.map((x) => r.songs[x]), { play: [{ label: "Play", onSelect: () => play(i), disabled: !r.songs[i].subsonicTrackId }] })}
+        dragOut={(_, picked, e) => dragSongs(e, () => picked.map((x) => r.songs[x]).filter((x): x is OwnedTrack => !!x), { now: true })}
       />
       {/* well below the last song, for whoever scrolls on (the founder, 2026-10-31: let what they came
           for breathe): the artist's other albums in your library, then yours by the artists like them */}

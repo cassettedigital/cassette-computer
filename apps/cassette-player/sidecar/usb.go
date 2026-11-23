@@ -578,6 +578,10 @@ func usbRelPath(src string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// A song in a folder Cassette reads where it is goes by its place in that folder (library-folders.go).
+	if root := linkedRootFor(src); root != "" {
+		musicDir = root
+	}
 	rel, err := filepath.Rel(filepath.Clean(musicDir), filepath.Clean(src))
 	if err != nil {
 		return "", err
@@ -860,7 +864,7 @@ func convergeUsbTiers(state *SidecarState, rec *usbDeviceRecord, vol usbVolume, 
 			return 0, true
 		}
 		e := manifest.Tracks[id]
-		src, err := resolveTrackPath(e.SubsonicID, trackHint{})
+		src, err := resolveSongFile(e.SubsonicID, trackHint{})
 		if err != nil {
 			log.Printf("usb: convert %q: library file not found (%v); left as is", e.Path, err)
 			continue
@@ -972,7 +976,7 @@ func convergeUsbCovers(state *SidecarState, rec *usbDeviceRecord, vol usbVolume)
 			return 0
 		}
 		e := manifest.Tracks[id]
-		src, err := resolveTrackPath(e.SubsonicID, trackHint{})
+		src, err := resolveSongFile(e.SubsonicID, trackHint{})
 		if err != nil {
 			// Library file not found this pass — try again next time, same as
 			// convergeUsbTiers does for the same failure.
@@ -1070,7 +1074,7 @@ func convergeUsbFreshness(state *SidecarState, rec *usbDeviceRecord, vol usbVolu
 			return refreshed, true
 		}
 		e := manifest.Tracks[id]
-		src, err := resolveTrackPath(e.SubsonicID, trackHint{})
+		src, err := resolveSongFile(e.SubsonicID, trackHint{})
 		if err != nil {
 			continue // try again next reconcile pass
 		}
@@ -1179,7 +1183,7 @@ func convergeUsbFreshness(state *SidecarState, rec *usbDeviceRecord, vol usbVolu
 			return refreshed, true
 		}
 		e := manifest.Tracks[id]
-		src, err := resolveTrackPath(e.SubsonicID, trackHint{})
+		src, err := resolveSongFile(e.SubsonicID, trackHint{})
 		if err != nil {
 			log.Printf("usb: refresh %q: library file not found (%v); left as is", e.Path, err)
 			continue
@@ -1830,7 +1834,7 @@ func processUsbIntent(state *SidecarState, rec *usbDeviceRecord, vol usbVolume, 
 		}
 		// The library file is resolved even for a transcode: its place in the
 		// library is where the track lives on the card too.
-		src, err := resolveTrackPath(t.SubsonicTrackID, trackHint{AlbumArtist: artist, Album: album, Title: title})
+		src, err := resolveSongFile(t.SubsonicTrackID, trackHint{AlbumArtist: artist, Album: album, Title: title})
 		if err != nil {
 			failed++
 			lastErr = "a track could not be found in the library"

@@ -121,10 +121,12 @@ export function Menu({
     const el = panel.current;
     if (!open || !el) return;
     el.style.removeProperty("--menu-slide");
-    // its laid-out box, not its drawn one: it opens from a slightly smaller scale, which a bounding box would read
-    const box = wrap.current?.getBoundingClientRect();
-    if (!box) return;
-    const left = box.left + el.offsetLeft;
+    // its laid-out box, not its drawn one: it opens from a slightly smaller scale, which a bounding box would read.
+    // Measured from the box it actually hangs from, which isn't always its own button: on a phone the masthead
+    // stretches its menu across the whole bar, and measuring from the button there threw it off the left edge
+    const from = el.offsetParent;
+    if (!from) return;
+    const left = from.getBoundingClientRect().left + from.clientLeft + el.offsetLeft;
     const right = left + el.offsetWidth;
     const room = 12;
     let dx = 0;

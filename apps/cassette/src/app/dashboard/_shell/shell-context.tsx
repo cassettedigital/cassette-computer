@@ -420,7 +420,9 @@ type ShellState = {
   showToast: (msg: string, opts?: { variant?: ToastVariant }) => void;
   /** Add tracks to one of the person's playlists (one request; a record goes in
    *  its order). Toasts the result. */
-  addTracksToPlaylist: (playlistId: string, playlistName: string, tracks: ShellTrack[]) => Promise<void>;
+  /** True when they went on. `already`: how many more were asked for that the playlist has already (the desk
+   *  leaves those out, desk/owned.tsx), said in the same note. */
+  addTracksToPlaylist: (playlistId: string, playlistName: string, tracks: ShellTrack[], opts?: { already?: number }) => Promise<boolean>;
   // drag state (for sidebar auto-expand + drop-target flash)
   dragging: boolean;
   flashPlaylistId: string | null;
@@ -1544,11 +1546,11 @@ export function ShellProvider({
   // whole record) go as one request, one op each, in their order; tracks with no
   // stable id are left out and said so.
   const addTracksToPlaylist = useCallback(
-    async (playlistId: string, playlistName: string, tracks: ShellTrack[]) => {
+    async (playlistId: string, playlistName: string, tracks: ShellTrack[], opts: { already?: number } = {}): Promise<boolean> => {
       const good = tracks.filter((t) => t.cassetteLocalId && LOCAL_ID_RE.test(t.cassetteLocalId));
       if (!good.length) {
         showToast(tracks.length > 1 ? "Can't add: these tracks have no stable id yet" : "Can't add — this track has no stable id yet");
-        return;
+        return false;
       }
       // Optimistic (Job 3): flash the playlist immediately as instant feedback,
       // then persist. The cloud stays the write-truth — a failure surfaces as an
@@ -1580,16 +1582,17 @@ export function ShellProvider({
           showToast(body.message ?? body.error ?? "Couldn't add to playlist", {
             variant: "error",
           });
-          return;
+          return false;
         }
         const skipped = tracks.length - good.length;
-        showToast(
-          good.length === 1
-            ? `Added to ${playlistName}`
-            : `Added ${good.length} songs to ${playlistName}${skipped ? ` (${skipped} not in your library yet)` : ""}`
-        );
+        const already = opts.already ?? 0;
+        const added = good.length === 1 ? (already ? `Added 1 song to ${playlistName}` : `Added to ${playlistName}`) : `Added ${good.length} songs to ${playlistName}`;
+        const there = already ? `. ${already === 1 ? "1 was" : `${already} were`} already on it` : "";
+        showToast(`${added}${there}${skipped ? ` (${skipped} not in your library yet)` : ""}`);
+        return true;
       } catch {
         showToast("Network error — try again", { variant: "error" });
+        return false;
       }
     },
     [showToast, flashPlaylist]

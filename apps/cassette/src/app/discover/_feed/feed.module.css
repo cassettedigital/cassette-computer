@@ -1,0 +1,98 @@
+/*
+ * The Discover page on the taste paper (DiscoverFeed.tsx). The head is the shared section title
+ * (_taste/PageTitle, which Radio wears too). The top pick is discover/TopPick (its own sheet); the lanes and the Radio
+ * band are lanes.module.css, in the desktop app's look.
+ */
+
+.page {
+  padding-bottom: var(--sec);
+}
+
+/* ── rhythm: a section's gap between the feed's parts (margins, not a gap, so the lead line can tuck up) ── */
+
+.feed {
+  display: flex;
+  flex-direction: column;
+}
+.feed > * + * {
+  margin-top: var(--sec);
+}
+
+/* a quiet line before the feed (the sign-in nudge): it reads as the head's last line, 18px under the lede
+   (as the lede sits under the title), and the first section follows it closer than a section's gap */
+.lead {
+  margin: 0;
+  font: var(--t-caption);
+  color: var(--ink-2);
+}
+.feed > .lead {
+  margin-top: calc(18px - var(--sec));
+}
+.feed > .lead + * {
+  margin-top: 40px;
+}
+
+
+/* ── loading: the feed's own shape as the shared skeleton's bones (FeedSkeleton, _taste/Skeleton) ── */
+
+.skelKeys {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* a lane: the name, then the kit shelf's columns (packages/cassette-kit ShelfSection: as many whole tiles
+   as the width holds, 2 up to 8) */
+.skelLane {
+  margin-bottom: 10px;
+  container: skel-shelf / inline-size;
+}
+.skelHead {
+  max-width: 60%;
+  margin: var(--pk-heading-top) 0 var(--pk-heading-bottom);
+}
+.skelShelf {
+  --cols: 2;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - (var(--cols) - 1) * var(--pk-tile-gap)) / var(--cols));
+  gap: var(--pk-tile-gap);
+  padding: 0 0 6px;
+  overflow: hidden;
+}
+.skelShelf > div {
+  min-width: 0;
+}
+.skelShelf > div > [data-shape="cover"] {
+  border-radius: var(--pk-r-artwork-tile);
+}
+@container skel-shelf (width >= 350px) {
+  .skelShelf {
+    --cols: 3;
+  }
+}
+@container skel-shelf (width >= 530px) {
+  .skelShelf {
+    --cols: 4;
+  }
+}
+@container skel-shelf (width >= 710px) {
+  .skelShelf {
+    --cols: 5;
+  }
+}
+@container skel-shelf (width >= 890px) {
+  .skelShelf {
+    --cols: 6;
+  }
+}
+@container skel-shelf (width >= 1070px) {
+  .skelShelf {
+    --cols: 7;
+  }
+}
+@container skel-shelf (width >= 1250px) {
+  .skelShelf {
+    --cols: 8;
+  }
+}

@@ -18,11 +18,15 @@
  * between, a quarter second at a time, so it moves smoothly and snaps back to the hub's word each read.
  */
 
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useShell, type ShellTrack } from "@/app/dashboard/_shell/shell-context";
 import { toBase64Url } from "@/lib/dashboard/library-group-keys";
 import { swrRead } from "@/lib/read-cache";
 import { inRecordOrder, loadSongs, songOfNow, songsOfRecordNow } from "./songs";
+import { playlistToPlay } from "./actions";
+import { playlistSongsNow, readPlaylistSongs } from "./playlists";
+import { notOnItYet } from "./playlist-adds";
 import type { DeskAlbum, OwnedTrack } from "./types";
 
 export type Owned = {
@@ -46,7 +50,7 @@ export type Owned = {
   recordTracks: (key: string) => Promise<OwnedTrack[]>;
   /** play several records on the Mac in the order given (an artist's), or shuffled */
   playRecords: (keys: string[], opts?: { shuffle?: boolean }) => Promise<void>;
-  /** add songs, or a whole record by its key, to one of your playlists */
+  /** add songs, or a whole record by its key, to one of your playlists: only the ones not on it already */
   addToPlaylist: (to: { id: string; name: string }, what: { songs: OwnedTrack[] } | { record: string }) => Promise<void>;
   toggle: () => void;
   next: () => void;
@@ -103,6 +107,7 @@ const ClockCtx = createContext<ReturnType<typeof createClock> | null>(null);
 
 export function OwnedProvider({ shelf, children }: { shelf: DeskAlbum[]; children: ReactNode }) {
   const shell = useShell();
+  const router = useRouter();
   const known = useRef(new Map<string, OwnedTrack>());
   const [pending, setPending] = useState<string | null>(null);
 
@@ -278,18 +283,36 @@ export function OwnedProvider({ shelf, children }: { shelf: DeskAlbum[]; childre
     [recordTracks, playList, shuffleList, showToast],
   );
 
-  // a playlist add: songs as they are, or a whole record in its order (the shell does the write)
+  // a playlist add: songs as they are, or a whole record in its order (the shell does the write). A song
+  // already on the playlist isn't put on again, so adding an album or an artist twice adds only what's new,
+  // and the note says how many were there already (the founder's wife, 2026-11-21: a second add doubled them)
   const { addTracksToPlaylist } = shell;
   const addToPlaylist = useCallback(
     async (to: { id: string; name: string }, what: { songs: OwnedTrack[] } | { record: string }) => {
+      let songs: OwnedTrack[];
       try {
-        const songs = "songs" in what ? what.songs : await recordTracks(what.record);
-        await addTracksToPlaylist(to.id, to.name, songs.map(toShell));
+        songs = "songs" in what ? what.songs : await recordTracks(what.record);
       } catch {
         showToast("Couldn't reach that album");
+        return;
+      }
+      // what's on it now: the cloud's word, else the copy this window last read
+      const onIt = await playlistToPlay(to.id).then(
+        (list) => list ?? [],
+        () => playlistSongsNow(to.id) ?? [],
+      );
+      const { fresh, already } = notOnItYet(songs, onIt);
+      if (!fresh.length) {
+        showToast(songs.length === 1 ? `${songs[0].title} is already on ${to.name}` : `All ${songs.length} are already on ${to.name}`);
+        return;
+      }
+      if (await addTracksToPlaylist(to.id, to.name, fresh.map(toShell), { already })) {
+        // the playlist's songs read again (its page, the side view), and its count in the sidebar
+        void readPlaylistSongs(to.id, () => {});
+        router.refresh();
       }
     },
-    [recordTracks, addTracksToPlaylist, showToast],
+    [recordTracks, addTracksToPlaylist, showToast, router],
   );
 
   // The scrubber's clock keeps its own time and takes the hub's word only when it really differs. The

@@ -17,6 +17,7 @@ import { Art, trackCovers } from "./Art";
 import { useAside } from "./DeskShell";
 import { useOwned } from "./owned";
 import { createPlaylist } from "./playlists";
+import { dragSongs } from "./drag";
 import { useQueueLines, useSongsMenu } from "./Shelves";
 import { deskMix, useMix, type DeskMix } from "./mixes";
 import { deskAlbum, deskArtist, deskPlaylist, type OwnedTrack } from "./types";
@@ -171,6 +172,7 @@ export function MixPage({ m }: { m: DeskMix }) {
         })}
         onPlay={(i) => owned.playList(m.songs, i)}
         menu={(i, picked) => songsMenu(picked.map((x) => m.songs[x]), { play: [{ label: "Play", onSelect: () => owned.playList(m.songs, i) }] })}
+        dragOut={(_, picked, e) => dragSongs(e, () => picked.map((x) => m.songs[x]).filter((x) => !!x), { now: true })}
       />
       {pm.menu}
     </div>

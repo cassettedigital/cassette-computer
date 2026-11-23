@@ -116,6 +116,17 @@ type SidecarState struct {
 	LibraryDir  string `json:"libraryDir,omitempty"`
 	LibraryData string `json:"libraryData,omitempty"`
 
+	// LinkedFolders are folders Cassette reads where they are and never writes into (library-folders.go,
+	// board #1163). MovingTo is a move of the Cassette folder under way (a retry picks it up); MovedFrom is
+	// the old folder a finished move left in place, for the person to put away themselves.
+	LinkedFolders []linkedFolder `json:"linkedFolders,omitempty"`
+	MovingTo      string         `json:"movingTo,omitempty"`
+	MovedFrom     string         `json:"movedFrom,omitempty"`
+	// LibraryDrive / LibraryOnDrive name a moved Cassette folder by its drive's serial and its place on it
+	// (Windows), so startup can follow it to a new drive letter (placeLibrary).
+	LibraryDrive   string `json:"libraryDrive,omitempty"`
+	LibraryOnDrive string `json:"libraryOnDrive,omitempty"`
+
 	// MBIDResolutionState caches MusicBrainz lookup outcomes per file so a
 	// repeat resolver pass doesn't re-hit the rate-limited public API.
 	// Map key is the absolute file path. nil/empty means "never attempted".
@@ -294,6 +305,7 @@ func routableHostname() (hostname string, routable bool) {
 type navidromeUser struct {
 	ID       string `json:"id"`
 	UserName string `json:"userName"`
+	IsAdmin  bool   `json:"isAdmin"`
 }
 
 // generateSubsonicCredential mints a fresh random Subsonic username + password.
@@ -934,10 +946,10 @@ func main() {
 	// (%USERPROFILE%\Music\Cassette) does not exist until a rip lazily created it,
 	// which left "add music" with no destination and Navidrome scanning a missing
 	// path. Best-effort: a failure here is logged, not fatal.
-	if sidecarMusicDir != "" {
-		if err := os.MkdirAll(sidecarMusicDir, 0o755); err != nil {
-			log.Printf("Warning: could not create music dir %q: %v", sidecarMusicDir, err)
-		}
+	// Only where it belongs already exists: a Cassette folder moved to a drive that's unplugged is
+	// left away, never started over on this computer's own disk (library-folders.go).
+	if err := makeMusicFolder(sidecarMusicDir); err != nil {
+		log.Printf("Warning: could not create music dir %q: %v", sidecarMusicDir, err)
 	}
 
 	log.Printf("Starting Cassette Player sidecar… (build %s)", buildVersion)
@@ -968,6 +980,15 @@ func main() {
 	// immediate library-sync (Job 1), and clear any temp dirs orphaned by a
 	// previous mid-rip crash/quit (Job 4).
 	liveState = state
+	publishLinkedRoots(state) // before anything below may write into a song (songHeld)
+	// placeLibrary followed a moved Cassette folder's drive to a new letter: remember where it is now.
+	if state.LibraryDir != "" && !satelliteOn.Load() && filepath.Clean(state.LibraryDir) != filepath.Clean(sidecarMusicDir) {
+		log.Printf("folders: the Cassette folder is now at %s (was %s)", sidecarMusicDir, state.LibraryDir)
+		state.LibraryDir = sidecarMusicDir
+		if err := saveState(state); err != nil {
+			log.Printf("Warning: could not save the Cassette folder's new place: %v", err)
+		}
+	}
 	// An older hub wrote the sign-in into sidecar.json; take it out now (onDisk). This launch keeps using it from
 	// memory, and the app hands it over again on every start after this one.
 	if localKey != "" && state.BearerToken != "" {
@@ -1074,6 +1095,8 @@ func main() {
 	// restart paths (interrupted-rip detection, the app's watchdog) are what
 	// clean up after them, and a recovered half-rip would not be.
 	goForever("heartbeat", func() { heartbeatLoop(state) })
+	goForever("linked folders watcher", func() { linkedWatcher(state) }) // folders Cassette reads (#1163)
+	goSafe("linked folders reconcile", func() { reconcileLinkedFolders(state) })
 	goForever("ingest watcher", func() { ingestWatcher(state) }) // J1: instant ingest — music-dir watch + POST /api/library/ingest
 	// Corded devices: recognise added USB players when they're plugged in and
 	// fill them through the phones' intent queue (usb.go). Strangers are only

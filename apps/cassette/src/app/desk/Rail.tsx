@@ -29,24 +29,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useShell } from "@/app/dashboard/_shell/shell-context";
-import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type PointerEvent, type ReactNode } from "react";
 import { Glyph, Pills, PlayPill, Rows, SavePill, Segmented, ShufflePill, TrackRow, useContextMenu, type MenuItem } from "@discovery/cassette-kit";
 import { useRadio } from "@/app/components/radio/RadioProvider";
 import { usePlayer } from "@/app/(taste)/_kit/player";
 import { Art, PlaylistArt, albumCovers, trackCovers } from "./Art";
-import { deletePlaylist, playlistPlayed, playlistSongs, playlistSongsNow, readPlaylistSongs } from "./playlists";
+import { playlistPlayed, playlistSongs, playlistSongsNow, readPlaylistSongs } from "./playlists";
 import { useAside, useDesk, type Look } from "./DeskShell";
 import { useStationSave } from "./saved-stations";
 import { useStationMenu } from "./station-menu";
 import { Booth, PreviewUpNext, UpNext, tintCover, useStationDisc, useTint } from "./Player";
-import { useQueueLines, useRadioSong, useRecordMenu, useSongsMenu, type RadioSong } from "./Shelves";
-import { SONGS_MIME, dragSongs, useSongPicks } from "./picks";
+import { useDeletePlaylist, useQueueLines, useRadioSong, useRecordMenu, useSongsMenu, type RadioSong } from "./Shelves";
+import { useSongPicks } from "./picks";
+import { dragRecord, dragSongs } from "./drag";
 import { useOwned } from "./owned";
 import { ArtistView, useArtistMenu } from "./Artist";
 import { MixArt, mixFacts, useMixMenu } from "./MadeForYou";
 import { deskMix, useMix } from "./mixes";
-import { deskAlbum, deskArtistOf, deskPlaylist, DESK, type DeskAlbum, type OwnedTrack } from "./types";
+import { deskAlbum, deskArtistOf, deskPlaylist, type DeskAlbum, type OwnedTrack } from "./types";
 import { StationSide, useStationPage } from "@/app/components/radio/StationSide";
 import { songLineOnRecord } from "@/lib/desk/song-credit";
 import { offlineWords } from "./network";
@@ -112,10 +112,7 @@ function SongRows({ songs, label, numbered, artistOf }: { songs: OwnedTrack[]; l
               onSelect={picks.onSelect(i)}
               onPlay={x.subsonicTrackId ? () => (on ? owned.toggle() : owned.playList(songs, i)) : undefined}
               onContextMenu={(e) => cm.open(e, menu(i))}
-              onDragStart={x.subsonicTrackId ? (e) => {
-                const going = picks.take(i);
-                dragSongs(e, going, going.length === 1 ? x.title : `${going.length} songs`);
-              } : undefined}
+              onDragOut={x.subsonicTrackId ? (e) => dragSongs(e, () => picks.take(i)) : undefined}
             />
           );
         })}
@@ -125,8 +122,8 @@ function SongRows({ songs, label, numbered, artistOf }: { songs: OwnedTrack[]; l
   );
 }
 
-/** The head every look shares: the art (what's selected: a click on it does nothing, a drag carries its
-    songs), the name (the way to its page), a line, the facts, the pills. */
+/** The head every look shares: the art (what's selected: a click on it does nothing, a drag carries an album
+    onto a playlist, drag.tsx), the name (the way to its page), a line, the facts, the pills. */
 function LookHead({
   art,
   href,
@@ -148,7 +145,8 @@ function LookHead({
   by?: ReactNode;
   facts?: string;
   pills?: ReactNode;
-  onDragArt?: (e: DragEvent) => void;
+  /** the press on the art, for a drag onto a playlist (an album's); the browser's own drag never starts */
+  onDragArt?: (e: PointerEvent) => void;
   /** a station's mark: rounded like an app icon */
   app?: boolean;
   /** an artist: a circle */
@@ -156,7 +154,7 @@ function LookHead({
 }) {
   return (
     <>
-      <span className={d.lookArt} data-circle={circle || undefined} data-app={app || undefined} draggable={onDragArt ? true : undefined} onDragStart={onDragArt}>
+      <span className={d.lookArt} data-circle={circle || undefined} data-app={app || undefined} onPointerDown={onDragArt} onDragStart={(e) => e.preventDefault()}>
         {art}
       </span>
       <div className={d.lookText}>
@@ -213,7 +211,7 @@ function RecordLook({ a }: { a: DeskAlbum }) {
         title={a.title}
         by={<Link href={deskArtistOf(a)}>{a.artist}</Link>}
         facts={facts}
-        onDragArt={songs ? (e) => dragSongs(e, songs, a.title) : undefined}
+        onDragArt={(e) => dragRecord(e, a)}
         pills={
           <Pills>
             <PlayPill state={moving ? "pause" : "play"} disabled={!!songs && here.length === 0} onClick={play} />
@@ -264,7 +262,6 @@ function PlaylistLook({ id }: { id: string }) {
         tinted="title"
         by={p.description ?? undefined}
         facts={[songWord(songs?.length ?? p.songs), minutes ? `${minutes} min` : null].filter(Boolean).join(" · ")}
-        onDragArt={(e) => e.preventDefault()}
         pills={
           <Pills>
             <PlayPill state="play" disabled={!!songs && here.length === 0} onClick={() => songs && (owned.playList(songs, 0), playlistPlayed(id))} />
@@ -294,7 +291,6 @@ function MixLook({ id }: { id: string }) {
         title={m.title}
         by={m.subtitle ?? "made for you"}
         facts={mixFacts(m)}
-        onDragArt={(e) => e.preventDefault()}
         pills={
           <Pills>
             <PlayPill state="play" onClick={() => owned.playList(m.songs, 0)} />
@@ -363,9 +359,11 @@ function StationLook({ slug }: { slug: string }) {
 /* ── the look's menu: everything you can do with what's shown, at the top (open its page, edit,
       delete, add to a playlist) ── */
 
-function useLookMenu(look: Look | null, record: DeskAlbum | null, ask: (what: "delete-playlist") => void): MenuItem[] | null {
+function useLookMenu(look: Look | null, record: DeskAlbum | null): MenuItem[] | null {
   const router = useRouter();
   const { playlists } = useDesk();
+  const aside = useAside();
+  const deleteIt = useDeletePlaylist();
   const stationMenu = useStationMenu();
   const recordMenu = useRecordMenu();
   const queue = useQueueLines();
@@ -385,43 +383,12 @@ function useLookMenu(look: Look | null, record: DeskAlbum | null, ask: (what: "d
       { label: "Rename…", onSelect: () => router.push(`${deskPlaylist(p.id)}?edit=1`) },
       { label: "Change the cover…", onSelect: () => router.push(`${deskPlaylist(p.id)}?cover=1`) },
       "separator",
-      { label: "Delete playlist…", onSelect: () => ask("delete-playlist") },
+      // asked the way every delete asks (useDeletePlaylist); gone, the side view lets go of it
+      { label: "Delete playlist…", onSelect: () => void deleteIt(p).then((gone) => gone && aside.follow()) },
     ];
   }
   if (look.kind === "artist") return artistMenu;
   return stationMenu(look.slug);
-}
-
-/** "Delete this playlist?", at the top of the side view, before anything goes. */
-function DeletePlaylist({ id, onDone }: { id: string; onDone: () => void }) {
-  const { playlists } = useDesk();
-  const { showToast } = useShell();
-  const aside = useAside();
-  const router = useRouter();
-  const p = playlists.find((x) => x.id === id);
-  if (!p) return null;
-  const drop = async () => {
-    try {
-      await deletePlaylist(p.id);
-      onDone();
-      aside.follow();
-      if (window.location.pathname === deskPlaylist(p.id)) router.replace(`${DESK}/playlists`);
-      router.refresh();
-    } catch (e) {
-      showToast((e as Error).message || "Couldn't delete that", { variant: "error" });
-    }
-  };
-  return (
-    <div className={d.lookConfirm} role="group" aria-label={`Delete ${p.name}?`}>
-      <span>Delete {p.name}?</span>
-      <button type="button" className={d.confirmYes} onClick={() => void drop()}>
-        Delete
-      </button>
-      <button type="button" className={d.confirmNo} onClick={onDone}>
-        Keep it
-      </button>
-    </div>
-  );
 }
 
 /* ── the column ── */
@@ -437,8 +404,7 @@ export function Rail() {
   const look: Look | null = aside.focus ?? (playingKey ? { kind: "record", key: playingKey } : null);
   const record = look?.kind === "record" ? (shelf.find((x) => x.key === look.key) ?? null) : null;
   const tint = useTint(record ? tintCover(record) : null);
-  const [asking, setAsking] = useState<string | null>(null);
-  const menu = useLookMenu(look, record, () => look?.kind === "playlist" && setAsking(look.id));
+  const menu = useLookMenu(look, record);
   const cm = useContextMenu();
   const preview = usePlayer();
   return (
@@ -464,7 +430,6 @@ export function Rail() {
         </span>
         {cm.menu}
       </div>
-      {asking && look?.kind === "playlist" && look.id === asking && <DeletePlaylist id={asking} onDone={() => setAsking(null)} />}
       <div className={d.asideBody}>
         {owned.reachable === false && <Offline />}
         {aside.tab === "queue" ? (
@@ -487,38 +452,4 @@ export function Rail() {
   );
 }
 
-/** A playlist in the left rail taking songs dragged out of the side view. */
-export function usePlaylistDrop(to: { id: string; name: string }) {
-  const { addToPlaylist } = useOwned();
-  const [over, setOver] = useState(false);
-  const takes = (e: DragEvent) => Array.from(e.dataTransfer.types).includes(SONGS_MIME);
-  return {
-    over,
-    onDragEnter: (e: DragEvent) => {
-      if (!takes(e)) return;
-      e.preventDefault();
-      setOver(true);
-    },
-    onDragOver: (e: DragEvent) => {
-      if (!takes(e)) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
-    },
-    onDragLeave: (e: DragEvent) => {
-      if ((e.currentTarget as Element).contains(e.relatedTarget as Node | null)) return;
-      setOver(false);
-    },
-    onDrop: (e: DragEvent) => {
-      setOver(false);
-      if (!takes(e)) return;
-      e.preventDefault();
-      try {
-        const songs = JSON.parse(e.dataTransfer.getData(SONGS_MIME)) as OwnedTrack[];
-        if (songs.length) void addToPlaylist(to, { songs });
-      } catch {
-        /* not ours */
-      }
-    },
-  };
-}
 

@@ -24,7 +24,8 @@ import { toBase64Url } from "@/lib/dashboard/library-group-keys";
 import { withoutLd } from "@/lib/desk/without-ld";
 import { isTokenMode } from "@/lib/player-client";
 import { askCloud, withCopy } from "@/lib/offline-copies";
-import { loadAlbumPage, loadArtistPage, loadDesk, loadDevices, loadPlaylist, loadRecord, ownedBySlug } from "./web";
+import type { DiscoverView } from "@/app/discover/_feed/view";
+import { loadAlbumPage, loadArtistPage, loadDesk, loadDevices, loadDiscover, loadPlaylist, loadRecord, ownedBySlug } from "./web";
 import type { DeskData, DeskDevices, DeskPlaylistPage, DeskRecordPage } from "./types";
 
 type AlbumPage = Omit<AlbumLoad, "jsonLd">;
@@ -48,9 +49,9 @@ export class NotKeptOffline extends Error {
  * reply when the cloud answers (and the copy refreshed), the copy when it doesn't, null on a 404. In the
  * paired app the request goes over the device token; in a rehearsal, to this server with your session.
  */
-async function remote<T>(path: string): Promise<{ value: T | null; offline: boolean }> {
+async function remote<T>(path: string, waitMs?: number): Promise<{ value: T | null; offline: boolean }> {
   const out = isTokenMode()
-    ? await askCloud<T>(path)
+    ? await askCloud<T>(path, waitMs)
     : await withCopy<T>(`rehearsal:${path}`, async () => {
         if (pretendOffline()) return { status: null, value: null };
         const h = await headers();
@@ -95,3 +96,12 @@ export const deskAlbumPage = cache(async (userId: string, slug: string): Promise
 export const deskArtistPage = cache(async (userId: string, slug: string): Promise<ArtistPage | null> =>
   viaCloud() ? (await remote<ArtistPage>(`/api/player/desk/artist/${encodeURIComponent(slug)}`)).value : withoutLd(await loadArtistPage(slug, userId)),
 );
+
+/** Discover, the website's page for the person. A listener's first visit of the day makes their page in the cloud,
+ *  which can take longer than the other pages' reads, so it gets more time before the copy kept on this Mac stands in. */
+const DISCOVER_WAIT_MS = 25_000;
+export const deskDiscover = cache(async (userId: string): Promise<{ view: DiscoverView; offline: boolean } | null> => {
+  if (!viaCloud()) return { view: await loadDiscover(userId), offline: false };
+  const d = await remote<DiscoverView>("/api/player/desk/discover", DISCOVER_WAIT_MS);
+  return d.value ? { view: d.value, offline: d.offline } : null;
+});

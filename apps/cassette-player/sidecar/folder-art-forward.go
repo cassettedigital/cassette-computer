@@ -46,6 +46,10 @@ func folderArtAllowed(dir string) bool {
 	if asSpare() {
 		return false
 	}
+	// A folder Cassette only reads gets nothing written into it, ever (library-folders.go).
+	if inLinkedFolder(dir) {
+		return false
+	}
 	since := folderArtSinceNanos.Load()
 	if since == 0 {
 		return false

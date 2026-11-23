@@ -717,6 +717,12 @@ button.tileLink {
   outline: 2px solid var(--pk-text-primary);
   outline-offset: 3px;
 }
+/* music held over it, to go on it (the desk's drag onto a playlist) */
+.tile[data-drop] .tileArt {
+  outline: 2px solid var(--pk-text-primary);
+  outline-offset: 3px;
+  transform: scale(1.03);
+}
 .tileLink:focus-visible .tileArt {
   outline: 2px solid var(--pk-text-primary);
   outline-offset: 3px;
@@ -1531,6 +1537,33 @@ a.hub:focus-visible {
   margin: 5px 8px;
   border: 0;
   background: color-mix(in srgb, var(--pk-text-primary) 10%, transparent);
+}
+/* a line that opens a submenu: its chevron at its end, lit while the submenu is open; the submenu sits
+   beside it, its first line level with this one, to the left when the window's edge is near (data-flip) */
+.cmenuHas {
+  position: relative;
+  display: grid;
+}
+.cmenuOpener {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.cmenuOpener[data-open] {
+  background: var(--pk-fill-selected);
+  color: var(--pk-text-on-fill);
+}
+.cmenuSub {
+  position: absolute;
+  top: -5px;
+  left: calc(100% + 4px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+.cmenuSub[data-flip] {
+  left: auto;
+  right: calc(100% + 4px);
 }
 
 /* the song table: denser than the phone's row (a pointer is precise), a header that stays, no lines */

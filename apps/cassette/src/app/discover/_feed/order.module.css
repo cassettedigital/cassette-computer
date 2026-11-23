@@ -1,0 +1,52 @@
+/* Discover in the founder's order (feed-order.ts, DiscoverFeed.tsx): the page's rhythm and its shelves. Every block
+   (a top pick, a shelf, the radio band) is a step of the page's one section gap (--sec, feed.module.css .feed),
+   nothing stacked on top of it. */
+
+/* the top of the page (the founder, 2026-11-18: "I want to see the cover art peeking about halfway out. Tempt
+   me!!"): the title close under the masthead, and the top pick half a section's gap under the title's last line (its
+   caps, or the line under them), so the record never crowds the title ("The album gets suuuuper close to discover").
+   The cover's size (toppick.module.css) keeps the next shelf in view. */
+.top > header {
+  padding-top: 8px;
+  padding-bottom: calc(var(--sec) / 2);
+}
+
+/* the page's blocks (a top pick, a run of shelves) sit a section's gap apart (feed.module.css .feed); the shelves in
+   a run, the Radio band last among them, sit closer, a shelf's gap: a shelf's head reads with its own covers, and a
+   run of shelves reads as one run (the founder, 2026-11-18: "the carousels are all reaaally far apart from one
+   another"). The gap is from the room a shelf keeps under its tiles to the next head. */
+.shelves {
+  --shelf-gap: clamp(22px, 2.2cqi, 32px);
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--shelf-gap);
+}
+/* the kit shelf's own bottom margin gives way to the gap */
+.shelves section {
+  margin-bottom: 0;
+}
+
+/* the head's menu word sits in the head's own line (the artist page's .likeWord) */
+.word {
+  display: contents;
+}
+.word > div {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* the shelf's play key (the shared play button, its glyph alone) at the end of the head's words (the head's trail):
+   a box exactly as tall as the words' first line, the key centred on it and standing past it above and below, so the
+   key sits on the first line however many lines the words take on a phone, and a head with its key is no taller
+   than one without (the shelves keep their rhythm). Room under it keeps the key clear of the covers where the head's
+   own room is less than the key stands past its line (a one-line head on a phone) */
+.key {
+  flex: none;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  height: 1lh;
+  margin-bottom: calc(var(--control-h) / 2 + 8px - 0.5lh);
+  font: var(--t-head-small);
+}

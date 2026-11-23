@@ -424,6 +424,19 @@
   background: color-mix(in srgb, var(--pk-text-primary) 14%, transparent);
   box-shadow: inset 0 0 0 1.5px var(--pk-text-primary);
 }
+/* during a drag, the first row: drop to start a new playlist (Sidebar NewPlaylistDrop) */
+.libItem[data-new] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 22%, transparent);
+}
+.libItem[data-new][data-drop] {
+  box-shadow: inset 0 0 0 1.5px var(--pk-text-primary);
+}
+.libArt[data-kind="new"] {
+  display: grid;
+  place-items: center;
+  background: var(--pk-surface-raised);
+  color: var(--pk-text-primary);
+}
 .libArt {
   position: relative;
   display: block;
@@ -591,24 +604,6 @@ button.libTitle:hover {
   display: flex;
   align-items: center;
   gap: 2px;
-}
-/* "Delete this playlist?", under the head, before anything goes */
-.lookConfirm {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 2px clamp(16px, 1.8vw, 24px) 6px;
-  padding: 8px 10px 8px 14px;
-  border-radius: var(--pk-r-control);
-  background: var(--pk-surface-raised);
-  font: var(--pk-t-mini-title);
-}
-.lookConfirm > span {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 /* one column the side view's own width: a long title ellipses or wraps instead of widening it */
 .asideBody {
@@ -1512,6 +1507,10 @@ button.barMode:focus-visible {
 .detail > h2:first-child {
   margin-top: 0;
 }
+/* where the music lives (#1163), under the computer's figures */
+.macFolders {
+  margin-top: var(--cs-space-5);
+}
 /* the figures are the kit's small Stats; the bar sits under them */
 .coverage {
   position: relative;
@@ -2023,8 +2022,8 @@ button.barMode:focus-visible {
   margin: 40px 0 0;
 }
 
-/* playlists: the name edited in place, the more key and the delete confirm (the new-playlist key is the
-   kit's Key) */
+/* playlists: the name edited in place and the more key (the new-playlist key is the kit's Key; deleting one
+   asks with the computer's own alert, as every delete does: Shelves useDeletePlaylist) */
 .nameText {
   cursor: text;
 }
@@ -2045,7 +2044,7 @@ button.barMode:focus-visible {
 .nameField:focus {
   outline: none;
 }
-/* the playlist's keys: Play and Shuffle, then "…" (or the delete confirm) on the same line */
+/* the playlist's keys: Play and Shuffle, then "…" on the same line */
 .heroKeys {
   display: flex;
   align-items: center;
@@ -2071,32 +2070,90 @@ button.barMode:focus-visible {
   background: var(--pk-surface-raised);
   color: var(--pk-text-primary);
 }
-.confirm {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+/* a playlist with nothing on it yet: how to fill it, and a place to drop music (drag.tsx) */
+.listEmpty {
+  margin: 14px 0 0;
+  padding: 18px 20px;
+  border-radius: var(--pk-r-control);
+  background: var(--pk-surface-raised);
   color: var(--pk-text-secondary);
-  font: var(--pk-t-metadata);
+  font: var(--pk-t-body);
+  transition: box-shadow 0.15s;
 }
-/* the same two keys wherever a delete asks first: on the playlist page (.confirm) and in the side view (.lookConfirm),
-   so neither shows the browser's own buttons (BUG-634) */
-.confirm button,
-.lookConfirm button {
-  height: 30px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--pk-r-pill);
-  font: var(--pk-t-section-label);
+.listEmpty[data-drop] {
+  box-shadow: inset 0 0 0 1.5px var(--pk-text-primary);
+}
+
+/* Playlists before there are any (Shelves ListsEmpty): what one is and how to fill one, said once, in the
+   first-run card's frame; the card takes music dropped on it to start one (drag.tsx) */
+.listsEmpty {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 8px 0 40px;
+  padding: clamp(24px, 3.4cqi, 44px);
+  border-radius: var(--pk-r-sheet);
+  background: var(--pk-surface-raised);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pk-text-primary) 7%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+  transition: box-shadow 0.15s;
+}
+.listsEmpty[data-drop] {
+  box-shadow:
+    inset 0 0 0 2px var(--pk-text-primary),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+.listsEmptyHead {
+  margin: 0;
+  color: var(--pk-text-primary);
+  font: 800 clamp(34px, 4.6cqi, 52px) / 0.95 var(--pk-f-display);
   text-transform: uppercase;
-  cursor: pointer;
 }
-.confirmYes {
+.listsEmptyWays {
+  display: grid;
+  gap: 10px;
+  max-width: 640px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--pk-text-secondary);
+  font: var(--pk-t-body);
+  font-size: 16px;
+  line-height: 1.45;
+}
+.listsEmptyWays b {
+  color: var(--pk-text-primary);
+  font-weight: 600;
+}
+
+/* music being dragged onto a playlist (drag.tsx): its name beside the pointer, and the window holding still
+   under it (no text picked up on the way, the grabbing hand everywhere) */
+.dragChip {
+  position: fixed;
+  z-index: 1200;
+  max-width: 260px;
+  padding: 7px 14px;
+  overflow: hidden;
+  border-radius: var(--pk-r-pill);
+  background: var(--pk-surface-elevated);
+  box-shadow: 0 0 0 1px var(--pk-hairline), 0 10px 26px rgb(0 0 0 / 0.42);
+  color: var(--pk-text-primary);
+  font: var(--pk-t-mini-title);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform: translate(14px, 12px);
+}
+.dragChip[data-over] {
   background: var(--pk-fill-selected);
   color: var(--pk-text-on-fill);
 }
-.confirmNo {
-  background: transparent;
-  color: var(--pk-text-primary);
+:global(html[data-dragging]) .app,
+:global(html[data-dragging]) .app * {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Home before there's a whole row of music (Shelves FirstRun): adding is the page, said once, with one
@@ -3523,7 +3580,6 @@ button.addWords {
 .onAirStation,
 .pane .atTitle,
 .toolTitle,
-.lookConfirm > span,
 .boothText > .lookBy {
   padding-bottom: var(--pk-drop);
   margin-bottom: calc(-1 * var(--pk-drop));

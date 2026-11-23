@@ -45,10 +45,10 @@ export type IconDef = {
 
 export const THEMES: readonly ThemeDef[] = [
   { id: "classic", name: "Classic Orange", blurb: "The original. Warm amber deck, orange needle." },
-  { id: "amber",   name: "Amber Gold",     blurb: "A hair warmer — gold where the orange was." },
-  { id: "rust",    name: "Rust",           blurb: "Deeper, redder — a well-worn faceplate." },
+  { id: "amber",   name: "Amber Gold",     blurb: "A hair warmer: gold where the orange was." },
+  { id: "rust",    name: "Rust",           blurb: "Deeper and redder, a well-worn faceplate." },
   { id: "marine",  name: "Marine",         blurb: "The cool one. Teal needle on the warm chassis." },
-  { id: "lime",    name: "Lime",           blurb: "Jersey lime — and the whole deck pivots forest to match." },
+  { id: "lime",    name: "Lime",           blurb: "Jersey lime, and the whole deck turns forest to match." },
   { id: "violet",  name: "Violet",         blurb: "Electric violet on a cooled-down slate chassis." },
   { id: "rose",    name: "Rose",           blurb: "Warm rose-pink that keeps the classic warm deck." },
 ] as const;
@@ -62,7 +62,7 @@ export const ICONS: readonly IconDef[] = [
   {
     id: "classic",
     name: "Signature",
-    blurb: "The default — orange tile, cream mark.",
+    blurb: "The default: orange tile, cream mark.",
     theme: "classic",
     bg: "linear-gradient(180deg, var(--cs-accent-9), var(--cs-accent-10))",
     mark: "var(--cs-gray-12)",

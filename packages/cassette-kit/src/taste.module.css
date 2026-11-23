@@ -11,6 +11,11 @@
   --r-area: 24px;
   --r-pill: 999px;
   --r-station: 18%;
+  --r-app-icon: 22%;
+  --icon-body: linear-gradient(180deg, #57301f 0%, #381e15 44%, #1a0f0a 100%);
+  --icon-sheen: radial-gradient(150% 80% at 50% -30%, rgba(255, 238, 222, 0.06) 0%, rgba(255, 238, 222, 0.025) 50%, rgba(255, 238, 222, 0) 70%);
+  --icon-edge: inset max(0.5px, 0.86cqi) max(0.5px, 0.86cqi) max(1.5px, 2.86cqi) rgba(255, 214, 176, 0.84), inset calc(-1 * max(0.5px, 0.86cqi)) calc(-1 * max(0.5px, 0.86cqi)) max(1.5px, 2.86cqi) rgba(255, 212, 172, 0.58), inset 0 0 max(1.5px, 2.86cqi) rgba(255, 206, 160, 0.16);
+  --icon-edge-mask: conic-gradient(rgba(0, 0, 0, 0.3) 0deg, rgba(0, 0, 0, 0.1) 25deg, rgba(0, 0, 0, 0) 55deg, rgba(0, 0, 0, 0) 80deg, rgba(0, 0, 0, 0.12) 100deg, rgba(0, 0, 0, 0.55) 118deg, rgba(0, 0, 0, 1) 135deg, rgba(0, 0, 0, 0.55) 152deg, rgba(0, 0, 0, 0.12) 170deg, rgba(0, 0, 0, 0) 190deg, rgba(0, 0, 0, 0) 235deg, rgba(0, 0, 0, 0.12) 260deg, rgba(0, 0, 0, 0.55) 290deg, rgba(0, 0, 0, 1) 315deg, rgba(0, 0, 0, 0.6) 340deg, rgba(0, 0, 0, 0.3) 360deg);
   --t-display: 800 clamp(52px, 7.6vw, 108px) / 0.86 var(--f-display);
   --t-display-track: -0.01em;
   --t-head: 800 clamp(30px, 4.6cqi, 68px) / 0.9 var(--f-display);

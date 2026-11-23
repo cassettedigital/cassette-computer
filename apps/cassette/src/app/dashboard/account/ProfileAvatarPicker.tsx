@@ -9,6 +9,10 @@
  * sticker-aware rendering code and syncs to the phones on the next GET
  * /api/sync/account. New accounts get one at random (see the signup default);
  * this is where a person changes it.
+ *
+ * A change that doesn't save says so once, in plain words, and the picture goes back to the one that's
+ * really on the account (2026-11-21: the server's own line, "image_url must be a Cassette upload", came up
+ * under the picker on every click while the new sticker stayed lit, so it looked worth trying again).
  */
 
 import { useRef, useState } from "react";
@@ -19,7 +23,11 @@ import { AvatarDisc } from "@/app/components/AvatarDisc";
 import { coerceAvatarPreset, type AvatarPresetId } from "@/lib/avatar";
 import { normalizeCoverImage } from "@/lib/library-cover";
 import { AVATAR_STICKERS, featuredStickers, isStickerUrl } from "@/lib/avatar-stickers";
+import { putSignedUpload } from "@/lib/signed-upload";
 import styles from "./ProfileAvatarPicker.module.css";
+
+const NOT_SAVED = "Your picture didn't change. Try again in a moment.";
+const UNREADABLE = "That file isn't a picture we can read. Try a JPEG or PNG.";
 
 export function ProfileAvatarPicker({
   currentImage,
@@ -39,6 +47,8 @@ export function ProfileAvatarPicker({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [libOpen, setLibOpen] = useState(false);
+  // what the account really wears, to go back to when a change doesn't save
+  const saved = useRef<string | null>(currentImage);
 
   async function save(body: { image_url?: string | null; avatar_preset?: string }) {
     setBusy(true);
@@ -50,16 +60,15 @@ export function ProfileAvatarPicker({
         credentials: "include",
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(data?.message ?? "Couldn't save that.");
-      }
+      if (!res.ok) throw new Error(NOT_SAVED);
       const data = (await res.json()) as { image: string | null; avatarPreset: string };
+      saved.current = data.image;
       setImage(data.image);
       setPreset(coerceAvatarPreset(data.avatarPreset));
       router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't save that.");
+    } catch {
+      setImage(saved.current);
+      setError(NOT_SAVED);
     } finally {
       setBusy(false);
     }
@@ -82,7 +91,7 @@ export function ProfileAvatarPicker({
     setError(null);
     try {
       const norm = await normalizeCoverImage(file, 800);
-      if (!norm) throw new Error("Couldn't read that image.");
+      if (!norm) throw new Error(UNREADABLE);
 
       const presignRes = await fetch("/api/account/avatar/presign", {
         method: "POST",
@@ -91,25 +100,20 @@ export function ProfileAvatarPicker({
         // the link is signed for exactly this many bytes (BUG-1012)
         body: JSON.stringify({ contentType: "image/jpeg", fileSize: norm.blob.size }),
       });
-      if (!presignRes.ok) {
-        const data = (await presignRes.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(data?.message ?? "Upload isn't available right now.");
-      }
+      if (!presignRes.ok) throw new Error(NOT_SAVED);
       const { presignedUrl, publicUrl } = (await presignRes.json()) as {
         presignedUrl: string;
         publicUrl: string;
       };
-      const putRes = await fetch(presignedUrl, {
-        method: "PUT",
-        body: norm.blob,
-        headers: { "Content-Type": "image/jpeg" },
-      });
-      if (!putRes.ok) throw new Error("Upload failed, try again.");
+      // in the computer app through its own server, which the store lets in (BUG-1075)
+      if (!(await putSignedUpload(presignedUrl, norm.blob, "image/jpeg"))) throw new Error(NOT_SAVED);
 
       setImage(publicUrl);
       await save({ image_url: publicUrl });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't upload that.");
+      // the photo's own trouble as it is; anything else (a refusal, no connection) in the one line
+      setImage(saved.current);
+      setError(err instanceof Error && err.message === UNREADABLE ? UNREADABLE : NOT_SAVED);
       setBusy(false);
     }
   }

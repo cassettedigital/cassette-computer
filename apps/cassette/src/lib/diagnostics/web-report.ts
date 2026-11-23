@@ -1,6 +1,7 @@
 import { isCrawlerUserAgent } from "./crawler";
 import { nowPlayingForReport, type NowPlayingNote } from "./now-playing";
 import { loadPaper } from "@/lib/appearance";
+import { putSignedUpload } from "@/lib/signed-upload";
 /**
  * Spine-only web error reporting (Option A: one backbone, no Sentry).
  *
@@ -190,12 +191,8 @@ async function uploadAttachment(
   contentType: string
 ): Promise<void> {
   try {
-    const put = await fetch(upload.presignedUrl, {
-      method: "PUT",
-      headers: { "Content-Type": contentType },
-      body: blob,
-    });
-    if (!put.ok) return;
+    // from the app through its own server: the feedback store refuses the app's window (BUG-1075)
+    if (!(await putSignedUpload(upload.presignedUrl, blob, contentType))) return;
     await fetch(
       `/api/diagnostics/reports/${reportId}/attachments/complete`,
       {

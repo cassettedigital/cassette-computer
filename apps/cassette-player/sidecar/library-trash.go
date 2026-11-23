@@ -38,6 +38,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -86,6 +87,26 @@ type trashFailure struct {
 	Reason          string `json:"reason"`
 }
 
+// errKeptInReadFolder: the song is in a folder Cassette only reads, so its file stays where it is.
+var errKeptInReadFolder = errors.New("in a folder Cassette only reads")
+
+// resolveSongFile is resolveTrackPath for code that only reads the song (copying it to a USB player): a
+// song in a folder Cassette reads where it is resolves to its own file there.
+func resolveSongFile(subsonicTrackID string, hint trackHint) (string, error) {
+	p, err := resolveTrackPath(subsonicTrackID, hint)
+	if !errors.Is(err, errKeptInReadFolder) {
+		return p, err
+	}
+	songPath, err := getSongPath(subsonicTrackID)
+	if err != nil {
+		return "", err
+	}
+	if info, statErr := os.Stat(songPath); statErr != nil || !info.Mode().IsRegular() {
+		return "", fmt.Errorf("file does not exist: %s", songPath)
+	}
+	return filepath.Clean(songPath), nil
+}
+
 // resolveTrackPath maps a Subsonic track id (plus fallback hint metadata) to
 // a real absolute path under sidecarMusicDir that is safe to trash.
 //
@@ -103,6 +124,12 @@ func resolveTrackPath(subsonicTrackID string, hint trackHint) (string, error) {
 	songPath, err := getSongPath(subsonicTrackID)
 	if err != nil {
 		log.Printf("library-trash: getSong(%q) failed: %v — trying hint fallback", subsonicTrackID, err)
+	}
+
+	// A song in a folder Cassette only reads keeps its file: Delete there takes it out of the library,
+	// never off the disk, and never falls back to a look-alike file in the Cassette folder (#1163).
+	if songPath != "" && filepath.IsAbs(songPath) && inLinkedFolder(songPath) {
+		return "", errKeptInReadFolder
 	}
 
 	if songPath != "" {
@@ -302,6 +329,7 @@ func handleLibraryTrash(w http.ResponseWriter, r *http.Request) {
 
 	trashed := make([]string, 0, len(req.Tracks))
 	failed := make([]trashFailure, 0)
+	kept := make([]string, 0) // left on the disk: in a folder Cassette only reads
 
 	// Track the album-level directories we touched so we can attempt to remove
 	// them if they become empty after trashing their files.
@@ -326,6 +354,10 @@ func handleLibraryTrash(w http.ResponseWriter, r *http.Request) {
 		}
 
 		absPath, err := resolveTrackPath(id, hint)
+		if errors.Is(err, errKeptInReadFolder) {
+			kept = append(kept, id)
+			continue
+		}
 		if err != nil {
 			log.Printf("library-trash: resolve %q failed: %v", id, err)
 			failed = append(failed, trashFailure{SubsonicTrackID: id, Reason: fmt.Sprintf("path resolution failed: %v", err)})
@@ -380,5 +412,6 @@ func handleLibraryTrash(w http.ResponseWriter, r *http.Request) {
 		"ok":      resp.OK,
 		"trashed": resp.Trashed,
 		"failed":  resp.Failed,
+		"kept":    kept,
 	})
 }

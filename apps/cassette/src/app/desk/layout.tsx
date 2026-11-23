@@ -8,7 +8,7 @@ import { isTokenMode } from "@/lib/player-client";
 import { HUB_IN_REACH } from "@/lib/hub-origin";
 import { DeskShell } from "./DeskShell";
 import { deskWindow } from "./source";
-import { webFlags } from "./web";
+import { webFlags, webHasPurchases } from "./web";
 import { deskUser } from "./session";
 
 /**
@@ -32,14 +32,16 @@ export const dynamic = "force-dynamic";
 /**
  * Studio and admin, for the account menu's jumps. On the web Studio is offered to anyone with a room and every
  * site admin, called "Studio" for everyone. The paired app reads the same rule from the cloud's shell read
- * (`studio`), falling back to the artist and admin flags when an older cloud doesn't send it.
+ * (`studio`), falling back to the artist and admin flags when an older cloud doesn't send it. And whether the
+ * account has bought anything, for Purchases (shown only then, the founder 2026-11-21).
  */
-async function flags(userId: string): Promise<[{ show: boolean; label: "Studio" }, boolean]> {
+async function flags(userId: string): Promise<[{ show: boolean; label: "Studio" }, boolean, boolean]> {
   if (isTokenMode()) {
     const shell = await loadDashboardShell();
-    return [{ show: shell?.studio ?? (!!shell?.isCreator || !!shell?.isAdmin), label: "Studio" }, !!shell?.isAdmin];
+    return [{ show: shell?.studio ?? (!!shell?.isCreator || !!shell?.isAdmin), label: "Studio" }, !!shell?.isAdmin, !!shell?.hasPurchases];
   }
-  return webFlags(userId);
+  const [[studio, admin], bought] = await Promise.all([webFlags(userId), webHasPurchases(userId).catch(() => true)]);
+  return [studio, admin, bought];
 }
 
 export default async function DeskLayout({ children }: { children: ReactNode }) {
@@ -48,13 +50,14 @@ export default async function DeskLayout({ children }: { children: ReactNode }) 
   // keeps its library window, and so does a local dev server that reaches its own hub.
   if (!isTokenMode() && !HUB_IN_REACH) redirect("/account");
   const user = await deskUser();
-  const [data, [studio, isAdmin]] = await Promise.all([deskWindow(user.id, user.name), flags(user.id)]);
+  const [data, [studio, isAdmin, hasPurchases]] = await Promise.all([deskWindow(user.id, user.name), flags(user.id)]);
   // studioLabel rides on the account to the rail's menu (desk/Sidebar.tsx reads it; DeskAccount stays as it is)
   const account = {
     user: { name: user.name, email: user.email, image: user.image, avatarPreset: user.avatarPreset },
     isCreator: studio.show,
     studioLabel: studio.label,
     isAdmin,
+    hasPurchases,
   };
   return (
     <ShellProvider isBetaTester library={false}>

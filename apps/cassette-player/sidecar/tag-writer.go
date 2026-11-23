@@ -55,6 +55,9 @@ var errSongHeld = errors.New("song held on the hub side")
 // a file outside the music folder. A file whose owner-write permission is off
 // was set that way on purpose, and a rename would have rewritten it anyway.
 func songHeld(path string) error {
+	if inLinkedFolder(path) {
+		return fmt.Errorf("%w: it is in a folder Cassette only reads", errSongHeld)
+	}
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return err
@@ -284,6 +287,9 @@ func rewriteKeepingMetadata(path string, fill func(io.Writer) error) error {
 	if err != nil {
 		return err
 	}
+	if inLinkedFolder(path) {
+		return fmt.Errorf("%w: it is in a folder Cassette only reads", errSongHeld)
+	}
 	if err := songHeldInfo(fi); err != nil {
 		return err
 	}
@@ -297,6 +303,11 @@ func rewriteKeepingMetadata(path string, fill func(io.Writer) error) error {
 // carry, and the temp is fsynced and renamed over path. On any error the temp
 // is removed and path is untouched.
 func writeViaTemp(path string, mode os.FileMode, fill func(io.Writer) error, finish func(tmp *os.File) error) error {
+	// The backstop for every file the hub writes: nothing, by any path, lands in a folder Cassette only
+	// reads (library-folders.go). songHeld and folderArtAllowed refuse first; this catches anything else.
+	if inLinkedFolder(path) {
+		return fmt.Errorf("%w: %s is in a folder Cassette only reads", errSongHeld, path)
+	}
 	dir := filepath.Dir(path)
 	base := filepath.Base(path)
 	tmp, err := os.CreateTemp(dir, base+".cassette.tmp.*")

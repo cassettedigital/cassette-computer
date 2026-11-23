@@ -286,14 +286,23 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState, progress resolve
 		dirty = true
 	}
 
-	info, statErr := os.Stat(sidecarMusicDir)
-	if statErr != nil {
-		log.Printf("MBID resolver: music dir %q not accessible (%v); skipping pass.",
-			sidecarMusicDir, statErr)
-		return 0, dirty, nil
+	// The Cassette folder, then every folder Cassette reads that's here. Songs in a read folder are
+	// identified like any other, and their match is held on the hub's side: songHeld refuses the tag
+	// write and folderArtAllowed the pictures (library-folders.go).
+	var roots []string
+	if info, statErr := os.Stat(sidecarMusicDir); statErr != nil {
+		log.Printf("MBID resolver: music dir %q not accessible (%v); skipping it.", sidecarMusicDir, statErr)
+	} else if !info.IsDir() {
+		log.Printf("MBID resolver: music dir %q is not a directory; skipping it.", sidecarMusicDir)
+	} else {
+		roots = append(roots, sidecarMusicDir)
 	}
-	if !info.IsDir() {
-		log.Printf("MBID resolver: music dir %q is not a directory; skipping pass.", sidecarMusicDir)
+	for _, root := range linkedRoots() {
+		if linkedFolderHere(root) {
+			roots = append(roots, root)
+		}
+	}
+	if len(roots) == 0 {
 		return 0, dirty, nil
 	}
 
@@ -315,7 +324,8 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState, progress resolve
 	var candidates []resolverCandidate
 
 	walkStart := time.Now()
-	walkErr := filepath.WalkDir(sidecarMusicDir, func(path string, d fs.DirEntry, walkErr error) error {
+	var root string // the folder being walked
+	visit := func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			log.Printf("MBID resolver: walk error at %q: %v", path, walkErr)
 			return nil
@@ -328,7 +338,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState, progress resolve
 		}
 		// Read-only files (M4A) are identified but never written to or beside, so
 		// they skip both folder backfills and the tag write below.
-		writable := isSupportedAudio(path)
+		writable := isSupportedAudio(path) && !inLinkedFolder(path)
 
 		// Fast Album Art backfill: ensure this album folder has a cover
 		// image, materialized from the embedded art of one of its tracks.
@@ -340,7 +350,7 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState, progress resolve
 		// library root itself.
 		if dir := filepath.Dir(path); writable && !coveredDirs[dir] {
 			coveredDirs[dir] = true
-			if filepath.Clean(dir) != filepath.Clean(sidecarMusicDir) && folderArtAllowed(dir) {
+			if filepath.Clean(dir) != filepath.Clean(root) && folderArtAllowed(dir) {
 				if wrote, mErr := materializeCoverForAlbumDir(dir); mErr != nil {
 					log.Printf("cover-art: backfill failed for %q: %v", dir, mErr)
 				} else if wrote {
@@ -397,7 +407,13 @@ func resolveMBIDsOnce(ctx context.Context, state *SidecarState, progress resolve
 		}
 		candidates = append(candidates, resolverCandidate{path: path, mtime: currentMtime})
 		return nil
-	})
+	}
+	var walkErr error
+	for _, root = range roots {
+		if walkErr = filepath.WalkDir(root, visit); walkErr != nil {
+			break // out of time: the next pass carries on
+		}
+	}
 
 	// The songs to check are known: tell progress before the first lookup.
 	if progress != nil && walkErr == nil {

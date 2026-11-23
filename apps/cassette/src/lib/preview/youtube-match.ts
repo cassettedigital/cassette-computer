@@ -109,6 +109,34 @@ export function normalize(s: string): string {
     .trim();
 }
 
+/** Scripts written without spaces between words: there a song's name can sit right against the next word
+ *  ("王力宏心跳MV", "米津玄師Lemon") and still be all of it. */
+const UNSPACED = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}\p{Script=Tibetan}]/u;
+const charBefore = (s: string, i: number): string | undefined => {
+  if (i <= 0) return undefined;
+  const c = s.charCodeAt(i - 1);
+  return c >= 0xdc00 && c <= 0xdfff && i >= 2 ? String.fromCodePoint(s.codePointAt(i - 2)!) : s[i - 1];
+};
+const charAt = (s: string, i: number): string | undefined => (i >= s.length ? undefined : String.fromCodePoint(s.codePointAt(i)!));
+const wordEdge = (c: string | undefined) => c === undefined || c === " " || UNSPACED.test(c);
+
+/**
+ * Whether `needle` sits in `hay` as whole words, both already normalize()d (BUG-1074). A plain substring let a
+ * song called "C#-" ("c") take "Avishai Cohen - Avisale A Mi Vecina", "É" take "Diante do Rei (Queremos Deus)",
+ * "Я" take "Надя" and "Intro" take "Introducción a SOMOS": a song's name has to end where a word ends. Next to
+ * a letter of a script written without spaces (UNSPACED), or when the name's own edge is one, any neighbour
+ * will do, since those scripts never mark where a word ends.
+ */
+export function containsAsWords(hay: string, needle: string): boolean {
+  if (!needle) return false;
+  const headOpen = UNSPACED.test(charAt(needle, 0) ?? "");
+  const tailOpen = UNSPACED.test(charBefore(needle, needle.length) ?? "");
+  for (let i = hay.indexOf(needle); i >= 0; i = hay.indexOf(needle, i + 1)) {
+    if ((headOpen || wordEdge(charBefore(hay, i))) && (tailOpen || wordEdge(charAt(hay, i + needle.length)))) return true;
+  }
+  return false;
+}
+
 /** Drop a leading "Artist - " / "Artist – " prefix (Discogs titles its videos
  *  "Artist - Title (...)"). Bounded to ≤40 chars so it can't eat a real title. */
 function stripArtistPrefix(title: string): string {
@@ -294,8 +322,9 @@ interface Scored {
  *     (official videos carry intros/outros — the 222s album cut vs the 259s
  *     "Lorde - Perfect Places" video). Only a wild >150s gap (full-album upload)
  *     is rejected.
- *   • substring-only match → require a TIGHT duration (≤12s), because a short
- *     title is a substring of a different song ("Sober" ⊂ "Sober II") and only a
+ *   • the title as whole words inside a longer one (containsAsWords: "C#-" is
+ *     not inside "Cohen", BUG-1074) → require a TIGHT duration (≤12s), because a
+ *     short title is part of a different song's ("Sober" in "Sober II") and only a
  *     near-identical length makes it safe.
  * Either way the upload must be the song's own version (versionAgreement): a
  * remix, an extended or numbered mix, an edit or a demo of a song is not it.
@@ -313,7 +342,7 @@ function scoreCandidates(track: TrackForMatch, videos: DiscogsVideo[]): Scored[]
     const full = normalize(foldAmpersand(v.title));
     const stripped = normalize(foldAmpersand(stripArtistPrefix(v.title)));
     const exact = full === normTitle || stripped === normTitle;
-    const contains = full.includes(normTitle) || stripped.includes(normTitle);
+    const contains = containsAsWords(full, normTitle) || containsAsWords(stripped, normTitle);
     if (!exact && !contains) continue;
 
     const diff =
@@ -352,6 +381,12 @@ function better(a: Scored, b: Scored | null): boolean {
 
 function toMatched(s: Scored | null): MatchedVideo | null {
   return s ? { videoId: s.videoId, url: watchUrl(s.videoId), kind: s.kind } : null;
+}
+
+/** Whether this one upload could be the track at all, by the rules that pick one (title, length, version):
+ *  what a stored match is held to again when its video is looked up again (owned-video-fill.ts stillMatches). */
+export function isMatchFor(track: TrackForMatch, video: DiscogsVideo): boolean {
+  return scoreCandidates(track, [video]).length > 0;
 }
 
 /** Choose the best Discogs video for one track, regardless of kind. */

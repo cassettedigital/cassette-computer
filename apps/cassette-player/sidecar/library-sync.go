@@ -365,6 +365,17 @@ func syncLibraryInventory(token string, syncMode string, state *SidecarState) (t
 		}
 	}
 
+	// A drive that's unplugged or a NAS that's asleep looks empty, and a full sync tells the cloud that
+	// whatever it didn't list is gone, so every phone would drop those songs. While any folder of the
+	// library is away, only what's here goes up; nothing is marked gone until every folder answers again
+	// (library-folders.go, #1163). Checked after the list is read, so a drive that left mid-read counts.
+	if syncMode == "full" {
+		if away := awayFolders(state); len(away) > 0 {
+			log.Printf("Library sync: %d folder(s) away (%s); sending what's here, removing nothing", len(away), strings.Join(away, ", "))
+			syncMode = "delta"
+		}
+	}
+
 	payload := librarySyncPayload{
 		Tracks:         tracks,
 		SyncMode:       syncMode,

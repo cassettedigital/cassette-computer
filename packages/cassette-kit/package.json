@@ -12,6 +12,7 @@
     "./tokens.json": "./tokens.json",
     "./taste.module.css": "./src/taste.module.css",
     "./images": "./src/images.ts",
+    "./app-icon": "./src/app-icon.generated.ts",
     "./picture": "./src/Picture.tsx",
     "./play-over": "./src/PlayOver.tsx"
   },

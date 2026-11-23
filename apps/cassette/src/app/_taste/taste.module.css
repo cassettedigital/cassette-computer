@@ -4,9 +4,11 @@
  * one recipe each, the calls in the founder-approved list).
  *
  * F1 one orange: the site kit's skinned accent, var(--cs-orange), text on it var(--cs-on-accent). It
- * follows the account skin everywhere, the homepage included. On the product pages it means live state
- * only (something playing). A record's own colour arrives as --accent-c, and its text-safe version (lifted
- * to 4.5:1 on the paper) as --accent-ink.
+ * follows the account skin everywhere, the homepage included. It marks what is live or playing, progress,
+ * selection, an "on" switch, the italic answer in a heading on a page not about one record, and the
+ * masthead's one call to action; never the fill of an ordinary key (the system's colour roles, 2026-11-22).
+ * A record's own colour arrives as --accent-c, and its text-safe version (lifted to 4.5:1 on the paper) as
+ * --accent-ink.
  *
  * F2 ink: four steps per stock (ink-e, ink-2 .74, ink-3 .56 the lowest step for text, .62 on the light
  * stock so it still reads 4.5:1 there, ink-4 .38 for tracks and rules, never text), plus a wash for hover

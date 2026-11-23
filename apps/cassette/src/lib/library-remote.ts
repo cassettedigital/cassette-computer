@@ -26,11 +26,14 @@ export type TrashTrack = {
   trackNumber?: number;
 };
 
-/** Per-track outcome from the sidecar. `failed` is empty on full success. */
+/** Per-track outcome from the sidecar. `failed` is empty on full success. `kept` are songs in a folder
+ *  Cassette reads where it is (board #1163): they leave the library and their files stay put. An older hub
+ *  sends no `kept`. */
 export type TrashResult = {
   ok: boolean;
   trashed: string[];
   failed: Array<{ subsonicTrackId: string; reason: string }>;
+  kept?: string[];
 };
 
 /**
@@ -255,3 +258,65 @@ export async function revealInLibrary(songId: string, what: "song" | "record"): 
     return false;
   }
 }
+
+/** One of the library's folders, as the hub sees it right now. `here: false` is a drive that's unplugged or a
+ *  network drive that's asleep: away, never emptied. */
+export type HubFolder = { path: string; here: boolean; network?: boolean };
+
+/** A move of the Cassette folder under way (or just failed). */
+export type FolderMove = {
+  from: string;
+  to: string;
+  phase: "copying" | "switching" | "error";
+  doneBytes: number;
+  totalBytes: number;
+  error?: string;
+};
+
+/** Where the music lives (board #1163): the Cassette folder, where adds and rips land and the only one the hub
+ *  writes into, and the folders Cassette reads where they are. `movedFrom` is an old Cassette folder a finished
+ *  move left in place for the person to put away. */
+export type LibraryFolders = {
+  cassette: HubFolder;
+  linked: HubFolder[];
+  move?: FolderMove;
+  movedFrom?: string;
+};
+
+/** The library's folders from the hub. Null when the hub isn't reachable, or is older than this feature. */
+export async function fetchLibraryFolders(): Promise<LibraryFolders | null> {
+  try {
+    const r = await hubFetch(`/api/library/folders`);
+    if (!r.ok) return null;
+    const d = (await r.json().catch(() => null)) as (Partial<LibraryFolders> & { ok?: boolean }) | null;
+    if (!d?.cassette || typeof d.cassette.path !== "string") return null;
+    return { cassette: d.cassette, linked: d.linked ?? [], move: d.move, movedFrom: d.movedFrom };
+  } catch {
+    return null;
+  }
+}
+
+/** A folder change's answer: `error` is already in words for the person. */
+export type FolderChange = { ok: boolean; error?: string };
+
+async function folderCall(route: "add" | "remove" | "move", path: string): Promise<FolderChange> {
+  try {
+    const r = await hubFetch(`/api/library/folders/${route}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    const d = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string; message?: string };
+    if (r.ok && d.ok) return { ok: true };
+    return { ok: false, error: d.message ?? d.error ?? "Cassette couldn't do that." };
+  } catch {
+    return { ok: false, error: "Your computer didn't answer. Is Cassette open on it?" };
+  }
+}
+
+/** Read a folder where it is. Nothing in it is ever moved or written to. */
+export const addReadFolder = (path: string) => folderCall("add", path);
+/** Stop reading a folder. Its files stay exactly where they are. */
+export const removeReadFolder = (path: string) => folderCall("remove", path);
+/** Move the Cassette folder into (or to) `path`. Progress shows on fetchLibraryFolders. */
+export const moveMusicFolder = (path: string) => folderCall("move", path);

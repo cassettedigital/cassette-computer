@@ -302,11 +302,11 @@ func newLocalMux(authURL string, pairing *pairingHandler) *http.ServeMux {
 	// reads (status.json, contributions) stay GET.
 	mux.HandleFunc("/api/rip/status.json", corsMiddleware(handleRipStatus))
 	mux.HandleFunc("/api/rip/detect", corsMiddleware(postOnly(handleRipDetect)))
-	mux.HandleFunc("/api/rip/start", corsMiddleware(mainOnly(postOnly(handleRipStart))))
+	mux.HandleFunc("/api/rip/start", corsMiddleware(musicFolderReady(mainOnly(postOnly(handleRipStart)))))
 	// /api/rip/confirm — the user picked a release from the "confirm" pick-list
 	// (POST {releaseMbid}) or chose to import the disc as unknown
 	// (POST {importUnknown:true}). Same cross-origin allowlist as the others.
-	mux.HandleFunc("/api/rip/confirm", corsMiddleware(mainOnly(postOnly(handleRipConfirm))))
+	mux.HandleFunc("/api/rip/confirm", corsMiddleware(musicFolderReady(mainOnly(postOnly(handleRipConfirm)))))
 	// /api/rip/search — free-text album search (MusicBrainz + iTunes) so a disc
 	// the resolver is unsure about can be found by hand before import-as-unknown
 	// (JOB 4). Selection flows back through /api/rip/confirm.
@@ -380,19 +380,25 @@ func newLocalMux(authURL string, pairing *pairingHandler) *http.ServeMux {
 	// Now): blocks until the disk re-read + full sync completes, so the caller can
 	// re-report inventory against current truth.
 	mux.HandleFunc("/api/library/converge", corsMiddleware(mainOnly(handleLibraryConverge)))
-	mux.HandleFunc("/api/library/upload", corsMiddleware(mainOnly(handleLibraryUpload)))
+	mux.HandleFunc("/api/library/upload", corsMiddleware(musicFolderReady(mainOnly(handleLibraryUpload))))
 	// Explicit "replace this album's cover" — the one path allowed to
 	// overwrite an existing cover.* (see replaceFolderCover, cover-art.go).
-	mux.HandleFunc("/api/library/cover/replace", corsMiddleware(mainOnly(handleLibraryCoverReplace)))
+	mux.HandleFunc("/api/library/cover/replace", corsMiddleware(musicFolderReady(mainOnly(handleLibraryCoverReplace))))
 	// Explicit "replace this artist's local photo" — same contract, one
 	// folder level up (see replaceArtistFolderPhoto, cover-art.go).
-	mux.HandleFunc("/api/library/artist-photo/replace", corsMiddleware(mainOnly(handleLibraryArtistPhotoReplace)))
+	mux.HandleFunc("/api/library/artist-photo/replace", corsMiddleware(musicFolderReady(mainOnly(handleLibraryArtistPhotoReplace))))
 	mux.HandleFunc("/api/library/artist-photo", corsMiddleware(handleLibraryArtistPhoto))
 	// "This Mac" dashboard surface: GET /info reports the library folder, its
 	// on-disk footprint (cached walk), and the build version; POST /reveal opens
 	// that folder in Finder. Same cross-origin allowlist as the routes above.
 	mux.HandleFunc("/api/library/info", corsMiddleware(handleLibraryInfo))
 	mux.HandleFunc("/api/library/reveal", corsMiddleware(handleLibraryReveal))
+	// Where the music lives (library-folders.go, #1163): the Cassette folder and the folders Cassette
+	// reads where they are. Add, remove and move change the library, so they're the main computer's.
+	mux.HandleFunc("/api/library/folders", corsMiddleware(handleLibraryFolders))
+	mux.HandleFunc("/api/library/folders/add", corsMiddleware(mainOnly(handleLibraryFoldersAdd)))
+	mux.HandleFunc("/api/library/folders/remove", corsMiddleware(mainOnly(handleLibraryFoldersRemove)))
+	mux.HandleFunc("/api/library/folders/move", corsMiddleware(mainOnly(handleLibraryFoldersMove)))
 
 	// Menu-bar card quick actions: favorite + add-to-playlist. Thin wrappers over
 	// the CLOUD sync API (the web dashboard's store), reusing the bearer token +

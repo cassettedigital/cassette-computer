@@ -17,6 +17,7 @@ import { Art, artistCovers, trackCovers } from "./Art";
 import { useDesk } from "./DeskShell";
 import { useOwned } from "./owned";
 import { useSongs } from "./songs";
+import { dragSongs } from "./drag";
 import { AlbumTile, PlaylistTile, StationTile, artistCount, len, useLook, useRecordMenu, useSongsMenu } from "./Shelves";
 import { DESK, deskAlbum, deskArtist, deskArtistOf, type DeskAlbum, type OwnedTrack } from "./types";
 import d from "./desk.module.css";
@@ -180,6 +181,7 @@ export function Search() {
             })}
             onPlay={(i) => playSong(shownSongs[i])}
             menu={(i, picked) => songsMenu(picked.map((x) => shownSongs[x]), { play: [{ label: "Play", onSelect: () => playSong(shownSongs[i]), disabled: !shownSongs[i].subsonicTrackId }] })}
+            dragOut={(_, picked, e) => dragSongs(e, () => picked.map((x) => shownSongs[x]).filter((x) => !!x), { now: true })}
           />
         </section>
       )}

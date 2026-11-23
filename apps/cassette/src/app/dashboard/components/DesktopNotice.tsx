@@ -3,8 +3,9 @@
 /**
  * DesktopNotice: what the desktop app shows in place of a page that can't show its real content there right
  * now. It needs NO database and NO cloud round-trip, so it renders at once even with the web unreachable.
- * Drawn in the player's look on its own panel (the kit's following paper), so it reads the same in the
- * desk's window and anywhere else the app still draws it.
+ * Drawn as a settings page is (settings/_parts: the page's heading, then a short head, its line and the
+ * key), on the window's own paper. It was its own paper panel, whose paper is at least a window tall, so
+ * the page's name sat low in a shaded box over a gap of nothing (BUG-1101, the design audit 2026-11-22).
  *
  * Two uses, same shape:
  *
@@ -23,8 +24,7 @@
 
 import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heading, KitProvider, Key, Notice, tokens as kit, type KitLinkProps } from "@discovery/cassette-kit";
-import t from "@/app/_taste/taste.module.css";
+import { Heading, KitProvider, Key, tokens as kit, type KitLinkProps } from "@discovery/cassette-kit";
 import { openOutside } from "@/lib/open-outside";
 import { PUBLIC_SITE_URL } from "@/lib/urls";
 import s from "@/app/settings/_parts/settings.module.css";
@@ -54,11 +54,15 @@ export function DesktopNotice({
   const onWeb = web ?? (/on the web/i.test(cardTitle) ? pathname : null);
   return (
     <KitProvider link={KitLink}>
-      {/* its own paper and panel, so the words read wherever it is drawn (the desk's window, an older frame) */}
-      <div className={`${t.root} ${t.follows} ${kit.kit} ${kit.follow} ${s.notice}`} data-follows="">
-        <Heading as="h1" shout={pageTitle} tone="quiet" />
-        <div>
-          <Notice head={cardTitle} line={body}>
+      {/* the kit's colours ride along, so the words read in any frame the app draws it in */}
+      <div className={`${kit.kit} ${kit.follow} ${s.page}`} data-fill="">
+        <header className={s.head}>
+          <Heading as="h1" shout={pageTitle} tone="quiet" />
+        </header>
+        <section className={s.emptyWords} aria-label={cardTitle}>
+          <h2 className={s.emptyHead}>{cardTitle}</h2>
+          <p className={s.emptyLine}>{body}</p>
+          <div className={s.emptyKeys}>
             {onWeb && (
               <Key tone="fill" onClick={() => openOutside(`${PUBLIC_SITE_URL}${onWeb}`)}>
                 Open in your browser
@@ -74,8 +78,8 @@ export function DesktopNotice({
                 {cta.label}
               </Key>
             )}
-          </Notice>
-        </div>
+          </div>
+        </section>
       </div>
     </KitProvider>
   );

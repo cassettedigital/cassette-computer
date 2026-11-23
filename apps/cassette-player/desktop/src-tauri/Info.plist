@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged by Tauri into the app's own Info.plist. What macOS shows when Cassette first reads music kept on
+     an external drive or a network drive (board #1163: folders Cassette reads where they are, and a Cassette
+     folder moved to another drive). -->
+<plist version="1.0">
+<dict>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>Cassette plays the music you keep on this drive, where it is.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>Cassette plays the music you keep on this network drive, where it is.</string>
+</dict>
+</plist>

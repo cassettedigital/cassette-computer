@@ -7,6 +7,7 @@
  *                                     kit's --cs- names written from them), composed by apps/cassette's _taste
  *   generated/CassetteKitTokens.swift the iPhone app (same role names as AmperfyKit/CassetteTokens.swift)
  *   generated/CassetteKitTokens.kt    the Android app
+ *   src/app-icon.generated.ts         the app icon's material, for the web's drawings outside the taste CSS (AppIcon, the share image)
  *
  * Run `pnpm --filter @discovery/cassette-kit generate` (or `node generate.mjs` here). Pure: no network,
  * no dependencies.
@@ -127,12 +128,32 @@ for (const [k, v] of Object.entries(tasteType)) {
   if (smallest(v.size) < T.floor) throw new Error(`taste.type.${k} goes under the ${T.floor}px floor`);
 }
 
+// the app icon's material, as CSS: one string per layer (the taste pages' --icon-* below, and app-icon.generated.ts)
+const A = t.appIcon;
+const pct = (n) => `${+(n * 100).toFixed(3)}%`;
+const rgba = ([hex, a]) => `rgba(${rgbHex(hex).join(", ")}, ${a})`;
+const iconBody = `linear-gradient(180deg, ${A.body.map(([c, at]) => `${c} ${pct(at)}`).join(", ")})`;
+const iconSheen = `radial-gradient(${A.sheen.radius.map(pct).join(" ")} at ${A.sheen.centre.map(pct).join(" ")}, ${A.sheen.stops.map(([at, a]) => `${rgba([A.sheen.color, a])} ${pct(at)}`).join(", ")})`;
+const ofSide = (share, min) => `max(${min}px, ${+(share * 100).toFixed(3)}cqi)`;
+const edgeOff = ofSide(A.edge.offset, A.edge.minPx[0]);
+const edgeBlur = ofSide(A.edge.blur, A.edge.minPx[1]);
+const iconEdge = [
+  `inset ${edgeOff} ${edgeOff} ${edgeBlur} ${rgba(A.edge.lead)}`,
+  `inset calc(-1 * ${edgeOff}) calc(-1 * ${edgeOff}) ${edgeBlur} ${rgba(A.edge.trail)}`,
+  `inset 0 0 ${edgeBlur} ${rgba(A.edge.around)}`,
+].join(", ");
+const iconMask = `conic-gradient(${A.edge.mask.map(([deg, a]) => `rgba(0, 0, 0, ${a}) ${deg}deg`).join(", ")})`;
+
 const tc = [`/* ${HEAD} */`, "", "/* what every taste page shares, whatever its stock: the three faces, the corners and the type roles */", ".base {"];
 for (const [k, v] of Object.entries(T.face)) tc.push(`  --f-${k}: ${t.face[v].web};`);
 for (const [k, v] of Object.entries(tasteRadius)) tc.push(`  --r-${kebab(k)}: ${v}px;`);
 // a station's own mark, rounded like an app icon wherever it stands for the station (the founder, 2026-11-16: "the
 // 'app icon' styling"): the player kit's own shape, so the web pages round it as the Mac app and the phones do
 for (const [k, v] of Object.entries(t.shape)) tc.push(`  --r-${kebab(k)}: ${+(v * 100).toFixed(4)}%;`);
+// the app icon's material (appIcon; the founder's pick, 2026-11-23), which the page-title tile wears: its body, its
+// sheen, and the light along its edge through the mask that pools it at two corners. The edge's lengths are shares
+// of the tile's side, written in cqi, so the tile is its own container (pagetitle.module.css).
+tc.push(`  --icon-body: ${iconBody};`, `  --icon-sheen: ${iconSheen};`, `  --icon-edge: ${iconEdge};`, `  --icon-edge-mask: ${iconMask};`);
 for (const [k, v] of Object.entries(tasteType)) {
   tc.push(`  --t-${kebab(k)}: ${v.weight} ${sizeOf(v.size)} / ${v.line} var(--f-${v.face});`);
   if (v.track != null) tc.push(`  --t-${kebab(k)}-track: ${v.track}em;`);
@@ -394,6 +415,22 @@ fs.mkdirSync(path.join(here, "generated"), { recursive: true });
 fs.writeFileSync(path.join(here, "generated", "CassetteKitTokens.swift"), sw.join("\n"));
 fs.writeFileSync(path.join(here, "generated", "CassetteKitTokens.kt"), kt.join("\n"));
 fs.writeFileSync(path.join(here, "src", "images.generated.ts"), ts.join("\n"));
+// the app icon's material for the web's drawings outside the taste pages' CSS: Brand.tsx's AppIcon draws it in SVG
+// from the numbers, the share image (next/og) takes the body and sheen as CSS
+const { $about: _about, ...material } = A;
+fs.writeFileSync(
+  path.join(here, "src", "app-icon.generated.ts"),
+  [
+    `// ${HEAD}`,
+    "",
+    "/** The app icon's material (tokens.json `appIcon`): colours are [hex, opacity], lengths shares of the tile's side. */",
+    `export const APP_ICON = ${JSON.stringify(material)} as const;`,
+    "/** Its body and its sheen as CSS backgrounds, for a drawing that takes CSS but not the taste pages' --icon-* (next/og). */",
+    `export const APP_ICON_BODY = ${JSON.stringify(iconBody)};`,
+    `export const APP_ICON_SHEEN = ${JSON.stringify(iconSheen)};`,
+    "",
+  ].join("\n"),
+);
 // The iPhone app compiles the Swift file from inside its own repo (the Amperfy fork, a separate public
 // checkout under apps/cassette-player-ios/amperfy, its own git), so it gets a copy beside its hand-kept
 // tables when that checkout is here. Commit the copy in the fork after a change.
