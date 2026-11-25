@@ -47,7 +47,7 @@ function Sheet({ children }: { children: ReactNode }) {
   const rootRef = useRef<HTMLDivElement>(null);
   useReviewPaper(rootRef);
   return (
-    <div ref={rootRef} id="top" className={`${t.root} ${t.follows} ${f.sheet}`} data-follows="" data-focus-sheet="">
+    <div ref={rootRef} id="top" className={`${t.root} ${t.follows} ${f.sheet}`} data-follows="" data-focus-sheet="" data-density="page">
       <main className={t.body}>
         <p className={f.mark}>
           <LogoMark className={f.logo} />

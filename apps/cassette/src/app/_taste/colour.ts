@@ -10,7 +10,8 @@
  *
  * Covers are read at the image ladder's smallest size, which the edge lets any page read the pixels of
  * (docs/reference/CASSETTE_IMAGES.md), and cached per cover. A grey cover (saturation under 0.12), an unreadable one or none has no colour to give, so it
- * takes the paper's brass.
+ * paints in the paper's ink, NO_COLOUR, and so does every record before its colour is read: its first paint is ink, then
+ * its colour (the founder's D12 A, 2026-11-22: "Ink; brass for quotes"). Brass is only for other people's quoted words.
  */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
@@ -18,8 +19,14 @@ import { IMAGE_RUNGS } from "@discovery/cassette-kit/images";
 import { mediaUrl } from "@/lib/image-url";
 import { ladderSrc } from "@/lib/images/picture";
 
-/** The paper's own light, used when the record gives no colour. */
+/** The paper's own light, for other people's quoted words only (D12); never a record's colour. */
 export const BRASS = "#c9a25a";
+/**
+ * A record with no colour of its own, and every record before its colour is read: the paper's ink (D12). A CSS value,
+ * the taste pages' --record-ink (generated from tokens.json: each paper's ink, chosen by the paper it sits on), so it
+ * holds on whichever paper a part is drawn; the current text colour where a page has no taste roles.
+ */
+export const NO_COLOUR = "var(--record-ink, currentColor)";
 /** Cassette's flat stock, the lighter of the two dark stocks, for contrast checks. */
 const OWN = "#1c1914";
 /** The light card stock, the darker of the two light stocks, for contrast checks on the light paper. */
@@ -114,15 +121,16 @@ export function contrast(a: string, b: string): number {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
-/** The record's accent: the cover's colour brightened for the dark paper; the brass when it has none. */
+/** The record's accent: the cover's colour brightened for the dark paper; the paper's ink when it has none (D12). */
 export function accentOf(hex: string | null | undefined): string {
-  if (!isHex(hex) || hex.toLowerCase() === READ_FAILED || saturation(hex) < 0.12) return BRASS;
+  if (!isHex(hex) || hex.toLowerCase() === READ_FAILED || saturation(hex) < 0.12) return NO_COLOUR;
   return brighten(hex);
 }
 
-/** The accent made safe for type: lifted until it reads at 4.5:1 or better on the lighter of the two dark stocks. */
+/** The accent made safe for type: lifted until it reads at 4.5:1 or better on the lighter of the two dark stocks. No
+ *  colour stays the paper's ink, which reads on either paper. */
 export function inkOf(accent: string): string {
-  if (!isHex(accent)) return BRASS;
+  if (!isHex(accent)) return NO_COLOUR;
   const [h, s, l0] = hexToHsl(accent);
   let l = l0;
   let out = accent;
@@ -149,7 +157,8 @@ function onCream(accent: string, min: number): string {
 /** A record's colour (an accentOf result) as a page sets it, --accent-c and --accent-ink, each in a
  *  version for both papers (light-dark(), read where a part uses it). */
 export function accentVars(accent: string): CSSProperties {
-  const a = isHex(accent) ? accent : BRASS;
+  if (!isHex(accent)) return { "--accent-c": NO_COLOUR, "--accent-ink": NO_COLOUR } as CSSProperties;
+  const a = accent;
   return {
     "--accent-c": `light-dark(${onCream(a, 3)}, ${a})`,
     "--accent-ink": `light-dark(${onCream(a, 4.5)}, ${inkOf(a)})`,
@@ -168,7 +177,7 @@ async function readable(src: string): Promise<HTMLImageElement> {
 
 async function extract(url: string): Promise<string> {
   // the smallest size, else the original should the ladder not answer; a host that allows neither
-  // takes the paper's brass
+  // has no colour to give (the paper's ink)
   const small = coverAt(url, 120);
   const img = await readable(small).catch((e) => (small === mediaUrl(url) ? Promise.reject(e) : readable(mediaUrl(url))));
 
@@ -209,12 +218,12 @@ async function extract(url: string): Promise<string> {
   return hslToHex(h, s, l);
 }
 
-/** One cover's accent (the album page). BRASS until the read lands. */
+/** One cover's accent (the album page). The paper's ink until the read lands (D12: first paint is ink). */
 export function useCoverAccent(src: string | null | undefined): string {
-  const [accent, setAccent] = useState(BRASS);
+  const [accent, setAccent] = useState(NO_COLOUR);
   useEffect(() => {
     if (!src) {
-      setAccent(BRASS);
+      setAccent(NO_COLOUR);
       return;
     }
     let live = true;
@@ -233,7 +242,7 @@ export function useCoverAccent(src: string | null | undefined): string {
  * Many covers' accents, keyed (the artist page), read only for the `keys` asked for: the lead record at
  * once, then each record as a person points at it or opens it. Reading a colour costs one small resized
  * copy of the cover, so a long list never reads them all. Each is accentOf(c), the same colour the
- * record's own page shows: BRASS for grey or unreadable covers.
+ * record's own page shows: NO_COLOUR (the paper's ink) for grey or unreadable covers.
  */
 export function useCoverColours(items: Array<{ key: string; src: string | null | undefined }>, keys: Array<string | null | undefined>): Record<string, string> {
   const [colours, setColours] = useState<Record<string, string>>({});
@@ -247,7 +256,7 @@ export function useCoverColours(items: Array<{ key: string; src: string | null |
     if (!item) return;
     asked.current.add(key);
     if (!item.src) {
-      setColours((m) => ({ ...m, [key]: BRASS }));
+      setColours((m) => ({ ...m, [key]: NO_COLOUR }));
       return;
     }
     void coverColor(item.src).then((c) => setColours((m) => ({ ...m, [key]: accentOf(c) })));

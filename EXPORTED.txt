@@ -1,4 +1,4 @@
-# Cassette for your computer 0.5.53, exported from Cassette's own repository at 01410a33bd58459ec4553ece170b0eb9760050f5.
+# Cassette for your computer 0.5.54, exported from Cassette's own repository at 557fa19110609e3153c0fd795ef7acd2c8462bc1.
 # One line per file: where it came from, then its path.
 #   engine: the computer app's own folder; desk: a player screen or what it imports, as the website runs it;
 #   stand-in / public copy: the public copy's own file in place of the website's; package, config, asset, made.
@@ -486,7 +486,6 @@ desk	apps/cassette/src/app/_taste/cover.module.css
 desk	apps/cassette/src/app/_taste/Cover.tsx
 desk	apps/cassette/src/app/_taste/CoverGlass.tsx
 desk	apps/cassette/src/app/_taste/CoverGlow.tsx
-desk	apps/cassette/src/app/_taste/disclosures.ts
 desk	apps/cassette/src/app/_taste/dock.module.css
 desk	apps/cassette/src/app/_taste/Dock.tsx
 desk	apps/cassette/src/app/_taste/doors.module.css
@@ -737,7 +736,13 @@ desk	apps/cassette/src/app/desk/DeskDrop.tsx
 desk	apps/cassette/src/app/desk/DeskShell.tsx
 desk	apps/cassette/src/app/desk/devices/page.tsx
 desk	apps/cassette/src/app/desk/disc.tsx
+desk	apps/cassette/src/app/desk/disc/disc.states.drawn.json
+desk	apps/cassette/src/app/desk/disc/disc.states.ts
+desk	apps/cassette/src/app/desk/disc/DiscStates.tsx
+desk	apps/cassette/src/app/desk/disc/DiscView.tsx
+desk	apps/cassette/src/app/desk/disc/look.ts
 desk	apps/cassette/src/app/desk/disc/page.tsx
+desk	apps/cassette/src/app/desk/disc/states.module.css
 desk	apps/cassette/src/app/desk/Discover.tsx
 desk	apps/cassette/src/app/desk/discover/loading.tsx
 desk	apps/cassette/src/app/desk/discover/page.tsx
@@ -746,8 +751,10 @@ desk	apps/cassette/src/app/desk/Editors.tsx
 desk	apps/cassette/src/app/desk/error.tsx
 desk	apps/cassette/src/app/desk/first-run.ts
 desk	apps/cassette/src/app/desk/home.ts
+desk	apps/cassette/src/app/desk/in-app-links.ts
 desk	apps/cassette/src/app/desk/keep-playing.tsx
 desk	apps/cassette/src/app/desk/layout.tsx
+desk	apps/cassette/src/app/desk/LeftTheApp.tsx
 desk	apps/cassette/src/app/desk/listening.ts
 desk	apps/cassette/src/app/desk/MadeForYou.tsx
 desk	apps/cassette/src/app/desk/mix/[id]/page.tsx
@@ -1008,11 +1015,14 @@ desk	packages/cassette-kit/src/Picture.tsx
 desk	packages/cassette-kit/src/playover.module.css
 desk	packages/cassette-kit/src/PlayOver.tsx
 desk	packages/cassette-kit/src/select.ts
+desk	packages/cassette-kit/src/system.css
 desk	packages/cassette-kit/src/taste.module.css
 desk	packages/cassette-kit/src/tip.module.css
 desk	packages/cassette-kit/src/Tip.tsx
 desk	packages/cassette-kit/src/tokens.module.css
 desk	packages/cassette-kit/src/word-initials.ts
+desk	packages/cassette-kit/system/types.ts
+desk	packages/cassette-kit/system/words.ts
 package	packages/cassette-kit/tokens.json
 package	packages/cassette-kit/tsconfig.json
 package	packages/storage/package.json
@@ -1033,6 +1043,7 @@ desk	packages/utils/src/sleep.ts
 desk	packages/utils/src/slugify.ts
 desk	packages/utils/src/url.ts
 package	packages/utils/tsconfig.json
+made	pnpm-lock.yaml
 public copy	pnpm-workspace.yaml
 public copy	README.md
 engine	SECURITY.md

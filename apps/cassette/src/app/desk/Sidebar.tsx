@@ -456,10 +456,11 @@ export function Sidebar({ slim, onSlim }: { slim: boolean; onSlim: (v: boolean) 
         <RailPlace href={`${DESK}/devices`} label="Devices" glyph="laptop" live={importing ? <ImportLive s={importing} /> : undefined} />
       </Places>
 
-      {/* a disc in the drive: one row, only while it's in (desk/disc.tsx) */}
-      <DiscRow slim={slim} />
-
       <Library slim={slim} />
+
+      {/* a disc in the drive: one row in a fixed seat at the sidebar's foot, only while it's in, so the library
+          list above never moves as a disc goes in or comes out (desk/disc.tsx, design wave 1c) */}
+      <DiscRow slim={slim} />
     </nav>
   );
 }

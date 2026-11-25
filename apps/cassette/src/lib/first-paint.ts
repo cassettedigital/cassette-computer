@@ -17,7 +17,6 @@ type PaintRoot = { setAttribute(name: string, value: string): void };
 type PaintStore = { getItem(key: string): string | null };
 type PaintWindow = { __cassetteDiag?: { consent?: boolean } };
 
-const THEME_KEY = "cs-theme";
 const PAPER_KEY = "cs-paper";
 const DIAGNOSTICS_KEY = "cs-diagnostics-consent";
 
@@ -28,19 +27,17 @@ export function firstPaintRan(win: PaintWindow): boolean {
 }
 
 /**
- * Put the saved settings on, as the root layout's scripts do: a skin other than Classic as data-theme, a held
- * light or dark as data-paper, and the diagnostics choice (anything but an explicit "off" is on, and a store
+ * Put the saved settings on, as the root layout's scripts do: a held light or dark as data-paper (no skin: a saved
+ * one is left where it is and never applied, the founder's D14), and the diagnostics choice (anything but an explicit "off" is on, and a store
  * that cannot be read is on too). Does nothing when the scripts already ran. True when it applied them.
  */
 export function reapplyFirstPaint(win: PaintWindow, root: PaintRoot, store: PaintStore | null): boolean {
   if (firstPaintRan(win)) return false;
   try {
-    const theme = store?.getItem(THEME_KEY);
     const paper = store?.getItem(PAPER_KEY);
-    if (theme && theme !== "classic") root.setAttribute("data-theme", theme);
     if (paper === "light" || paper === "dark") root.setAttribute("data-paper", paper);
   } catch {
-    // storage blocked: the page stays in the default skin and the device's own light or dark
+    // storage blocked: the page stays on the device's own light or dark
   }
   try {
     win.__cassetteDiag = { consent: store?.getItem(DIAGNOSTICS_KEY) !== "off" };

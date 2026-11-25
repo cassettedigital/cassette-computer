@@ -53,7 +53,7 @@ function Paper({ oldKit, account = true, rootRef, dock, children }: Body & { roo
   useReveal(rootRef);
   useReviewPaper(rootRef);
   return (
-    <div ref={rootRef} id="top" className={`${t.root} ${t.follows}`} data-follows="">
+    <div ref={rootRef} id="top" className={`${t.root} ${t.follows}`} data-follows="" data-density="page">
       <Masthead home="/" account={account} />
       <main className={oldKit ? `${t.body} ${f.oldKit}` : t.body} data-old-kit={oldKit ? "" : undefined}>
         {children}

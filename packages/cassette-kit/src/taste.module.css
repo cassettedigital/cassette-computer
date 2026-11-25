@@ -6,7 +6,7 @@
   --f-mono: var(--font-mono), "DM Mono", ui-monospace, monospace;
   --f-serif: var(--font-serif), "Newsreader", Georgia, serif;
   --r-small: 3px;
-  --r-card: 5px;
+  --r-card: var(--corner-card, 5px);
   --r-cover: 2px;
   --r-area: 24px;
   --r-pill: 999px;
@@ -32,6 +32,18 @@
   --t-link-track: 0.16em;
   --t-meta: 500 11px / 1.3 var(--f-mono);
   --t-meta-track: 0.08em;
+  --t-poster: 800 clamp(60px, 11cqi, 148px) / 0.86 var(--f-display);
+  --t-hero-name: 800 clamp(36px, 9cqi, 108px) / 0.86 var(--f-display);
+  --t-group-label: 700 13px / 1.1 var(--f-display);
+  --t-group-label-track: 0.10769em;
+  --t-voice: italic 500 25px / 1.1 var(--f-serif);
+  --t-voice-track: -0.01em;
+  --t-name: 700 21px / 1 var(--f-display);
+  --t-item: 400 18px / 1.4 var(--f-serif);
+  --t-line: var(--t-caption);
+  --t-figures: var(--t-meta);
+  --t-figures-track: var(--t-meta-track);
+  --record-ink: light-dark(#15110e, #efe7da);
   --control-h: 48px;
   --control-line: 1.5px;
   --control-line-alpha: 35%;

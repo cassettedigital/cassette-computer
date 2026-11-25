@@ -36,10 +36,10 @@ CLOUD="https://www.cassette.digital"
 
 DESKTOP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$(cd "$DESKTOP_DIR/../../.." && pwd)"
-WEB_DIR="$REPO_ROOT/apps/cassette"
 NATIVE_DIR="$REPO_ROOT/apps/cassette-player"
+EXPORT_DIR="$NATIVE_DIR/export"
 DISTDIR=".next-desktop"
-STANDALONE="$WEB_DIR/$DISTDIR/standalone"
+APP_VERSION="$(node -p 'require(process.argv[1]).version' "$(cygpath -w "$DESKTOP_DIR/src-tauri/tauri.conf.json" 2>/dev/null || echo "$DESKTOP_DIR/src-tauri/tauri.conf.json")")"
 RES="$DESKTOP_DIR/src-tauri/resources-win"
 BIN="$RES/bin"
 WORK="${RUNNER_TEMP:-$DESKTOP_DIR/.bundle-windows}/cassette-win"
@@ -128,8 +128,34 @@ else
   flag "unsigned: no signing login (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET), so Windows will warn on install"
 fi
 
+# ─── The player screens ─────────────────────────────────────────────────────────────────────────────────────
+# The window's server is built from the public copy of the player screens, never from the website itself
+# (board #1207; bundle-macos.sh says why). In Cassette's own repository export/screens.mjs makes the copy:
+# with CASSETTE_SCREENS_RELEASE=1 (the workflow's release runs) the public repo's tag v<version>, which must
+# have been exported from this very commit; otherwise an export of this folder, for a test build that is never
+# published (the installer's seal says which, and the uploader refuses a test build). In the public copy (no
+# export/ folder) the copy is this folder itself.
+win() { cygpath -w "$1" 2>/dev/null || echo "$1"; }
+if [ -f "$EXPORT_DIR/screens.mjs" ]; then
+  SCREENS_ROOT="$WORK/screens"
+  if [ "${CASSETTE_SCREENS_RELEASE:-}" = 1 ]; then
+    node "$(win "$EXPORT_DIR/screens.mjs")" --out "$(win "$SCREENS_ROOT")" --release "$APP_VERSION" --commit "$(git -C "$REPO_ROOT" rev-parse HEAD)"
+    SCREENS_FROM="public tag v$APP_VERSION"
+  else
+    node "$(win "$EXPORT_DIR/screens.mjs")" --out "$(win "$SCREENS_ROOT")"
+    SCREENS_FROM="a test export of this folder, not for release"
+  fi
+  echo "==> [ui] the screens' packages (their own lockfile) and the shared ones…"
+  ( cd "$SCREENS_ROOT" && pnpm install --frozen-lockfile --config.node-linker=hoisted --reporter=silent && pnpm --filter "cassette^..." run build )
+else
+  SCREENS_ROOT="$REPO_ROOT"
+  SCREENS_FROM="this public copy"
+fi
+WEB_DIR="$SCREENS_ROOT/apps/cassette"
+STANDALONE="$WEB_DIR/$DISTDIR/standalone"
+
 # ─── The UI server ──────────────────────────────────────────────────────────────────────────────────────────
-echo "==> [ui] Next.js standalone, compile-only, no database…"
+echo "==> [ui] Next.js standalone, compile-only, no database, from ${SCREENS_FROM}…"
 STAND_IN="cassette-build-stand-in-$(date +%s)"
 ( cd "$WEB_DIR" && env -u DATABASE_URL -u DATABASE_URL_APP \
     DESKTOP_BUILD=1 NEXT_PUBLIC_SIDECAR_URL=/sidecar \
@@ -149,6 +175,11 @@ find "$RES/server/apps/cassette/$DISTDIR" -name '*.map' -delete
 printf 'CASSETTE_CLOUD_BASE=%s\n' "$CLOUD" > "$RES/server/.env"
 if grep -rqF "$STAND_IN" "$RES/server"; then
   echo "FATAL: the build's stand-in token ended up in the server tree"; exit 1
+fi
+# The tripwire (board #1207): the server may carry the player screens and nothing else. Before the installer,
+# so a server that fails never becomes one; the installer is sealed below once it exists.
+if [ -f "$EXPORT_DIR/bundle-check.mjs" ]; then
+  node "$(win "$EXPORT_DIR/bundle-check.mjs")" --server "$(win "$RES/server")"
 fi
 # Windows paths stop at 260 characters in many tools, the installer included. Report the longest one under the
 # install folder (about 40 characters of C:\Users\<name>\AppData\Local\Cassette\ come before it).
@@ -328,6 +359,11 @@ SETUP="$(ls "$DESKTOP_DIR"/src-tauri/target/release/bundle/nsis/*-setup.exe | he
 if [ -n "$SIGNING" ]; then
   signed "$(cygpath -w "$SETUP")" || { echo "FATAL: the installer came out unsigned"; exit 1; }
   echo "==> [sign] the installer is signed (the workflow checks every program inside it)"
+fi
+# The seal beside the installer: its server passed the check above, and where its screens came from. The
+# uploader (publish-desktop-release.mts) refuses an installer without a seal naming it, or from a test export.
+if [ -f "$EXPORT_DIR/bundle-check.mjs" ]; then
+  node "$(win "$EXPORT_DIR/bundle-check.mjs")" --seal "$(win "$SETUP")" --from "$SCREENS_FROM"
 fi
 
 echo "==> Built:"

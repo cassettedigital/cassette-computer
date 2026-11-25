@@ -11,8 +11,13 @@
     ".": "./src/index.ts",
     "./tokens.json": "./tokens.json",
     "./taste.module.css": "./src/taste.module.css",
+    "./system.css": "./src/system.css",
+    "./scales": "./src/system.generated.ts",
     "./images": "./src/images.ts",
     "./budgets": "./src/budgets.ts",
+    "./words": "./system/words.ts",
+    "./intent": "./system/intent.ts",
+    "./parts": "./system/parts.ts",
     "./app-icon": "./src/app-icon.generated.ts",
     "./picture": "./src/Picture.tsx",
     "./play-over": "./src/PlayOver.tsx"

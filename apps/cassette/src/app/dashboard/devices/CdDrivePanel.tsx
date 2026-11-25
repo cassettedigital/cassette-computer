@@ -81,7 +81,7 @@ export {
 
 // ── Live wrapper ─────────────────────────────────────────────────────────────
 
-export function CdDrivePanel({ connected }: { connected: boolean }) {
+export function CdDrivePanel({ connected, under = false, onBack }: { connected: boolean; under?: boolean; onBack?: () => void }) {
   const { status, reachability } = useRipStatus();
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -277,7 +277,7 @@ export function CdDrivePanel({ connected }: { connected: boolean }) {
 
   return (
     <>
-      {status?.interruptedRip && !interruptedDismissed && (
+      {status?.interruptedRip && !interruptedDismissed && !under && (
         <InterruptedRipBanner
           info={status.interruptedRip}
           onDismiss={() => void dismissInterrupted()}
@@ -303,6 +303,8 @@ export function CdDrivePanel({ connected }: { connected: boolean }) {
         onRetryTrack={retryTrack}
         inviteDismissed={inviteDismissed}
         onDismissInvite={dismissInvite}
+        under={under}
+        onBack={onBack}
       />
     </>
   );
@@ -359,6 +361,8 @@ export function DriveComponent({
   onRetryTrack,
   inviteDismissed = false,
   onDismissInvite,
+  under = false,
+  onBack,
 }: {
   reachability: Reachability;
   connected: boolean;
@@ -390,6 +394,11 @@ export function DriveComponent({
   /** Job 5: the no-drive invite is dismissible; the choice persists in the wrapper. */
   inviteDismissed?: boolean;
   onDismissInvite?: () => void;
+  /** Drawn under the disc's page's own head (desk/disc.tsx, design wave 1c): that head already shows the disc, its
+      keys and its passing line, so only the steps are drawn here (choosing, naming, recovering, errors). */
+  under?: boolean;
+  /** Under the head, "Back to the match" leaves the choices. */
+  onBack?: () => void;
 }) {
   return (
     <section className={styles.drive}>
@@ -415,9 +424,192 @@ export function DriveComponent({
         onRetryTrack={onRetryTrack}
         inviteDismissed={inviteDismissed}
         onDismissInvite={onDismissInvite}
+        under={under}
+        onBack={onBack}
       />
     </section>
   );
+}
+
+// "Back to the match": out of the other choices, home to the match (the card's own flip, and under the disc's page)
+function BackToMatch({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className={styles.backLink} onClick={onClick}>
+      <ChevronLeft size={14} strokeWidth={1.8} />
+      Back to the match
+    </button>
+  );
+}
+
+// The permission a hub needs to read the drive, and how to give it on its OS (BUG-247).
+function DeniedSteps({ s, busy, actionMsg, onDetect }: { s: RipStatus; busy: boolean; actionMsg: string | null; onDetect?: () => void }) {
+  const { body, link } = permissionDeniedCopy(s.hubOS);
+  return (
+    <div className={styles.stack}>
+      <div className={styles.line}>
+        <Lock size={14} />
+        <span>Cassette needs permission to read the disc drive.</span>
+      </div>
+      <div className={styles.muted}>{body}</div>
+      <div className={styles.row}>
+        <Button onClick={onDetect} disabled={busy} variant="secondary">
+          Check again
+        </Button>
+        {/* Only macOS gets a deep link today (a documented URI scheme into
+            Privacy & Security); Linux/Windows/unknown get instructions only. */}
+        {link && (
+          <TextLink href={link.href} variant="accent">
+            {link.label}
+          </TextLink>
+        )}
+      </div>
+      {actionMsg && <div className={styles.muted}>{actionMsg}</div>}
+    </div>
+  );
+}
+
+// A disc that couldn't be read or identified: the way to try again, and a way out.
+function ErrorSteps({ s, busy, actionMsg, onDetect, onClear }: { s: RipStatus; busy: boolean; actionMsg: string | null; onDetect?: () => void; onClear?: () => void }) {
+  return (
+    <div className={styles.stack}>
+      <div className={styles.line}>
+        <AlertTriangle size={14} color="var(--cs-red)" />
+        {/* Clean human copy; the raw match detail (MusicBrainz disc id, etc.)
+            is tucked into the tooltip, never in the visible string (§7,§13). */}
+        <span title={s.message ?? undefined}>Couldn&apos;t identify this disc.</span>
+      </div>
+      <div className={styles.row}>
+        <Button onClick={onDetect} disabled={busy} variant="secondary">
+          Try again
+        </Button>
+        {/* Job A: a way out of a dead-end error, not just "Try again". */}
+        {onClear && (
+          <Button onClick={onClear} disabled={busy} variant="secondary">
+            Start over
+          </Button>
+        )}
+      </div>
+      {actionMsg && <div className={styles.muted}>{actionMsg}</div>}
+    </div>
+  );
+}
+
+/**
+ * Under the disc's page's head (desk/disc.tsx, design wave 1c): the steps only. The head already draws the cover,
+ * the name, the keys (Rip, Stop or Play, then Eject) and the passing line on the cover's top edge, so nothing here
+ * repeats them: the choices when it's a guess or "Not this album?" was pressed, the ways to name or find an unknown
+ * disc, the songs that didn't read, an error's way out, and the drive's permission.
+ */
+function UnderSteps({
+  s,
+  busy,
+  actionMsg,
+  coverUrl,
+  pending,
+  setPending,
+  onBack,
+  onDetect,
+  onClear,
+  onConfirm,
+  onImportUnknown,
+  onSearch,
+  onAcoustId,
+  onSubmitNames,
+  onRetryTrack,
+}: {
+  s: RipStatus;
+  busy: boolean;
+  actionMsg: string | null;
+  coverUrl: string | null;
+  pending: PendingRip | null;
+  setPending: (p: PendingRip | null) => void;
+  onBack?: () => void;
+  onDetect?: () => void;
+  onClear?: () => void;
+  onConfirm?: (candidateId: string, trackNames?: Record<string, string>) => void;
+  onImportUnknown?: () => void;
+  onSearch?: (query: string) => Promise<RipCandidate[]>;
+  onAcoustId?: () => void;
+  onSubmitNames?: (payload: NameOverride) => Promise<number>;
+  onRetryTrack?: (position: number) => void;
+}) {
+  if (s.permissionState === "denied") return <DeniedSteps s={s} busy={busy} actionMsg={actionMsg} onDetect={onDetect} />;
+  const pick = (c: RipCandidate) => setPending({ candidate: c, commit: (names) => onConfirm?.(c.id, names) });
+  if (pending) {
+    return (
+      <CompareConfirm
+        pending={pending}
+        coverUrl={coverUrl}
+        busy={busy}
+        onConfirm={(names) => {
+          pending.commit(names);
+          setPending(null);
+        }}
+        onBack={() => setPending(null)}
+      />
+    );
+  }
+  const muted = actionMsg && <div className={styles.muted}>{actionMsg}</div>;
+  const confident = !s.unidentified && (s.confidence ?? 0) >= CONFIDENT_THRESHOLD;
+  const recover = (lead: string, acoust: boolean, onPick: (c: RipCandidate) => void) => (
+    <RecoverIdentity s={s} busy={busy} lead={lead} showAcoustId={acoust} onSearch={onSearch} onAcoustId={onAcoustId} onPick={onPick} />
+  );
+  switch (s.state) {
+    case "matched":
+    case "confirm":
+      if (s.state === "matched" && confident) {
+        // "Not this album?": straight to the other choices, the match itself left out (it's the head)
+        return (
+          <div className={styles.stack}>
+            {onBack && <BackToMatch onClick={onBack} />}
+            <ChooserOptions s={s} busy={busy} omitGuessId={s.candidates?.[0]?.id} onPick={pick} onSearch={onSearch} onAcoustId={onAcoustId} onImportUnknown={onImportUnknown} />
+            {muted}
+          </div>
+        );
+      }
+      if ((s.candidates?.length ?? 0) > 0) {
+        return (
+          <div className={styles.stack}>
+            <ChooserOptions s={s} busy={busy} onPick={pick} onSearch={onSearch} onAcoustId={onAcoustId} onImportUnknown={onImportUnknown} />
+            {muted}
+          </div>
+        );
+      }
+      return (
+        <div className={styles.stack}>
+          {recover("We couldn’t identify this album.", true, pick)}
+          {onImportUnknown && (
+            <div className={styles.row}>
+              <Button variant="ghost" disabled={busy} onClick={onImportUnknown}>
+                Just rip it
+              </Button>
+            </div>
+          )}
+          {muted}
+        </div>
+      );
+    case "ripping":
+      return s.unidentified && onSubmitNames ? <InlineNameFields status={s} busy={busy} onSubmitNames={onSubmitNames} /> : null;
+    case "done": {
+      if (!s.unidentified) return null;
+      const apply = (c: RipCandidate) => {
+        const tracks = (c.tracks ?? []).filter((t) => t.title && t.title.trim()).map((t) => ({ position: t.position, title: t.title.trim() }));
+        void onSubmitNames?.({ album: c.album || undefined, albumArtist: c.albumArtist && c.albumArtist !== "Unknown Artist" ? c.albumArtist : undefined, tracks });
+      };
+      return (
+        <div className={styles.stack}>
+          {recover("This album isn’t identified yet.", false, apply)}
+          {onSubmitNames && <InlineNameFields status={s} busy={busy} onSubmitNames={onSubmitNames} />}
+        </div>
+      );
+    }
+    case "incomplete":
+      return <IncompleteRip status={s} busy={busy} onRetryTrack={onRetryTrack} onClear={onClear} actionMsg={actionMsg} />;
+    case "error":
+      return <ErrorSteps s={s} busy={busy} actionMsg={actionMsg} onDetect={onDetect} onClear={onClear} />;
+    default:
+      return null;
+  }
 }
 
 // ── The state ladder ─────────────────────────────────────────────────────────
@@ -442,6 +634,8 @@ function Ladder({
   onRetryTrack,
   inviteDismissed = false,
   onDismissInvite,
+  under = false,
+  onBack,
 }: {
   reachability: Reachability;
   connected: boolean;
@@ -466,6 +660,11 @@ function Ladder({
   onRetryTrack?: (position: number) => void;
   inviteDismissed?: boolean;
   onDismissInvite?: () => void;
+  /** Drawn under the disc's page's own head (desk/disc.tsx, design wave 1c): that head already shows the disc, its
+      keys and its passing line, so only the steps are drawn here (choosing, naming, recovering, errors). */
+  under?: boolean;
+  /** Under the head, "Back to the match" leaves the choices. */
+  onBack?: () => void;
 }) {
   // Routing: a confident match (≥ CONFIDENT_THRESHOLD) rips on a single tap —
   // ConfidentMatch's "Rip to library" calls onRip directly. Every OTHER path (a
@@ -475,6 +674,10 @@ function Ladder({
 
   // The website in a regular browser never reaches the drive (lib/hub-origin, the founder 2026-10-29):
   // discs rip in the app, so it says so rather than "isn't running" about a computer that may be on.
+  if (under) {
+    // the page above has already said where the drive is and what the disc is: only the steps
+    return status ? <UnderSteps s={status} busy={busy} actionMsg={actionMsg} coverUrl={coverUrl} pending={pending} setPending={setPending} onBack={onBack} onDetect={onDetect} onClear={onClear} onConfirm={onConfirm} onImportUnknown={onImportUnknown} onSearch={onSearch} onAcoustId={onAcoustId} onSubmitNames={onSubmitNames} onRetryTrack={onRetryTrack} /> : null;
+  }
   if (!HUB_IN_REACH) {
     return <Notice title="Discs rip in the Cassette app" body="Open Cassette on the computer with the drive." />;
   }
@@ -501,37 +704,8 @@ function Ladder({
 
   // Job 6: attempt-driven permission gate. macOS prompts at rip/read time, not
   // at drive-attach time - so this only appears once a read is actually denied.
-  if (s.permissionState === "denied") {
-    const { body, link } = permissionDeniedCopy(s.hubOS);
-    return (
-      <div className={styles.stack}>
-        <div className={styles.line}>
-          <Lock size={14} />
-          <span>Cassette needs permission to read the disc drive.</span>
-        </div>
-        <div className={styles.muted}>{body}</div>
-        <div className={styles.row}>
-          <Button onClick={onDetect} disabled={busy} variant="secondary">
-            Check again
-          </Button>
-          {/* Only macOS gets a deep link today (a documented URI scheme into
-              Privacy & Security); Linux/Windows/unknown get instructions only. */}
-          {link && (
-            <TextLink href={link.href} variant="accent">
-              {link.label}
-            </TextLink>
-          )}
-        </div>
-        {actionMsg && <div className={styles.muted}>{actionMsg}</div>}
-      </div>
-    );
-  }
+  if (s.permissionState === "denied") return <DeniedSteps s={s} busy={busy} actionMsg={actionMsg} onDetect={onDetect} />;
 
-  // No drive. A calm capability line - never an alarm.
-  // NOTE: `drivePresent` is reported by the sidecar from `cd-paranoia -Q`, which
-  // can read false-negative when a drive is attached but the read fails - see the
-  // sidecar detection bug flagged in the redesign handoff. Copy assumes the
-  // corrected meaning ("no drive") on purpose.
   if (!s.drivePresent) {
     // No drive · first run → the one time we invite, dismissible. Once dismissed
     // it stays gone (persisted in the wrapper) so a driveless user isn't nagged.
@@ -773,28 +947,7 @@ function Ladder({
       );
 
     case "error":
-      return (
-        <div className={styles.stack}>
-          <div className={styles.line}>
-            <AlertTriangle size={14} color="var(--cs-red)" />
-            {/* Clean human copy; the raw match detail (MusicBrainz disc id, etc.)
-                is tucked into the tooltip, never in the visible string (§7,§13). */}
-            <span title={s.message ?? undefined}>Couldn&apos;t identify this disc.</span>
-          </div>
-          <div className={styles.row}>
-            <Button onClick={onDetect} disabled={busy} variant="secondary">
-              Try again
-            </Button>
-            {/* Job A: a way out of a dead-end error, not just "Try again". */}
-            {onClear && (
-              <Button onClick={onClear} disabled={busy} variant="secondary">
-                Start over
-              </Button>
-            )}
-          </div>
-          {actionMsg && <div className={styles.muted}>{actionMsg}</div>}
-        </div>
-      );
+      return <ErrorSteps s={s} busy={busy} actionMsg={actionMsg} onDetect={onDetect} onClear={onClear} />;
 
     case "idle":
     default:
@@ -1265,10 +1418,7 @@ function MatchCard({
   if (flipped) {
     return (
       <div className={`${styles.stack} ${styles.grow}`}>
-        <button type="button" className={styles.backLink} onClick={() => setFlipped(false)}>
-          <ChevronLeft size={14} strokeWidth={1.8} />
-          Back to the match
-        </button>
+        <BackToMatch onClick={() => setFlipped(false)} />
         <div className={styles.pickerHead}>Which one is it?</div>
         <ChooserOptions
           s={s}

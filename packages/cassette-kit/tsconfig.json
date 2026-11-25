@@ -10,6 +10,6 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src", "system"],
+  "exclude": ["src/**/*.test.ts", "system/**/*.test.ts"]
 }

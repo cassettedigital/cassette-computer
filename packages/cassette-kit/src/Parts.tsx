@@ -17,7 +17,10 @@
  *   StripRow    Settings' StripRow: 46pt covers that fade out from 78% of the width
  *   Waveform    WaveformAnimatedView: three 3pt bars in the record's tint
  *   Hero        GenericDetailTableHeader: the 240pt cover in its own light, the page title, the answer
- *               line, the meta line and the pills
+ *               line, the meta line and the pills. The pills sit on the cover's foot and the name grows up
+ *               (the founder, 2026-11-24): past its room it steps down to the section heading's size, then
+ *               is cut, whole on hover and read out in full. An optional coming line sits on the cover's
+ *               top edge, its room held in every state
  *   Ambient     AmbientCoverBackdrop: the cover blurred big behind a player, under two scrims
  *   WordArt     a station with no picture (CarPlayStyle phoneWordArt): its colour run into the dark at
  *               140 degrees, its name set on it
@@ -26,7 +29,7 @@
  * colour arrives as --pk-tint-text and --pk-tint-glow on any ancestor.
  */
 
-import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { Glyph, type Concept } from "./Glyph";
 import { PlayDisc, type PlayState } from "./Controls";
 import { useKitLink } from "./KitProvider";
@@ -508,47 +511,154 @@ export function StripRow({ covers, label }: { covers: Array<{ key: string; art: 
   );
 }
 
+/** Room left on a cut, so the last line's foot isn't clipped by rounding. */
+const FIT_SLACK = 1;
+
+/**
+ * Fits a record's name to its room (the founder's "grows up", 2026-11-24, audit round 2): the name keeps its
+ * size while it fits above the artist line, steps down to the section heading's size when it doesn't, and is
+ * cut on its last line when even that doesn't fit. The room is the Hero's: the cover's height, less the coming
+ * line's held room and everything under the name, so the name never pushes the artist or the pills.
+ */
+function useFitName(name: { current: HTMLElement | null }, words: unknown): { step: boolean; lines: number | null } {
+  const [fit, setFit] = useState<{ step: boolean; lines: number | null }>({ step: false, lines: null });
+  useLayoutEffect(() => {
+    const el = name.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    let frame = 0;
+    const measure = () => {
+      // start from the full size, uncut
+      el.removeAttribute("data-step");
+      el.removeAttribute("data-cut");
+      el.style.removeProperty("--pk-name-lines");
+      // the room: a name zone of its own (the cover on top), or what the column leaves between the coming line (or
+      // the cover's top) and the artist
+      const room = () => {
+        if (getComputedStyle(el).flexShrink === "0") return el.clientHeight;
+        const col = el.parentElement!;
+        const prev = el.previousElementSibling;
+        const next = el.nextElementSibling;
+        const top = prev ? prev.getBoundingClientRect().bottom : col.getBoundingClientRect().top;
+        const foot = next ? next.getBoundingClientRect().top - parseFloat(getComputedStyle(next).marginTop || "0") : col.getBoundingClientRect().bottom;
+        return foot - top;
+      };
+      // the name's own height, its lines at their line height, as if it had all the room it wanted
+      const natural = () => {
+        el.style.setProperty("height", "auto");
+        el.style.setProperty("flex", "none");
+        const h = el.offsetHeight;
+        el.style.removeProperty("height");
+        el.style.removeProperty("flex");
+        return h;
+      };
+      const space = room();
+      const fits = () => natural() <= space + FIT_SLACK;
+      let step = false;
+      let lines: number | null = null;
+      if (!fits()) {
+        step = true;
+        el.setAttribute("data-step", "");
+        if (!fits()) {
+          const lh = parseFloat(getComputedStyle(el).lineHeight) || 1;
+          lines = Math.max(1, Math.floor((space + FIT_SLACK) / lh));
+        }
+      }
+      if (step) el.setAttribute("data-step", "");
+      if (lines) {
+        el.setAttribute("data-cut", "");
+        el.style.setProperty("--pk-name-lines", String(lines));
+      }
+      setFit((f) => (f.step === step && f.lines === lines ? f : { step, lines }));
+    };
+    measure();
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    });
+    if (el.parentElement) ro.observe(el.parentElement);
+    // the type face arriving late re-measures the name in it
+    void document.fonts?.ready.then(() => requestAnimationFrame(measure));
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
+  }, [name, words]);
+  return fit;
+}
+
 export function Hero({
   art,
   title,
+  name,
   answer,
   meta,
   kind = "album",
   peek,
+  line,
   children,
 }: {
   art: ReactNode;
   /** The name; a page that edits it in place passes its field here. */
   title: ReactNode;
+  /** The name as plain words, when `title` isn't (a link, a field): what a cut name shows on hover. */
+  name?: string;
   answer?: ReactNode;
-  meta?: string;
+  /** The facts line: words, or a held place for them while they're on their way. */
+  meta?: ReactNode;
   /** Albums take 3pt corners, playlists 5, stations 4. */
   kind?: "album" | "playlist" | "station";
   /** Something tucked behind the cover and showing past its edge (a disc in its sleeve); placed by
       its own class against the cover's box, which doesn't clip it. */
   peek?: ReactNode;
+  /** The coming line (the founder's "top line", 2026-11-24): one line on the cover's top edge for a passing
+      note or link. Give it on a page whose notes come and go, null when there's none right now: its room is
+      held either way, so the name never re-fits as a note comes and goes. Left out, there's no line. */
+  line?: ReactNode;
   /** The pills. */
   children?: ReactNode;
 }) {
+  const nameRef = useRef<HTMLHeadingElement>(null);
+  const words = name ?? (typeof title === "string" ? title : undefined);
+  const fit = useFitName(nameRef, `${words ?? ""}|${line === undefined ? "" : "line"}`);
+  const hasLine = line !== undefined;
   return (
-    <header className={s.hero}>
+    <header className={s.hero} data-line={hasLine || undefined}>
       {peek ? (
-        <span className={s.heroStage}>
+        <span className={s.heroStage} data-anchor="cover">
           {peek}
           <span className={s.heroArt} data-kind={kind}>
             {art}
           </span>
         </span>
       ) : (
-        <span className={s.heroArt} data-kind={kind}>
+        <span className={s.heroArt} data-kind={kind} data-anchor="cover">
           {art}
         </span>
       )}
       <span className={s.heroText}>
-        <h1 className={s.heroTitle}>{title}</h1>
-        {answer && <span className={s.heroAnswer}>{answer}</span>}
-        {meta && <span className={s.heroMeta}>{meta}</span>}
-        {children && <span className={s.heroPills}>{children}</span>}
+        {hasLine && (
+          <span className={s.heroLine} data-anchor="line">
+            {line}
+          </span>
+        )}
+        <h1 ref={nameRef} className={s.heroTitle} data-anchor="name" title={fit.lines && words ? words : undefined}>
+          {title}
+        </h1>
+        {answer && (
+          <span className={s.heroAnswer} data-anchor="artist" title={typeof answer === "string" ? answer : undefined}>
+            {answer}
+          </span>
+        )}
+        {meta && (
+          <span className={s.heroMeta} data-anchor="facts">
+            {meta}
+          </span>
+        )}
+        {children && (
+          <span className={s.heroPills} data-anchor="keys">
+            {children}
+          </span>
+        )}
       </span>
     </header>
   );

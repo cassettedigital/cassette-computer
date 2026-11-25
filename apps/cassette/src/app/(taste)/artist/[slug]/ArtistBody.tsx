@@ -12,7 +12,7 @@
 
 import { Suspense, use, useCallback, useState } from "react";
 import { InlineLink } from "@/app/_taste/Button";
-import { BRASS, accentVars, useCoverColours } from "@/app/_taste/colour";
+import { NO_COLOUR, accentVars, useCoverColours } from "@/app/_taste/colour";
 import { useRailAccent } from "@/app/_taste/player";
 import type { Surface } from "@/lib/app-surface";
 import k from "@/app/_taste/taste.module.css";
@@ -113,9 +113,9 @@ export function ArtistBody({ p, like, surface = "web" }: { p: ArtistPayload; lik
     p.records.map((r) => ({ key: r.slug, src: r.coverSmall ?? r.cover })),
     [p.leadSlug, ...wanted],
   );
-  // the paper's brass is no colour at all (a grey or missing cover): the page keeps the brass
+  // no colour at all (a grey or missing cover): the page keeps its own, the paper's ink (D12)
   const read = p.leadSlug ? colours[p.leadSlug] : undefined;
-  const lead = read && read.toLowerCase() !== BRASS ? read : undefined;
+  const lead = read && read !== NO_COLOUR ? read : undefined;
   const style = lead ? accentVars(lead) : undefined;
   useRailAccent(lead);
   const [photoGone, setPhotoGone] = useState(false);

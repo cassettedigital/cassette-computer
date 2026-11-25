@@ -155,7 +155,7 @@ function size(bytes: number | null | undefined): string | null {
 
 function Frame({ children }: { children: ReactNode }) {
   return (
-    <main className={`${t.root} ${t.follows} ${kit.kit} ${kit.follow} ${d.away}`} data-follows="">
+    <main className={`${t.root} ${t.follows} ${kit.kit} ${kit.follow} ${d.away}`} data-follows="" data-density="compact">
       <LogoMark className={d.awayMark} />
       {children}
     </main>

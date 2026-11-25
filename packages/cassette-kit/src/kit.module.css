@@ -1278,6 +1278,7 @@ a.hub:focus-visible {
 
 /* ── the hero (GenericDetailTableHeader): side by side on a computer, stacked when narrow ── */
 .hero {
+  --hero-line: 17px; /* the coming line's one line (the meta face's line height) */
   position: relative;
   display: grid;
   grid-template-columns: var(--pk-hero-cover) minmax(0, 1fr);
@@ -1338,20 +1339,87 @@ a.hub:focus-visible {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22);
   pointer-events: none;
 }
+/* the words beside the cover (the founder's "grows up", 2026-11-24, audit round 2): the column is the cover's
+   own height, the pills sit on its foot and the artist and facts just above them, the same place on every record.
+   The name sits on the artist and takes the change: extra lines climb, and past its room it steps down to the
+   section heading's size, then is cut (Hero's useFitName), whole on hover and read out in full. A page with a
+   coming line holds one line's room on the cover's top edge in every state, so a note never moves anything. */
 .heroText {
   position: relative;
   z-index: 1;
-  display: grid;
-  justify-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
   min-width: 0;
+  height: var(--pk-hero-cover);
+}
+.heroLine {
+  flex: none;
+  display: block;
+  box-sizing: content-box;
+  width: 100%;
+  height: var(--hero-line);
+  margin-bottom: auto;
+  padding-bottom: var(--pk-hero-line-to-meta);
+  overflow: hidden;
+  font: var(--pk-t-meta);
+  line-height: var(--hero-line);
+  letter-spacing: var(--pk-k-meta);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pk-text-secondary);
+}
+.heroLine a,
+.heroLine button,
+.heroLine [data-link] {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--pk-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 .heroTitle {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-width: 100%;
   margin: 0;
+  overflow: hidden;
   font: var(--pk-t-page-title);
   letter-spacing: var(--pk-k-page-title);
   text-transform: uppercase;
   text-wrap: balance;
+  overflow-wrap: anywhere;
   color: var(--pk-text-primary);
+}
+/* one size down: the section heading's size, never smaller in the windows (the founder, 2026-11-24) */
+.heroTitle[data-step] {
+  font: var(--pk-t-shout);
+  letter-spacing: var(--pk-k-shout);
+}
+.heroTitle[data-cut] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--pk-name-lines);
+}
+.heroAnswer,
+.heroMeta {
+  flex: none;
+  max-width: 100%;
+}
+/* a planned head (one with a coming line: the disc's page) holds its artist and facts to one line each, cut, so the
+   artist sits in one place on every record; the other heads keep their lines until wave 5's record head (S4) */
+.hero[data-line] .heroAnswer,
+.hero[data-line] .heroMeta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .heroAnswer {
   margin-top: var(--pk-hero-title-to-line);
@@ -1367,15 +1435,22 @@ a.hub:focus-visible {
   color: var(--pk-text-secondary);
 }
 .heroPills {
+  flex: none;
   display: block;
   width: 100%;
   margin-top: var(--pk-hero-meta-to-pills);
 }
+/* the cover on top: on a planned head (the disc's page), the coming line on the cover's top edge, then the cover,
+   then a name zone of three lines (the founder: room for three lines when the picture is on top) with the name on its
+   foot, on its artist; the other heads keep today's stack until their waves (5 and 6) */
 @container (width < 620px) {
   .hero {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
     text-align: center;
+  }
+  .hero[data-line] {
+    padding-top: calc(var(--hero-line) + var(--pk-hero-line-to-meta));
   }
   .heroArt {
     width: var(--pk-hero-cover);
@@ -1387,7 +1462,27 @@ a.hub:focus-visible {
     width: 100%;
   }
   .heroText {
-    justify-items: center;
+    position: static;
+    align-items: center;
+    width: 100%;
+    height: auto;
+  }
+  .heroLine {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 0;
+  }
+  .hero[data-line] .heroTitle {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 100%;
+    height: calc(3 * 1.05 * 36px);
+  }
+  .hero[data-line] .heroTitle[data-cut] {
+    display: -webkit-box;
   }
   .heroPills > * {
     margin-inline: auto;
@@ -2412,7 +2507,7 @@ a.qBody .qTitle:hover {
   gap: 6px;
   min-width: 0;
   padding: 14px 16px;
-  border-radius: var(--pk-r-panel);
+  border-radius: var(--pk-r-card); /* a card: the frame decides (D8) */
   background: var(--pk-surface-raised);
   --tone-ink: var(--pk-text-primary);
 }
@@ -2731,7 +2826,7 @@ a.qBody .qTitle:hover {
   margin: auto; /* the browser's own centring, which a page's reset of every margin would undo */
   padding: 0;
   border: 0;
-  border-radius: var(--pk-r-card);
+  border-radius: var(--corner-panel); /* a panel, 14 on every surface (D8) */
   background: var(--pk-surface-elevated);
   color: var(--pk-text-primary);
   box-shadow:

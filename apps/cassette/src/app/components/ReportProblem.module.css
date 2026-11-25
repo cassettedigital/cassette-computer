@@ -20,7 +20,7 @@
   margin: 0;
   padding: 12px 14px;
   border: 0;
-  border-radius: var(--pk-r-control);
+  border-radius: var(--corner-panel); /* the note box: a panel, 14 (D8) */
   background: var(--pk-surface-raised);
   box-shadow: inset 0 0 0 1px var(--pk-hairline);
   color: var(--pk-text-primary);

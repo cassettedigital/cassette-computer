@@ -2,7 +2,8 @@
 #
 # Build + install the Cassette desktop app (macOS).
 #
-# Produces a self-contained /Applications/Cassette.app: the full Next.js UI is
+# Produces a self-contained /Applications/Cassette.app: the player screens, from
+# the public copy (export/screens.mjs, never the whole website, board #1207), are
 # built in "standalone" mode and copied INSIDE the app; at launch the shell
 # spawns it on a local port (see src-tauri/src/lib.rs) and points the window at
 # it. Data still streams from the cloud DB — only the UI/assets are bundled.
@@ -103,15 +104,29 @@ NOTARY_PROFILE="cassette-notary"
 
 DESKTOP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$(cd "$DESKTOP_DIR/../../.." && pwd)"
-WEB_DIR="$REPO_ROOT/apps/cassette"
+# The website's folder: its .env.local and the release uploader. Never what the window is built from.
+SITE_DIR="$REPO_ROOT/apps/cassette"
+EXPORT_DIR="$DESKTOP_DIR/../export"
+
+# The window's server is built from the public copy of the player screens, never from the website itself
+# (board #1207): Next copies into the server every file any page of what it builds reads, so building the
+# website put the taste recipes, Admin, AI prompts and press lists into every download. In Cassette's own
+# repository the copy is made by export/screens.mjs (a release: the public repo's own tag; any other build:
+# an export of this folder); in the public copy (no export/ folder) the copy is this folder itself.
+if [[ -f "$EXPORT_DIR/screens.mjs" ]]; then
+  SCREENS_ROOT="${CASSETTE_SCREENS_DIR:-$HOME/Library/Caches/cassette-screens}"
+else
+  SCREENS_ROOT="$REPO_ROOT"
+fi
+WEB_DIR="$SCREENS_ROOT/apps/cassette"
+APP_VERSION="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$DESKTOP_DIR/src-tauri/tauri.conf.json")"
 
 # One version, one commit, one tag: once the computer app's public repo exists, a release goes out only if
 # that repo has its version's tag, exported from this very commit (export/source-gate.mjs). The uploader
 # checks again; this stops a release that can't go out before the long build instead of after it.
 BUILT_FROM="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 if [[ "$PUBLISH" == true ]]; then
-  GATE_VERSION="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$DESKTOP_DIR/src-tauri/tauri.conf.json")"
-  node "$DESKTOP_DIR/../export/source-gate.mjs" --version "$GATE_VERSION" --commit "$BUILT_FROM" --repo-dir "$REPO_ROOT" || exit 1
+  node "$EXPORT_DIR/source-gate.mjs" --version "$APP_VERSION" --commit "$BUILT_FROM" --repo-dir "$REPO_ROOT" || exit 1
 fi
 # Desktop builds use a separate distDir (next.config.ts) so they never clobber a
 # running `next dev` that owns the default .next.
@@ -121,11 +136,20 @@ APP_OUT="$DESKTOP_DIR/src-tauri/target/release/bundle/macos/Cassette.app"
 INSTALL_DIR="/Applications/Cassette.app"
 
 if [[ "$REBUILD" == true || ! -f "$STANDALONE/apps/cassette/server.js" ]]; then
-  echo "==> Building Next.js standalone (DESKTOP_BUILD=1)…"
+  if [[ "$SCREENS_ROOT" != "$REPO_ROOT" ]]; then
+    if [[ "$NOTARIZE" == true ]]; then
+      node "$EXPORT_DIR/screens.mjs" --out "$SCREENS_ROOT" --release "$APP_VERSION" --commit "$BUILT_FROM"
+    else
+      node "$EXPORT_DIR/screens.mjs" --out "$SCREENS_ROOT"
+    fi
+    echo "==> Installing the screens' packages (their own lockfile) and building the shared ones…"
+    ( cd "$SCREENS_ROOT" && pnpm install --frozen-lockfile --reporter=silent && pnpm --filter "cassette^..." run build )
+  fi
+  echo "==> Building Next.js standalone (DESKTOP_BUILD=1) from ${SCREENS_ROOT}…"
   # NEXT_PUBLIC_SIDECAR_URL=/sidecar routes the sidecar client through the app's
   # own same-origin proxy (app/sidecar/[...path]/route.ts) instead of the CORS-
   # gated https://local.cassette.digital:5173 portal.
-  ( cd "$REPO_ROOT" && NEXT_PUBLIC_SIDECAR_URL=/sidecar DESKTOP_BUILD=1 pnpm --filter cassette build )
+  ( cd "$SCREENS_ROOT" && NEXT_PUBLIC_SIDECAR_URL=/sidecar DESKTOP_BUILD=1 pnpm --filter cassette build )
 fi
 
 echo "==> Staging static + public into the standalone tree…"
@@ -165,7 +189,7 @@ BUNDLED_ENV="$APP_OUT/Contents/Resources/server/.env"
 : > "$BUNDLED_ENV"
 printf 'CASSETTE_CLOUD_BASE=%s\n' "${CASSETTE_CLOUD_BASE:-https://www.cassette.digital}" >> "$BUNDLED_ENV"
 for KEY in R2_DIAGNOSTICS_BUCKET; do
-  LINE=$(/usr/bin/grep -E "^${KEY}=" "$WEB_DIR/.env.local" | /usr/bin/head -1) || true
+  LINE=$(/usr/bin/grep -E "^${KEY}=" "$SITE_DIR/.env.local" | /usr/bin/head -1) || true
   [[ -n "$LINE" ]] && printf '%s\n' "$LINE" >> "$BUNDLED_ENV"
 done
 # Readable by every account on the Mac, like the rest of the bundle: whoever opens
@@ -189,6 +213,12 @@ MAPS="$(find "$APP_OUT/Contents/Resources/server/apps/cassette/$DISTDIR" -name '
 if [[ "$MAPS" != 0 ]]; then
   echo "==> Removing $MAPS source maps from the UI server (BUG-1009)"
   find "$APP_OUT/Contents/Resources/server/apps/cassette/$DISTDIR" -name '*.map' -delete
+fi
+
+# The tripwire (board #1207): the server may carry the player screens and nothing else, no taste recipe, AI
+# prompt, Admin page or website data file. Before signing, so a server that fails never becomes an app.
+if [[ -f "$EXPORT_DIR/bundle-check.mjs" ]]; then
+  node "$EXPORT_DIR/bundle-check.mjs" --server "$APP_OUT/Contents/Resources/server"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -539,13 +569,18 @@ if [[ "$PUBLISH" == true ]]; then
   [[ -f "$TARBALL.sig" ]] || { echo "signer produced no .sig" >&2; exit 1; }
 
   echo "==> Uploading archive + feed manifest to R2…"
-  ( cd "$WEB_DIR" && pnpm dlx tsx scripts/publish-desktop-release.mts \
+  # The Mac and Windows apps release together (scripts/lib/release-together.ts): the publish may HOLD this build.
+  PUBLISH_OUT=$( cd "$SITE_DIR" && pnpm dlx tsx scripts/publish-desktop-release.mts \
       --archive "$TARBALL" --sig "$TARBALL.sig" \
       --version "$VERSION" --target "$TARGET" --arch "$ARCH" \
-      --dmg "$DMG" --notes "${RELEASE_NOTES:-}" --built-from "$BUILT_FROM" )
+      --dmg "$DMG" --notes "${RELEASE_NOTES:-}" --built-from "$BUILT_FROM" | tee /dev/stderr )
 
   rm -f "$TARBALL" "$TARBALL.sig"
-  echo "==> Published $VERSION ($TARGET-$ARCH). Installed clients will update on next launch."
+  if grep -q "^Held Cassette" <<<"$PUBLISH_OUT"; then
+    echo "==> HELD $VERSION ($TARGET-$ARCH): uploaded, not live. Publish Windows $VERSION from the same commit and both go live together."
+  else
+    echo "==> Published $VERSION ($TARGET-$ARCH). Installed clients will update on next launch."
+  fi
 fi
 
 echo "==> Done. $INSTALL_DIR"

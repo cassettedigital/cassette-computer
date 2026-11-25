@@ -44,7 +44,6 @@ import { Glyph, KitProvider, tokens as kit, type KitLinkProps } from "@discovery
 import { useRadio } from "@/app/components/radio/RadioProvider";
 import { useReveal } from "@/app/_taste/reveal";
 import t from "@/app/_taste/taste.module.css";
-import { TASTE } from "@/app/(taste)/_kit/links";
 import { PlayerProvider, usePlayer } from "@/app/(taste)/_kit/player";
 import { useShell } from "@/app/dashboard/_shell/shell-context";
 import { DeskDrop } from "./DeskDrop";
@@ -65,7 +64,8 @@ import { loadSongs, rereadLibrary } from "./songs";
 import { inField, spaceIsTheFocus, watchFocusArrival } from "@/lib/keys";
 import { DESK, type DeskData } from "./types";
 import { DiscProvider, useDisc } from "./disc";
-import { openOutside } from "@/lib/open-outside";
+import { inDesktopApp, openOutside } from "@/lib/open-outside";
+import { inAppTarget } from "./in-app-links";
 import { PUBLIC_SITE_URL } from "@/lib/urls";
 import { collectInputFiles, pickMusicInApp, startIngest } from "@/lib/library-ingest";
 import { ladderSrc } from "@/lib/images/picture";
@@ -338,7 +338,6 @@ function Toolbar({
 const SLIM_KEY = "desk-taste-rail-slim";
 /** How old the window's library is before coming back to the window reads it again. */
 const REREAD_AFTER_MS = 3 * 60_000;
-const PAGE_LINK = new RegExp(`^(?:${TASTE.replace(/[/]/g, "\\/")})?/(album|artist)/(.+)$`);
 
 function Window({ children }: { children: ReactNode }) {
   const preview = usePlayer();
@@ -624,6 +623,7 @@ function Window({ children }: { children: ReactNode }) {
   useEffect(() => {
     const on = [kit.kit, kit.follow, d.deskBody];
     document.body.classList.add(...on);
+    document.body.dataset.density = "compact"; // the window's density, for its pop-ups too (tokens.json `density`)
     const asked = new URLSearchParams(window.location.search).get("paper");
     const held = asked === "light" || asked === "dark" ? asked : null;
     if (held) {
@@ -632,6 +632,7 @@ function Window({ children }: { children: ReactNode }) {
     }
     return () => {
       document.body.classList.remove(...on);
+      delete document.body.dataset.density;
       if (held) delete document.body.dataset.paper;
     };
   }, []);
@@ -641,25 +642,25 @@ function Window({ children }: { children: ReactNode }) {
     if (!window.location.hash) paneRef.current?.scrollTo({ top: 0 });
   }, [pathname]);
 
-  // the shared pages' links stay inside the window
+  // the shared pages' links (in the window or in a pop-up drawn at the body): an album or artist page opens
+  // on the desk; inside the app, a website page the desk has a screen for opens that screen, a station opens
+  // in the side view, and any other website page opens in the person's browser, because the app carries
+  // only the player screens (in-app-links.ts, board #1207)
   useEffect(() => {
-    const el = appRef.current;
-    if (!el) return;
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a || a.target === "_blank") return;
-      // the record and artist pages link to themselves at /proto/taste/... today and at /album and
-      // /artist once they're the site's own pages; inside this window either stays in the window
-      const href = a.getAttribute("href") ?? "";
-      const m = href.match(PAGE_LINK);
-      if (!m) return;
+      const go = inAppTarget(a.getAttribute("href") ?? "", inDesktopApp());
+      if (!go) return;
       e.preventDefault();
-      router.push(`${DESK}/${m[1]}/${m[2]}`);
+      if (go.to === "desk") router.push(go.path);
+      else if (go.to === "station") aside.select({ kind: "station", slug: go.slug });
+      else openOutside(`${PUBLIC_SITE_URL}${go.path}`);
     };
-    el.addEventListener("click", onClick, true);
-    return () => el.removeEventListener("click", onClick, true);
-  }, [router]);
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [router, aside]);
 
   // the desktop keys, never while typing (BUG-604), and Space never where it belongs to the focus: a
   // field, a menu, or a button the keyboard brought the focus to (lib/keys.ts, BUG-603; one rule with
@@ -712,6 +713,7 @@ function Window({ children }: { children: ReactNode }) {
         ref={appRef}
         className={`${t.root} ${t.follows} ${kit.kit} ${kit.follow} ${d.app}`}
         data-follows=""
+        data-density="compact"
         data-titlebar="own" /* lays out its own top in the Mac app's window (lib/desktop-shell) */
         data-room={room || undefined}
         data-slim={slimNow || railOver || undefined /* the grid keeps the folded column; an open rail floats */}

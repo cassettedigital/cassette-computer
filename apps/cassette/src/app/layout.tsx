@@ -17,6 +17,9 @@ import { AppSurface } from "@/app/components/AppSurface";
 import { InPageLinks } from "@/app/components/InPageLinks";
 import { ROW_FIT_SCRIPT } from "@/app/_taste/row-fit";
 import "./globals.css";
+// the design system's scales as custom properties (design wave 3): the one spacing list, layout, rhythm, keys by
+// density, motion and layers. New names only; nothing draws from them on its own.
+import "@discovery/cassette-kit/system.css";
 
 /**
  * Fonts loaded at build time via next/font — self-hosted, zero external requests,
@@ -123,7 +126,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     }
   }
   return (
-    // the scripts below set data-theme and data-shell on <html> before React starts: expected, not a mismatch
+    // the scripts below set data-paper and data-shell on <html> before React starts: expected, not a mismatch
     <html lang="en" className={`${display.variable} ${displayItalic.variable} ${mono.variable} ${serif.variable}`} suppressHydrationWarning>
       <body>
         {/* Desktop app cold-start: the external stylesheet (globals.css, which
@@ -137,12 +140,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             stock when the paper is: a light device or the reader's Light in Appearance, unless the
             iPhone app's dark hold or the page's own review link holds it dark. */}
         <style dangerouslySetInnerHTML={{ __html: UNDER_PAGE }} />
-        {/* Appearance/skins: apply the saved theme before first paint so there's
-            no flash of the default orange. Runs synchronously during parse;
-            mirrors lib/appearance.ts (localStorage key "cs-theme", validated on
-            write). Any non-classic id sets data-theme; an unknown value simply
-            matches no skin block and falls back to Classic — so new skins need
-            no change here. The light-or-dark choice ("cs-paper", light or dark;
+        {/* Appearance: no skins (the founder's D14), so a saved skin ("cs-theme") is left where it is and never
+            applied. The light-or-dark choice ("cs-paper", light or dark;
             Auto stores nothing to stamp) goes on as data-paper the same way, ahead
             of the iPhone app's script below, whose dark hold wins. Whether this browser was signed in last
             time ("cs-who", in or out, kept by the Masthead once the session answers) goes on as data-who the
@@ -152,7 +151,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'try{var h=document.documentElement,t=localStorage.getItem("cs-theme"),p=localStorage.getItem("cs-paper"),w=localStorage.getItem("cs-who");if(t&&t!=="classic")h.setAttribute("data-theme",t);if(p==="light"||p==="dark")h.setAttribute("data-paper",p);if(w==="in"||w==="out")h.setAttribute("data-who",w);}catch(e){}',
+              'try{var h=document.documentElement,p=localStorage.getItem("cs-paper"),w=localStorage.getItem("cs-who");if(p==="light"||p==="dark")h.setAttribute("data-paper",p);if(w==="in"||w==="out")h.setAttribute("data-who",w);}catch(e){}',
           }}
         />
         {/* Covers land softly (the founder, 2026-11-11: "a gentle and timed fade in"): a cover marked data-lands

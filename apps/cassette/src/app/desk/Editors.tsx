@@ -200,7 +200,7 @@ function EditArtist({ name, albums, onClose, onSaved }: { name: string; albums: 
     }
   };
   return (
-    <div className={`${t.follows} ${kit.kit} ${kit.follow} ${d.editorScope}`}>
+    <div className={`${t.follows} ${kit.kit} ${kit.follow} ${d.editorScope}`} data-density="compact">
       <Dialog open onClose={onClose} title="Edit artist" width={520}>
         <div className={d.dialogBody}>
           <div className={d.dialogFace}>

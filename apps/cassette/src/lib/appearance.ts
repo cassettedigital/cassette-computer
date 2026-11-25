@@ -43,8 +43,19 @@ export type IconDef = {
   mark: string;
 };
 
+/** The skins on offer: none but the classic look. The site is light and dark only (the founder's D14, 2026-11-22:
+ *  "We nixed the skins for now - it's just light and dark mode, at the moment"). */
 export const THEMES: readonly ThemeDef[] = [
   { id: "classic", name: "Classic Orange", blurb: "The original. Warm amber deck, orange needle." },
+] as const;
+
+/**
+ * The skins retired by D14 (design wave 3): hidden, never deleted (retire means hide). Never offered and never applied;
+ * kept so a choice an account or a browser already holds still reads as a known id, left where it is, and the account
+ * route still accepts what an older app sends. Anyone who picked one sees the default orange from their next visit,
+ * with no message.
+ */
+export const RETIRED_SKINS: readonly ThemeDef[] = [
   { id: "amber",   name: "Amber Gold",     blurb: "A hair warmer: gold where the orange was." },
   { id: "rust",    name: "Rust",           blurb: "Deeper and redder, a well-worn faceplate." },
   { id: "marine",  name: "Marine",         blurb: "The cool one. Teal needle on the warm chassis." },
@@ -78,7 +89,7 @@ export const DEFAULT_ICON: IconId = "classic";
 const THEME_KEY = "cs-theme";
 const ICON_KEY = "cs-icon";
 
-const THEME_IDS = new Set<string>(THEMES.map((t) => t.id));
+const THEME_IDS = new Set<string>([...THEMES, ...RETIRED_SKINS].map((t) => t.id));
 const ICON_IDS = new Set<string>(ICONS.map((i) => i.id));
 
 /** Coerce an unknown stored value to a valid theme id (defaults to classic). */
@@ -132,13 +143,11 @@ export function loadAppearance(): { theme: ThemeId; icon: IconId } {
   }
 }
 
-/** Stamp the theme on <html> so the whole web app (and the desktop WebView)
- *  re-tints instantly. `classic` clears the attribute back to the :root default. */
-export function applyTheme(theme: ThemeId): void {
+/** Skins are retired (D14): nothing stamps one on <html> any more, so this only clears one a page may still carry,
+ *  whatever the stored choice says. The stored choice itself is left where it is. */
+export function applyTheme(_theme: ThemeId): void {
   if (typeof document === "undefined") return;
-  const root = document.documentElement;
-  if (theme === DEFAULT_THEME) root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", theme);
+  document.documentElement.removeAttribute("data-theme");
 }
 
 /** Best-effort cross-device write. localStorage + the live apply already made

@@ -88,10 +88,12 @@ else
 fi
 
 echo "==> Uploading archive + feed manifest to R2…"
-( cd "$WEB_DIR" && pnpm dlx tsx scripts/publish-desktop-release.mts \
+# The Mac and Windows apps release together (scripts/lib/release-together.ts): the publish may HOLD this build
+# until Windows is published at the same version, and then it says so instead of "Published".
+PUBLISH_OUT=$( cd "$WEB_DIR" && pnpm dlx tsx scripts/publish-desktop-release.mts \
     --archive "$TARBALL" --sig "$TARBALL.sig" \
     --version "$VERSION" --target "$TARGET" --arch "$ARCH" \
-    ${DMG_ARGS[@]+"${DMG_ARGS[@]}"} --notes "${RELEASE_NOTES:-}" --built-from "$(git -C "$REPO_ROOT" rev-parse HEAD)" )
+    ${DMG_ARGS[@]+"${DMG_ARGS[@]}"} --notes "${RELEASE_NOTES:-}" --built-from "$(git -C "$REPO_ROOT" rev-parse HEAD)" | tee /dev/stderr )
 
 rm -f "$TARBALL" "$TARBALL.sig"
 
@@ -100,4 +102,8 @@ PREV="0.0.0"
 curl -s -o /dev/null -w "feed for a $PREV client -> HTTP %{http_code} (200 = update offered)\n" \
   "https://www.cassette.digital/api/desktop/update/$TARGET/$ARCH/$PREV" || true
 
-echo "==> Published $VERSION ($TARGET-$ARCH). Open Cassette and use the UPDATE AVAILABLE pill (it also checks every 30 minutes)."
+if grep -q "^Held Cassette" <<<"$PUBLISH_OUT"; then
+  echo "==> HELD $VERSION ($TARGET-$ARCH): uploaded, not live. Publish Windows $VERSION from the same commit and both go live together."
+else
+  echo "==> Published $VERSION ($TARGET-$ARCH). Open Cassette and use the UPDATE AVAILABLE pill (it also checks every 30 minutes)."
+fi

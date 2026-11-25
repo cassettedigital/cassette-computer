@@ -1,0 +1,93 @@
+/* The disc's states page (DiscStates.tsx): the states side by side, one crop, guide lines through the anchors. */
+.sheet {
+  padding: var(--space-24) var(--space-24) var(--space-48);
+  background: var(--pk-surface-base);
+  color: var(--pk-text-primary);
+}
+.head {
+  margin: 0 0 var(--space-16);
+  font: var(--pk-t-meta);
+  letter-spacing: var(--pk-k-meta);
+  text-transform: uppercase;
+  color: var(--pk-text-secondary);
+}
+.strip {
+  display: grid;
+  gap: var(--space-32);
+  overflow-x: auto;
+}
+.sheet[data-print] {
+  width: max-content;
+}
+.sheet[data-print] .strip {
+  overflow: visible;
+}
+.row {
+  position: relative;
+  display: flex;
+  gap: var(--space-16);
+  width: max-content;
+}
+/* a guide line through one anchor, where the row's first state puts it, carried across every state */
+.guide {
+  position: absolute;
+  z-index: 1;
+  top: var(--y);
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--pk-danger) 70%, transparent);
+  pointer-events: none;
+}
+.panel {
+  display: grid;
+  gap: var(--space-8);
+  margin: 0;
+}
+/* the window's page, cropped to its head and first songs (taller where the cover sits on top) */
+.panel .frame {
+  grid-column: auto;
+  grid-row: auto;
+  position: relative;
+  isolation: isolate;
+  width: var(--pane);
+  height: 470px;
+  padding-top: var(--space-24);
+  padding-bottom: 0;
+  overflow: hidden;
+  border-radius: var(--corner-card);
+  box-shadow: inset 0 0 0 1px var(--pk-hairline);
+}
+.panel .frame[data-stacked] {
+  height: 760px;
+}
+.caption {
+  display: grid;
+  gap: var(--space-4);
+}
+.label {
+  font: var(--pk-t-meta);
+  letter-spacing: var(--pk-k-meta);
+  text-transform: uppercase;
+  color: var(--pk-text-primary);
+}
+.tag {
+  font: var(--pk-t-meta);
+  color: var(--pk-text-secondary);
+}
+.tag[data-moved] {
+  color: var(--pk-danger);
+}
+/* the stand-in sleeve: lanterns in the record's colour over dusk, from the colour roles only */
+.sleeve {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 25% 35%, var(--pk-tint-glow) 0 9%, transparent 12%),
+    radial-gradient(circle at 55% 23%, var(--pk-tint-glow) 0 6%, transparent 8%),
+    radial-gradient(circle at 76% 43%, var(--pk-tint-glow) 0 12%, transparent 15%),
+    radial-gradient(circle at 42% 58%, var(--pk-tint-glow) 0 5%, transparent 7%),
+    linear-gradient(175deg, transparent 0 74%, var(--pk-surface-sunken) 75%),
+    linear-gradient(180deg, var(--pk-fill-selected), color-mix(in srgb, var(--pk-tint-glow) 55%, var(--pk-fill-selected)));
+}

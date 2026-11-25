@@ -1856,24 +1856,23 @@ function AddMusicRow() {
       {disc.shown && s && (
         <div className={d.addCard} data-moving={disc.moving || undefined}>
           <button type="button" className={d.addDiscArt} onClick={() => router.push(`${DESK}/disc`)} aria-label={`Open ${s.album ?? "the disc"}`}>
-            <DiscArt cover={disc.cover} sizes="72px" spin={reading(s)} />
+            <DiscArt cover={disc.cover} sizes="72px" spin={reading(s) && !disc.pressed} />
             {disc.moving && <span className={d.discRing} style={{ "--done": `${total ? Math.round((done / total) * 100) : 0}%` } as CSSProperties} aria-hidden="true" />}
           </button>
           <button type="button" className={d.addWords} onClick={() => router.push(`${DESK}/disc`)}>
-            <span className={d.addKick}>{disc.moving ? `Ripping ${done} of ${total}` : s.state === "done" ? "In your library" : reading(s) ? "Reading…" : "Disc in"}</span>
-            <span className={d.addTitle}>{s.album?.trim() || "Audio CD"}</span>
-            <span className={d.addLine}>{s.albumArtist ?? ""}</span>
+            {/* through the hub's re-read at the start of a rip, the disc it was (design wave 1c) */}
+            <span className={d.addKick}>{disc.moving ? `Ripping ${done} of ${total}` : disc.pressed ? "Starting" : s.state === "done" ? "In your library" : reading(s) ? "Reading…" : "Disc in"}</span>
+            <span className={d.addTitle}>{(disc.pressed && disc.held ? disc.held : s).album?.trim() || "Audio CD"}</span>
+            <span className={d.addLine}>{(disc.pressed && disc.held ? disc.held : s).albumArtist ?? ""}</span>
           </button>
-          {disc.sure && !s.alreadyInLibrary && (
-            <Key tone="fill" onClick={disc.rip} disabled={disc.busy}>
-              Rip
-            </Key>
-          )}
-          {s.discPresent && !disc.moving && s.state !== "detecting" && (
-            <Key onClick={disc.eject} disabled={disc.busy} aria-label="Eject" title="Eject">
-              <Glyph name="eject" size={13} />
-            </Key>
-          )}
+          {/* Rip and Eject keep their seats in every state, dimmed where they sit (design wave 1c), so the
+              name's room never changes as the disc moves through its states */}
+          <Key tone="fill" onClick={disc.rip} disabled={disc.busy || !disc.sure || disc.moving || disc.pressed || !!s.alreadyInLibrary}>
+            Rip
+          </Key>
+          <Key onClick={disc.eject} disabled={disc.busy || !s.discPresent || disc.moving || disc.pressed || s.state === "detecting"} aria-label="Eject" title="Eject">
+            <Glyph name="eject" size={13} />
+          </Key>
         </div>
       )}
     </div>

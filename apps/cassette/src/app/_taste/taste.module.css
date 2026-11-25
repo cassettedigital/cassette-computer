@@ -147,8 +147,8 @@
   --paper: #f3eadb; /* the pill's text */
 
   /* colour */
-  --brass: #c9a25a; /* the paper's own light; a record with no colour */
-  --accent-c: var(--brass); /* a page sets the record's colour (and its --accent-ink) on its own wrapper */
+  --brass: #c9a25a; /* the paper's own light: other people's quoted words only, never a record (D12) */
+  --accent-c: var(--record-ink); /* no colour yet, or none: the paper's ink (D12); a page sets the record's colour (and its --accent-ink) on its own wrapper */
 
   /* the frame (the gutter and the wrap's width are the set's, above) */
   --stick: 16px; /* top offset for anything sticky */
@@ -181,14 +181,14 @@
       stock, or the dark paper when their device is set to dark. The page can hold one paper with
       data-paper (a review link, ?paper=dark),
       and <html> can hold either: the reader's choice in Appearance (lib/appearance.ts), or dark in the
-      iPhone app's web view (lib/app-surface.ts) while the app is dark-only. The page's hold wins. The pill keeps its cream (--paper, above). The paper's own light, the brass, is too pale
-      to read on cream, so a record with no colour takes a deep brass there; a record's own colour comes
-      in both versions from colour.ts (accentVars). ── */
+      iPhone app's web view (lib/app-surface.ts) while the app is dark-only. The page's hold wins. The pill keeps its cream (--paper, above). A record
+      with no colour paints the ink of the paper it sits on (--record-ink, the founder's D12); a record's own colour
+      comes in both versions from colour.ts (accentVars). ── */
 .follows {
   composes: auto from "@discovery/cassette-kit/taste.module.css";
   --grain-paper: var(--grain);
   --surface: var(--bg) var(--grain);
-  --accent-c: light-dark(#7f5f26, var(--brass));
+  --accent-c: var(--record-ink);
   --cover-shadow: 0 22px 44px -20px light-dark(rgba(52, 34, 16, 0.5), rgba(0, 0, 0, 0.72));
 }
 @media (prefers-color-scheme: dark) {

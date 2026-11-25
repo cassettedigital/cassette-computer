@@ -12,7 +12,7 @@
  *   title       the card's one title, a question when it asks one ("Sign in on this computer?"), sized to the column
  *               (the founder's D2 B: 40px on a computer, so most sit on one line above the keys; 30 on a phone)
  *   line        one sentence, when the title needs one (90 characters)
- *   disclosure  a required sentence by name (disclosures.ts): under the title (the pairing page's write-back line, with
+ *   disclosure  a required sentence by name (the kit's word list, system/words.ts): under the title (the pairing page's write-back line, with
  *               its Tip), or under the keys where the person commits (the terms)
  *   tip         one short sentence behind a "?" at the end of the line (the kit's Tip)
  *   notice      one line from the form: what went wrong, or what happened (a code sent). It, and a field's error, have one
@@ -34,7 +34,7 @@ import { BUDGET, Tip } from "@discovery/cassette-kit";
 import type { AppDevice } from "@/lib/opened-by-app";
 import { ActionRow } from "./ActionRow";
 import { ArtistRows, type ArtistRow } from "./ArtistRows";
-import { DISCLOSURES, type DisclosureId, type DisclosurePart } from "./disclosures";
+import { DISCLOSURES, type DisclosureId, type DisclosurePart } from "@discovery/cassette-kit/words";
 import { buttonClass } from "./Button";
 import { Chip, ChipRow } from "./Chip";
 import { Field } from "./Field";

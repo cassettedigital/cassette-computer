@@ -1878,7 +1878,7 @@ button.barMode:focus-visible {
   gap: 10px;
   margin: 4px 0 0;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--pk-r-card); /* a card: the frame decides (D8) */
   background: var(--pk-surface-raised);
   color: var(--pk-text-secondary);
   font: var(--pk-t-metadata);
@@ -2590,13 +2590,13 @@ button.barMode:focus-visible {
 /* Resume and Deep Dive are lit by their own record, as the iPhone's cards are: CoverGlass
    (app/_taste/CoverGlass.tsx), the card's paper over the record's light (founder, 2026-10-29, 2026-11-02) */
 .deepDiveCard {
-  --glass-radius: var(--pk-r-panel);
+  --glass-radius: var(--pk-r-card);
   display: grid;
   grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
   gap: 22px;
   align-items: end;
   padding: 16px;
-  border-radius: var(--pk-r-panel);
+  border-radius: var(--pk-r-card); /* a card: the frame decides (D8) */
   background: var(--pk-surface-raised);
 }
 .deepDiveArt {
@@ -2785,16 +2785,31 @@ button.barMode:focus-visible {
 /* ── the disc in the drive (disc.tsx) ── */
 
 /* the sidebar's row: a touch taller than a library row for its cover (it confirms the match), the name
-   and one line, then Rip and Eject. Ripping, the cover softens under a ring that fills. */
+   and one line, then Rip and Eject, two round icon keys that keep their seats in every state. Ripping, the
+   cover softens under a ring that fills. */
 .discRow {
+  flex: none;
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
-  margin: 8px 0 2px;
+  margin: 0;
   padding: 5px 6px 5px 4px;
   border-radius: var(--pk-r-control);
   transition: background-color 0.15s;
+  /* the disc's seat is the sidebar's foot (design wave 1c): it rises into place on the move curve and the
+     library list above it never moves */
+  animation: discRowIn var(--motion-move) var(--curve-move) both;
+}
+@keyframes discRowIn {
+  from {
+    translate: 0 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .discRow {
+    animation: none;
+  }
 }
 .discRow:hover,
 .discRow[data-on] {
@@ -2872,16 +2887,15 @@ button.barMode:focus-visible {
   color: var(--pk-text-secondary);
 }
 .discRip {
+  display: grid;
+  place-items: center;
+  width: 24px;
   height: 24px;
-  padding: 0 10px;
+  padding: 0;
   border: 0;
   border-radius: var(--pk-r-pill);
   background: var(--pk-fill-selected);
   color: var(--pk-text-on-fill);
-  font: var(--pk-t-pill);
-  font-size: 11px;
-  letter-spacing: var(--pk-k-pill);
-  text-transform: uppercase;
   cursor: pointer;
 }
 .discRip:hover:not(:disabled) {
@@ -2923,6 +2937,7 @@ button.barMode:focus-visible {
 .discSegs {
   position: absolute;
   inset: 0;
+  background: var(--ring);
   border-radius: 50%;
   mask: radial-gradient(circle, transparent 0 calc(50% - 6px), #000 calc(50% - 5px));
 }
@@ -3100,9 +3115,27 @@ button.barMode:focus-visible {
 .discTrack[data-state="error"] .discMark {
   color: var(--pk-danger);
 }
-/* the drive panel's own steps, borrowed for choosing and naming */
+/* the drive panel's own steps, under the head: choosing, naming, recovering, an error's way out */
 .discPanel {
   max-width: 760px;
+  margin-top: 8px;
+}
+/* the sleeve in the cover's frame; a best guess is dimmed until the person picks */
+.discSleeve {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.discSleeve[data-dim] {
+  opacity: 0.55;
+}
+/* a line not known yet (the artist, the facts while the disc is read): the songs' soft bar, set in the line's own
+   place (DiscView draws it with .discGhostBar) */
+.discGhostBar.discBone {
+  display: inline-block;
+  max-width: 100%;
+  height: 0.6em;
+  vertical-align: middle;
 }
 
 /* ── Devices, redrawn (2026-10-31): adding music first, devices weighted by use ── */
@@ -3504,6 +3537,7 @@ button.addWords {
 }
 .discGhostBar {
   display: block;
+  width: var(--w);
   height: 12px;
   border-radius: var(--pk-r-pill);
   background: linear-gradient(90deg, color-mix(in srgb, var(--pk-text-primary) 7%, transparent), color-mix(in srgb, var(--pk-text-primary) 13%, transparent), color-mix(in srgb, var(--pk-text-primary) 7%, transparent));

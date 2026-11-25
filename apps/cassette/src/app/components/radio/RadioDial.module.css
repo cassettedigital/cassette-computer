@@ -33,7 +33,7 @@
   align-items: center;
   gap: 16px;
   overflow: hidden;
-  border-radius: var(--pk-r-card);
+  border-radius: var(--corner-picture); /* a card whose face is a picture or a station's colour (D8) */
   background: var(--pk-surface-raised);
   --disc: 40px;
 }

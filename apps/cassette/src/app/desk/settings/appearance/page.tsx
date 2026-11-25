@@ -11,7 +11,7 @@ export const metadata = { title: "Appearance" };
 export default function DeskAppearance() {
   return (
     <div className={d.settings}>
-      <AppearanceBody fill skins={false} />
+      <AppearanceBody fill />
     </div>
   );
 }
